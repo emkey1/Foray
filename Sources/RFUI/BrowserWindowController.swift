@@ -1,5 +1,6 @@
 import AppKit
 import RFModel
+import RFOperations
 
 /// One browser window (= one native tab): sidebar + browser, toolbar, title.
 @MainActor
@@ -23,6 +24,7 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate, NSToo
         static let arrange = NSToolbarItem.Identifier("arrange")
         static let search = NSToolbarItem.Identifier("search")
         static let guide = NSToolbarItem.Identifier("guide")
+        static let jobs = NSToolbarItem.Identifier("jobs")
     }
 
     init(location: Location, pendingSearch: SearchQuery? = nil) {
@@ -96,11 +98,14 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate, NSToo
 
     func windowDidBecomeKey(_ notification: Notification) { WindowManager.shared.sessionChanged() }
 
+    /// One app-wide undo stack for file operations, like Finder.
+    func windowWillReturnUndoManager(_ window: NSWindow) -> UndoManager? { OperationCenter.shared.undoManager }
+
     // MARK: Toolbar
 
     func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
         [.toggleSidebar, .sidebarTrackingSeparator, ToolbarID.navigation, .flexibleSpace, ToolbarID.mode, ToolbarID.arrange,
-         ToolbarID.search, ToolbarID.guide]
+         ToolbarID.jobs, ToolbarID.search, ToolbarID.guide]
     }
 
     func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
@@ -143,6 +148,11 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate, NSToo
             updateRecentsMenu()
             recentsObserver = AppModel.shared.observeRecentSearches { [weak self] in self?.updateRecentsMenu() }
             syncSearchField()
+            return item
+        case ToolbarID.jobs:
+            let item = NSToolbarItem(itemIdentifier: id)
+            item.view = JobsToolbarButton()
+            item.label = "Operations"
             return item
         case ToolbarID.guide:
             let item = NSToolbarItem(itemIdentifier: id)
@@ -290,6 +300,7 @@ public final class WindowManager {
     private var saveScheduled = false
 
     public func openWindow(_ location: Location? = nil) {
+        FileOperationsUI.shared.install()
         let controller = make(location ?? .folder(FileManager.default.homeDirectoryForCurrentUser))
         controller.window?.center()
         showAsSeparateWindow(controller)
@@ -375,6 +386,7 @@ public final class WindowManager {
 
     /// Reopens the saved windows and tabs; returns false if there was nothing to restore.
     public func restoreSession() -> Bool {
+        FileOperationsUI.shared.install()
         guard let session = AppModel.shared.loadSession(), !session.windows.isEmpty else { return false }
         for saved in session.windows where !saved.tabs.isEmpty {
             let first = make(saved.tabs[0])

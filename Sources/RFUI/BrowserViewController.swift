@@ -19,12 +19,22 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
     private let addressField = AddressField()
     private let statusLabel = NSTextField(labelWithString: "")
     private let sizeSlider = NSSlider(value: 64, minValue: 16, maxValue: 256, target: nil, action: nil)
-    private var content: ContentView?
+    var content: ContentView?
+    /// In-place rename field, laid over the item's name.
+    let renameField = RenameField()
+    private var renaming: FileItem?
     private var contentMode: ViewMode?
     /// Content views are kept per mode once created, so switching back reuses their rows and cells.
     private var contentCache: [ViewMode: ContentView] = [:]
     /// What each content view last rendered; a view that's already current isn't re-applied.
     private var rendered: [ViewMode: (generation: Int, settings: ViewSettings)] = [:]
+
+    /// Forces content views to redraw (e.g. cut items dim).
+    func invalidateRenderedContent() {
+        rendered = [:]
+        applyContentIfNeeded()
+        restoreSelection()
+    }
     private var typeSelect = TypeSelectBuffer()
     private var previewPanel: QLPreviewPanel?
 
@@ -323,6 +333,9 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
         let menu = NSMenu()
         let items = state.selectedItems
         if items.isEmpty {
+            menu.addItem(withTitle: "New Folder", action: #selector(newFolder(_:)), keyEquivalent: "")
+            menu.addItem(withTitle: "Paste", action: #selector(paste(_:)), keyEquivalent: "")
+            menu.addItem(.separator())
             menu.addItem(withTitle: "Show Hidden Files", action: #selector(toggleHiddenFiles(_:)), keyEquivalent: "")
                 .state = state.settings.arrangement.showHidden ? .on : .off
             menu.addItem(sortMenuItem())
@@ -338,6 +351,16 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
         }
         if state.location.searchQuery != nil && items.count == 1 {
             menu.addItem(withTitle: "Show in Enclosing Folder", action: #selector(showInEnclosingFolder(_:)), keyEquivalent: "")
+        }
+        menu.addItem(.separator())
+        menu.addItem(withTitle: "Move to Trash", action: #selector(moveToTrash(_:)), keyEquivalent: "")
+        menu.addItem(.separator())
+        if items.count == 1 { menu.addItem(withTitle: "Rename", action: #selector(renameSelection(_:)), keyEquivalent: "") }
+        menu.addItem(withTitle: "Duplicate", action: #selector(duplicate(_:)), keyEquivalent: "")
+        menu.addItem(withTitle: "Copy", action: #selector(copy(_:)), keyEquivalent: "")
+        menu.addItem(withTitle: "Cut", action: #selector(cut(_:)), keyEquivalent: "")
+        if operationFolder != nil && items.count > 1 {
+            menu.addItem(withTitle: "New Folder with Selection", action: #selector(newFolderWithSelection(_:)), keyEquivalent: "")
         }
         menu.addItem(.separator())
         menu.addItem(withTitle: "Quick Look", action: #selector(toggleQuickLook(_:)), keyEquivalent: "")
@@ -362,6 +385,61 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
 
     func contentPresentationChanged(_ change: (inout Presentation) -> Void) {
         state.updatePresentation(change)
+    }
+
+    func contentRename() { renameSelection(nil) }
+
+    // MARK: Rename in place
+
+    func beginRename(_ item: FileItem) {
+        guard state.location != .computer, let content, let frame = content.nameFrameInWindow(for: item.id) else { return }
+        endRename(commit: false)
+        renaming = item
+        var rect = view.convert(frame, from: nil).insetBy(dx: -3, dy: -2)
+        rect.size.width = max(rect.width, 160)
+        rect.origin.x = max(view.bounds.minX + 2, min(rect.origin.x, view.bounds.maxX - rect.width - 2))
+        renameField.frame = rect
+        renameField.stringValue = item.name
+        renameField.onCommit = { [weak self] in self?.endRename(commit: true) }
+        renameField.onCancel = { [weak self] in self?.endRename(commit: false) }
+        if renameField.superview == nil { view.addSubview(renameField) }
+        renameField.isHidden = false
+        view.window?.makeFirstResponder(renameField)
+        // Select the name without its extension, like Finder.
+        let base = FileNaming.split(item.name).base
+        renameField.currentEditor()?.selectedRange = NSRange(location: 0, length: (base as NSString).length)
+    }
+
+    func endRename(commit: Bool) {
+        guard let item = renaming else { return }
+        renaming = nil
+        let newName = renameField.stringValue
+        renameField.isHidden = true
+        if let content { view.window?.makeFirstResponder(content.firstResponderView) }
+        guard commit, newName != item.name else { return }
+        if let problem = FileNaming.problem(with: newName) {
+            NSSound.beep()
+            let alert = NSAlert()
+            alert.messageText = "“\(newName)” can't be used."
+            alert.informativeText = problem
+            if let window = view.window { alert.beginSheetModal(for: window) }
+            return
+        }
+        let oldExt = FileNaming.split(item.name).ext, newExt = FileNaming.split(newName).ext
+        if !item.isNavigableFolder, oldExt != nil, oldExt?.lowercased() != newExt?.lowercased(), let window = view.window {
+            let alert = NSAlert()
+            alert.messageText = "Are you sure you want to change the extension from “.\(oldExt!)” to “\(newExt.map { "." + $0 } ?? "nothing")”?"
+            alert.informativeText = "If you make this change, your document may open in a different app."
+            alert.addButton(withTitle: "Keep .\(oldExt!)")
+            alert.addButton(withTitle: newExt.map { "Use .\($0)" } ?? "Remove")
+            alert.beginSheetModal(for: window) { [weak self] response in
+                guard let self else { return }
+                let name = response == .alertFirstButtonReturn ? FileNaming.split(newName).base + "." + oldExt! : newName
+                FileOperationsUI.shared.submit(.rename(item.url, to: name), from: self.state)
+            }
+            return
+        }
+        FileOperationsUI.shared.submit(.rename(item.url, to: newName), from: state)
     }
 
     // MARK: Opening
@@ -535,6 +613,7 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
     }
 
     func validateMenuItem(_ item: NSMenuItem) -> Bool {
+        if let answer = validateFileCommand(item) { return answer }
         let a = state.settings.arrangement
         switch item.action {
         case #selector(goBack(_:)): return state.history.canGoBack
@@ -692,4 +771,41 @@ final class AddressField: NSTextField, NSTextFieldDelegate {
 
 extension Array {
     subscript(safe i: Int) -> Element? { indices.contains(i) ? self[i] : nil }
+}
+
+/// The in-place rename field: Return commits, Esc cancels, clicking elsewhere commits (like Finder).
+final class RenameField: NSTextField, NSTextFieldDelegate {
+    var onCommit: (() -> Void)?
+    var onCancel: (() -> Void)?
+
+    override init(frame: NSRect) {
+        super.init(frame: frame)
+        delegate = self
+        isBezeled = true
+        bezelStyle = .squareBezel
+        focusRingType = .exterior
+        font = .systemFont(ofSize: NSFont.systemFontSize)
+        lineBreakMode = .byTruncatingMiddle
+        cell?.isScrollable = true
+        isHidden = true
+    }
+
+    required init?(coder: NSCoder) { fatalError() }
+
+    func control(_ control: NSControl, textView: NSTextView, doCommandBy selector: Selector) -> Bool {
+        switch selector {
+        case #selector(NSResponder.insertNewline(_:)):
+            onCommit?()
+            return true
+        case #selector(NSResponder.cancelOperation(_:)):
+            onCancel?()
+            return true
+        default:
+            return false
+        }
+    }
+
+    func controlTextDidEndEditing(_ obj: Notification) {
+        if !isHidden { onCommit?() }
+    }
 }

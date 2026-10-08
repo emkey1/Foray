@@ -119,9 +119,18 @@ enum MainMenu {
         let newTab = item("New Tab", #selector(AppDelegate.newBrowserTab(_:)), "t")
         newTab.target = target
         menu.addItem(newTab)
+        menu.addItem(item("New Folder", Commands.newFolder, "n", [.command, .shift]))
+        menu.addItem(item("New Folder with Selection", Commands.newFolderWithSelection, "n", [.command, .control]))
+        menu.addItem(.separator())
         menu.addItem(item("Open", Commands.openSelection, "o"))
         menu.addItem(item("Open in New Tab", Commands.openSelectionInNewTab))
         menu.addItem(item("Close Window", #selector(NSWindow.performClose(_:)), "w"))
+        menu.addItem(.separator())
+        menu.addItem(item("Rename", Commands.rename))
+        menu.addItem(item("Duplicate", Commands.duplicate, "d"))
+        let backspace = String(UnicodeScalar(NSBackspaceCharacter)!)
+        menu.addItem(item("Move to Trash", Commands.moveToTrash, backspace))
+        menu.addItem(item("Delete Immediately…", Commands.deleteImmediately, backspace, [.command, .option]))
         menu.addItem(.separator())
         menu.addItem(item("Quick Look", Commands.toggleQuickLook, "y"))
         menu.addItem(item("Show in Enclosing Folder", Commands.showInEnclosingFolder, "r"))
@@ -134,12 +143,15 @@ enum MainMenu {
 
     private static func editMenu() -> NSMenu {
         let menu = NSMenu(title: "Edit")
-        menu.addItem(item("Undo", #selector(UndoManager.undo), "z"))
-        menu.addItem(item("Redo", #selector(UndoManager.redo), "z", [.command, .shift]))
+        // NSWindow handles undo:/redo: with the window's undo manager (the app-wide file-ops stack)
+        // and keeps the titles current ("Undo Move").
+        menu.addItem(item("Undo", Selector(("undo:")), "z"))
+        menu.addItem(item("Redo", Selector(("redo:")), "z", [.command, .shift]))
         menu.addItem(.separator())
         menu.addItem(item("Cut", #selector(NSText.cut(_:)), "x"))
         menu.addItem(item("Copy", #selector(NSText.copy(_:)), "c"))
         menu.addItem(item("Paste", #selector(NSText.paste(_:)), "v"))
+        menu.addItem(item("Move Items Here", Commands.moveItemsHere, "v", [.command, .option]))
         menu.addItem(item("Select All", #selector(NSText.selectAll(_:)), "a"))
         return menu
     }

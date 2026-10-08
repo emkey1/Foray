@@ -17,3 +17,10 @@ enum TestDirs {
         return tmp.appendingPathComponent("rf-\(prefix)-\(UUID().uuidString)", isDirectory: true)
     }
 }
+
+import Testing
+
+/// Parent suite for tests that replace shared singletons. `.serialized` applies to everything
+/// nested inside, so they never run concurrently with each other.
+@MainActor
+@Suite(.serialized) enum UISerial {}

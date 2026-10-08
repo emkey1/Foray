@@ -66,6 +66,14 @@ final class IconContentViewController: NSViewController, ContentView {
         return window.convertToScreen(item.view.convert(frame, to: nil))
     }
 
+    func nameFrameInWindow(for id: FileID) -> NSRect? {
+        guard let path = indexPath(for: id) else { return nil }
+        collectionView.scrollToItems(at: [path], scrollPosition: .nearestHorizontalEdge)
+        collectionView.layoutSubtreeIfNeeded()
+        guard let item = collectionView.item(at: path) as? IconItem else { return nil }
+        return item.labelFrameInWindow
+    }
+
     // MARK: Index mapping (sections = groups)
 
     fileprivate func index(of path: IndexPath) -> Int {
@@ -146,6 +154,10 @@ final class BrowserCollectionView: NSCollectionView {
             owner?.host?.contentToggleQuickLook()
             return
         }
+        if event.modifierFlags.intersection([.command, .option, .control]).isEmpty && (event.keyCode == 36 || event.keyCode == 76) {
+            owner?.host?.contentRename()   // Return / Enter: rename, like Finder
+            return
+        }
         if let chars = event.typeSelectCharacters {
             owner?.host?.contentTypeSelect(chars)
             return
@@ -168,6 +180,7 @@ private final class IconItem: NSCollectionViewItem {
     private var iconSize: CGFloat = 64
 
     var iconFrame: NSRect { iconView.frame }
+    var labelFrameInWindow: NSRect { label.convert(label.bounds, to: nil) }
 
     override func loadView() {
         view = NSView()
@@ -187,7 +200,7 @@ private final class IconItem: NSCollectionViewItem {
         self.item = item
         iconSize = options.iconSize
         label.stringValue = item.displayName
-        view.alphaValue = item.flags.contains(.hidden) ? 0.6 : 1
+        view.alphaValue = item.flags.contains(.hidden) || FileClipboard.isCut(item.url) ? 0.5 : 1
         let provider = IconProvider.shared
         iconView.image = provider.cachedThumbnail(for: item, size: options.iconSize) ?? provider.icon(for: item)
         provider.loadFileIcon(for: item) { [weak self] image in

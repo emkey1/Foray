@@ -64,10 +64,8 @@ final class Sandbox {
 
     private func waitForUndo(_ action: () -> Void) async {
         action()
-        // Undo/redo steps run as jobs; wait until none is active.
-        try? await Task.sleep(for: .milliseconds(20))
-        while !center.activeJobs.isEmpty { try? await Task.sleep(for: .milliseconds(10)) }
-        try? await Task.sleep(for: .milliseconds(20))
+        // Undo/redo steps run as jobs, one after another.
+        while center.isBusy { try? await Task.sleep(for: .milliseconds(10)) }
     }
 
     /// Relative path → contents ("<dir>" for folders, "-> target" for symlinks), for exact comparisons.

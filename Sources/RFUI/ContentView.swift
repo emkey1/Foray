@@ -13,6 +13,8 @@ protocol ContentHost: AnyObject {
     func contentTypeSelect(_ characters: String)
     func contentHeaderClicked(_ key: SortKey, shift: Bool)
     func contentPresentationChanged(_ change: (inout Presentation) -> Void)
+    /// Return on a selected item: rename it in place.
+    func contentRename()
 }
 
 /// Every view mode renders the same snapshot and the same selection; switching modes swaps the
@@ -24,6 +26,8 @@ protocol ContentView: NSViewController {
     /// Programmatic selection; must not call back into `contentSelectionChanged`.
     func showSelection(_ ids: Set<FileID>, reveal: FileID?)
     func screenFrame(for id: FileID) -> NSRect?
+    /// The item's name label, in window coordinates (where the rename field goes).
+    func nameFrameInWindow(for id: FileID) -> NSRect?
     var firstResponderView: NSView { get }
     /// An expanded folder's contents changed (only list view shows them).
     func childrenChanged(_ id: FileID)

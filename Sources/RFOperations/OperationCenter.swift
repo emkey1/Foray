@@ -27,11 +27,16 @@ public final class Job: Identifiable {
 /// Finder), progress for the UI, conflict questions answered by the UI.
 @MainActor
 public final class OperationCenter {
-    public static let shared = OperationCenter(journal: .shared, trash: Trash.system)
+    /// Replaceable so tests use a private Trash and journal.
+    public static var shared = OperationCenter(journal: .shared, trash: Trash.system)
 
     public let undoManager = UndoManager()
     public private(set) var jobs: [Job] = []
     public var activeJobs: [Job] { jobs.filter { !$0.isFinished } }
+    /// Undo/redo sequences still running (their steps run one after another).
+    private var runningSequences = 0
+    /// Anything still running, including the gaps between the steps of an undo.
+    public var isBusy: Bool { !activeJobs.isEmpty || runningSequences > 0 }
 
     /// Asked when an item already exists at the destination. Default: Keep Both (never destructive).
     public var resolveConflict: @MainActor (Job, ConflictQuestion) async -> ConflictAnswer = { _, _ in ConflictAnswer(.keepBoth) }
@@ -158,7 +163,9 @@ public final class OperationCenter {
             }
         }
         undoManager.setActionName(name)
+        runningSequences += 1
         Task { @MainActor in
+            defer { runningSequences -= 1 }
             var combined = OperationResult()
             for step in steps {
                 let job = Job(step, isUndoStep: true)

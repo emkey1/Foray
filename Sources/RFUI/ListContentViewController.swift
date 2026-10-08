@@ -160,6 +160,18 @@ final class ListContentViewController: NSViewController, ContentView {
         return window.convertToScreen(outline.convert(iconRect, to: nil))
     }
 
+    func nameFrameInWindow(for id: FileID) -> NSRect? {
+        guard let node = existingOrTopLevelNode(id),
+              let column = outline.tableColumns.firstIndex(where: { $0.identifier.rawValue == ListColumn.name.rawValue })
+        else { return nil }
+        let row = outline.row(forItem: node)
+        guard row >= 0 else { return nil }
+        outline.scrollRowToVisible(row)
+        guard let cell = outline.view(atColumn: column, row: row, makeIfNecessary: true) as? NSTableCellView,
+              let text = cell.textField else { return nil }
+        return text.convert(text.bounds, to: nil)
+    }
+
     // MARK: Building
 
     /// The node for an item that's shown: cached, or created for a top-level item.
@@ -399,8 +411,13 @@ final class BrowserOutlineView: NSOutlineView {
     weak var owner: ListContentViewController?
 
     override func keyDown(with event: NSEvent) {
-        if event.charactersIgnoringModifiers == " " && event.modifierFlags.intersection([.command, .option, .control]).isEmpty {
+        let plain = event.modifierFlags.intersection([.command, .option, .control]).isEmpty
+        if event.charactersIgnoringModifiers == " " && plain {
             owner?.host?.contentToggleQuickLook()
+            return
+        }
+        if plain && (event.keyCode == 36 || event.keyCode == 76) {  // Return / Enter: rename, like Finder
+            owner?.host?.contentRename()
             return
         }
         super.keyDown(with: event)
@@ -444,7 +461,7 @@ private final class NameCell: NSTableCellView {
         itemID = item.id
         textField?.stringValue = item.displayName
         imageView?.image = IconProvider.shared.icon(for: item)
-        alphaValue = item.flags.contains(.hidden) ? 0.6 : 1
+        alphaValue = item.flags.contains(.hidden) || FileClipboard.isCut(item.url) ? 0.5 : 1
         IconProvider.shared.loadFileIcon(for: item) { [weak self] image in
             guard self?.itemID == item.id else { return }
             self?.imageView?.image = image

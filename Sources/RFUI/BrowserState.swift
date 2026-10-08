@@ -1,6 +1,7 @@
 import AppKit
 import RFFileSystem
 import RFModel
+import RFOperations
 import RFSearch
 
 /// Per-tab state (DESIGN.md §5.3): location, history, settings, the arranged snapshot and the
@@ -48,12 +49,18 @@ final class BrowserState {
     private var observers: [(Change) -> Void] = []
     private var settingsObserver: UUID?
 
+    /// Every live tab, so file operations can refresh all of them (weak; tabs unregister on deinit).
+    private static var registry: [ObjectIdentifier: () -> BrowserState?] = [:]
+    static var live: [BrowserState] { registry.values.compactMap { $0() } }
+
     init(location: Location) {
         self.location = location
         self.history = NavigationHistory(location)
         self.details = .fallback(location)
         self.settings = AppModel.shared.resolve(location.settingsClass, folder: nil).0
         settingsObserver = AppModel.shared.observeSettings { [weak self] in self?.reresolveSettings() }
+        let id = ObjectIdentifier(self)
+        Self.registry[id] = { [weak self] in self }
         load()
     }
 
@@ -72,6 +79,7 @@ final class BrowserState {
     }
 
     func invalidate() {
+        Self.registry[ObjectIdentifier(self)] = nil
         recordSearchIfLeaving()
         loadTask?.cancel()
         detailsTask?.cancel()
@@ -240,6 +248,39 @@ final class BrowserState {
     }
 
     func reload() { load() }
+
+    // MARK: After file operations (DESIGN.md §5.7)
+
+    /// Updates this tab right away instead of waiting for FSEvents (0.2–0.8 s). `select`: the
+    /// operation's resulting items, for the tab that started it.
+    func applyFileChanges(_ result: OperationResult, select: [URL] = []) {
+        if case .search = location {
+            // Results aren't re-run; drop items that moved away or went to the Trash.
+            let gone = Set((result.moved.map(\.from) + result.trashed.map(\.from) + result.deleted).map(\.standardizedFileURL.path))
+            guard !gone.isEmpty else { return }
+            rawItems.removeAll { gone.contains($0.url.standardizedFileURL.path) }
+            rearrange("file-op")
+            return
+        }
+        guard let folder = location.folderURL?.standardizedFileURL else { return }
+        let changed = result.changedFolders.contains { $0.standardizedFileURL.path == folder.path }
+        let names = select.filter { $0.deletingLastPathComponent().standardizedFileURL.path == folder.path }.map(\.lastPathComponent)
+        guard changed || !names.isEmpty else { return }
+        if !names.isEmpty { pendingSelection = names }
+        load()
+    }
+
+    /// Selects items by name once they appear (e.g. after New Folder, before renaming it).
+    func select(names: [String]) {
+        let wanted = Set(names)
+        let ids = snapshot.items.filter { wanted.contains($0.name) }.map(\.id)
+        if ids.isEmpty {
+            pendingSelection = names
+        } else {
+            setSelection(Set(ids), anchor: ids.first)
+            notify(.snapshot)
+        }
+    }
 
     // MARK: Search (DESIGN.md §3.1)
 
