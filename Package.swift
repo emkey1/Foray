@@ -15,13 +15,16 @@ let package = Package(
         .target(name: "RFModel"),
         // Filesystem access: enumeration, watching, volumes.
         .target(name: "RFFileSystem", dependencies: ["CFastFS", "RFModel"]),
+        // Search planner and backends (Spotlight, crawl).
+        .target(name: "RFSearch", dependencies: ["RFModel", "RFFileSystem"]),
         // AppKit views and controllers. Never touches the filesystem directly.
-        .target(name: "RFUI", dependencies: ["RFModel", "RFFileSystem"]),
+        .target(name: "RFUI", dependencies: ["RFModel", "RFFileSystem", "RFSearch"]),
         // App entry point: menus, app delegate.
         .executableTarget(name: "RealFinder", dependencies: ["RFUI"]),
 
         .testTarget(name: "RFModelTests", dependencies: ["RFModel"]),
         .testTarget(name: "RFFileSystemTests", dependencies: ["RFFileSystem"]),
+        .testTarget(name: "RFSearchTests", dependencies: ["RFSearch"]),
         .testTarget(name: "RFUITests", dependencies: ["RFUI"]),
     ]
 )

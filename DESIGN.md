@@ -590,6 +590,12 @@ protocol SearchBackend: Sendable {
 - Uses fd-relative `*at()` syscalls, so very deep paths work.
 - Results stay live through a recursive FSEvents stream on the scope root.
 
+**As built (M3):**
+- **Module:** search lives in a new `RFSearch` target (planner, Spotlight translation, `NSMetadataQuery` runner). The crawl is `TreeWalker` in RFFileSystem, a parallel `getattrlistbulk` walk that filters raw names before building items.
+- **Path spelling:** Spotlight hits come back with canonical paths (`/private/var/…`). They are respelled to match the scope the user chose, so they merge with crawl results and show sensible "Where" paths.
+- **Live updates:** after the initial gathering, Spotlight results update live. Crawl results don't yet; that's a follow-up, using recursive FSEvents on the scope root.
+- **No Spotlight:** queries Spotlight can't express (regexes) crawl the scope instead. For This Mac, that means crawling `/`.
+
 **No per-folder index detection.** M0 (S3) showed that Spotlight's coverage can't be predicted reliably per folder. Probes contradicted each other, Spotlight answered queries even on an unindexed disk image, and new files took 0.2–2.6 s to be indexed. So the planner treats Spotlight as fast but possibly incomplete or stale, and treats Crawl plus FSEvents as authoritative. Only volume-level indexing status (as reported by `mdutil -s`) is used, and only for the contents-search banner.
 
 ### 5.7 File operations engine

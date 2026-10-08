@@ -1,10 +1,16 @@
 import Foundation
 
-/// What a tab shows (DESIGN.md §5.3). M1 implements folders and Computer; the other cases arrive
-/// with their milestones.
+/// What a tab shows (DESIGN.md §5.3). Recents, tags, Trash and the rest arrive with their
+/// milestones.
 public enum Location: Hashable, Codable, Sendable {
     case folder(URL)
     case computer
+    case search(SearchQuery)
+
+    public var searchQuery: SearchQuery? {
+        if case .search(let q) = self { return q }
+        return nil
+    }
 
     public var folderURL: URL? {
         if case .folder(let url) = self { return url }
@@ -16,6 +22,7 @@ public enum Location: Hashable, Codable, Sendable {
         switch self {
         case .folder(let url): url.path == "/" ? "/" : url.lastPathComponent
         case .computer: "Computer"
+        case .search(let q): "Searching “\(q.text)”"
         }
     }
 
@@ -27,6 +34,8 @@ public enum Location: Hashable, Codable, Sendable {
             return .folder
         case .computer:
             return .computer
+        case .search:
+            return .searchResults
         }
     }
 }
@@ -66,6 +75,11 @@ public struct NavigationHistory: Codable, Sendable {
         if back.count > Self.limit { back.removeFirst() }
         forward.removeAll()
         current = HistoryEntry(location: location)
+    }
+
+    /// Refining a search replaces the current entry instead of adding one per keystroke.
+    public mutating func replaceCurrent(_ location: Location) {
+        current = HistoryEntry(location: location, selectedNames: current.selectedNames)
     }
 
     @discardableResult

@@ -82,4 +82,6 @@ public enum Commands {
     public static let goEnclosing = #selector(BrowserViewController.goEnclosing(_:))
     public static let goToStandardLocation = #selector(BrowserViewController.goToStandardLocation(_:))
     public static let goToFolder = #selector(BrowserViewController.goToFolder(_:))
+    public static let focusSearch = #selector(BrowserWindowController.focusSearch(_:))
+    public static let showInEnclosingFolder = #selector(BrowserViewController.showInEnclosingFolder(_:))
 }

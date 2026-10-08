@@ -152,3 +152,69 @@ import Testing
         #expect(state.selectedItems.map(\.name) == ["sub"])
     }
 }
+
+/// Search flow (DESIGN.md §3.1): scope defaults to the current folder, refining doesn't add
+/// history, and ending the search restores the folder and its selection.
+@MainActor
+@Suite(.serialized) struct SearchFlowTests {
+    let folder: URL
+
+    init() throws {
+        let base = FileManager.default.temporaryDirectory.appendingPathComponent("rf-searchflow-\(UUID().uuidString)")
+        folder = base.appendingPathComponent("Projects", isDirectory: true)
+        try FileManager.default.createDirectory(at: folder.appendingPathComponent("deep/er"), withIntermediateDirectories: true)
+        for path in ["report.pdf", "deep/report notes.txt", "deep/er/photo report.jpg", "unrelated.txt"] {
+            FileManager.default.createFile(atPath: folder.appendingPathComponent(path).path, contents: Data("x".utf8))
+        }
+        AppModel.shared = AppModel(store: AppSupportStore(directory: base.appendingPathComponent("store")))
+    }
+
+    private func wait(_ condition: () -> Bool) async {
+        let deadline = Date().addingTimeInterval(5)
+        while !condition() && Date() < deadline { try? await Task.sleep(for: .milliseconds(20)) }
+    }
+
+    @Test func searchDefaultsToCurrentFolderAndReturns() async throws {
+        let state = BrowserState(location: .folder(folder))
+        defer { state.invalidate() }
+        await wait { state.loadState == .complete && state.snapshot.items.count == 3 }
+        let unrelated = try #require(state.snapshot.items.first { $0.name == "unrelated.txt" })
+        state.setSelection([unrelated.id], anchor: unrelated.id)
+
+        state.search("report")
+        let q = try #require(state.location.searchQuery)
+        #expect(q.scope == .folder(folder, recursive: true))
+        #expect(q.origin == folder)
+        await wait { state.loadState == .complete && state.snapshot.items.count == 3 }
+        #expect(Set(state.snapshot.items.map(\.name)) == ["report.pdf", "report notes.txt", "photo report.jpg"])
+        #expect(state.settings.presentation.mode == .list)  // search results class default
+
+        state.search("report kind:images")       // refine: replaces, doesn't add history
+        await wait { state.loadState == .complete && state.snapshot.items.count == 1 }
+        #expect(state.snapshot.items.map(\.name) == ["photo report.jpg"])
+        state.updateSearch { $0.scope = .folder(folder, recursive: false) }   // Subfolders off
+        await wait { state.loadState == .complete && state.snapshot.items.isEmpty }
+        #expect(state.snapshot.items.isEmpty)
+
+        state.endSearch()
+        #expect(state.location == .folder(folder))
+        #expect(!state.history.canGoBack)
+        await wait { state.loadState == .complete && !state.selection.isEmpty }
+        #expect(state.selectedItems.map(\.name) == ["unrelated.txt"])
+    }
+
+    @Test func clearingTheFieldEndsTheSearch() async throws {
+        let state = BrowserState(location: .folder(folder))
+        defer { state.invalidate() }
+        state.search("report")
+        #expect(state.location.searchQuery != nil)
+        state.search("   ")
+        #expect(state.location == .folder(folder))
+    }
+
+    @Test func searchFromComputerSearchesThisMac() {
+        let state = BrowserState(location: .computer)
+        defer { state.invalidate() }
+        #expect(state.defaultSearchScope == .thisMac)
+    }
+}

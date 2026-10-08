@@ -122,6 +122,8 @@ public enum ArrangementEngine {
             return KindNames.name(for: a).localizedStandardCompare(KindNames.name(for: b))
         case .fileExtension:
             return a.pathExtension.compare(b.pathExtension)
+        case .folder:
+            return a.url.deletingLastPathComponent().path.localizedStandardCompare(b.url.deletingLastPathComponent().path)
         case .size:
             return compareOptional(a.size, b.size)
         case .dateModified:

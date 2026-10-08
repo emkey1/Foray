@@ -12,6 +12,8 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
     var openInNewTab: ((Location) -> Void)?
 
     private let contentContainer = NSView()
+    private let scopeBar = SearchScopeBar()
+    private var scopeBarCollapsed: NSLayoutConstraint?
     private let messageLabel = NSTextField(wrappingLabelWithString: "")
     private let pathBar = NSPathControl()
     private let addressField = AddressField()
@@ -61,7 +63,8 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
         sizeSlider.target = self
         sizeSlider.action = #selector(iconSizeChanged)
 
-        let views: [NSView] = [contentContainer, messageLabel, pathBar, addressField, statusLabel, sizeSlider]
+        scopeBar.onChange = { [weak self] change in self?.state.updateSearch(change) }
+        let views: [NSView] = [scopeBar, contentContainer, messageLabel, pathBar, addressField, statusLabel, sizeSlider]
         for v in views {
             v.translatesAutoresizingMaskIntoConstraints = false
             root.addSubview(v)
@@ -71,8 +74,12 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
         separator.translatesAutoresizingMaskIntoConstraints = false
         root.addSubview(separator)
 
+        scopeBarCollapsed = scopeBar.heightAnchor.constraint(equalToConstant: 0)
         NSLayoutConstraint.activate([
-            contentContainer.topAnchor.constraint(equalTo: root.safeAreaLayoutGuide.topAnchor),
+            scopeBar.topAnchor.constraint(equalTo: root.safeAreaLayoutGuide.topAnchor),
+            scopeBar.leadingAnchor.constraint(equalTo: root.leadingAnchor),
+            scopeBar.trailingAnchor.constraint(equalTo: root.trailingAnchor),
+            contentContainer.topAnchor.constraint(equalTo: scopeBar.bottomAnchor),
             contentContainer.leadingAnchor.constraint(equalTo: root.leadingAnchor),
             contentContainer.trailingAnchor.constraint(equalTo: root.trailingAnchor),
             contentContainer.bottomAnchor.constraint(equalTo: separator.topAnchor),
@@ -130,13 +137,26 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
         case .details, .location:
             updatePathBar()
             updateStatus()
+            updateScopeBar()
         case .selection:
             updateStatus()
             previewPanel?.reloadData()
         }
     }
 
+    private func updateScopeBar() {
+        if let q = state.location.searchQuery {
+            scopeBar.show(q)
+            scopeBar.isHidden = false
+            scopeBarCollapsed?.isActive = false
+        } else {
+            scopeBar.isHidden = true
+            scopeBarCollapsed?.isActive = true
+        }
+    }
+
     private func refreshAll() {
+        updateScopeBar()
         content?.apply(state.snapshot, settings: state.settings)
         restoreSelection()
         updatePathBar()
@@ -192,6 +212,14 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
 
     private func updateStatus() {
         let snap = state.snapshot
+        if let search = state.searchStatus {
+            var parts = [search.isRunning ? "Searching… \(search.items.count.formatted()) found" : "\(snap.items.count.formatted()) found"]
+            if search.foldersScanned > 0 { parts.append("\(search.foldersScanned.formatted()) folders scanned") }
+            if search.foldersSkipped > 0 { parts.append("\(search.foldersSkipped.formatted()) couldn't be read") }
+            if !state.selectedItems.isEmpty { parts.append("\(state.selectedItems.count.formatted()) selected") }
+            statusLabel.stringValue = parts.joined(separator: "  ·  ")
+            return
+        }
         var parts: [String] = []
         let selected = state.selectedItems
         if selected.isEmpty {
@@ -210,6 +238,11 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
         switch state.loadState {
         case .failed(let message, _):
             messageLabel.stringValue = message
+            messageLabel.isHidden = false
+        case .complete where state.snapshot.items.isEmpty && state.location.searchQuery != nil:
+            let q = state.location.searchQuery!
+            let place = q.scope == .thisMac ? "on this Mac" : "in “\(q.scope.folderURL?.lastPathComponent ?? "")”"
+            messageLabel.stringValue = "No results for “\(q.text)” \(place)."
             messageLabel.isHidden = false
         case .complete where state.snapshot.items.isEmpty && !state.settings.arrangement.kindFilter.isEmpty:
             messageLabel.stringValue = "No items match the kind filter."
@@ -245,6 +278,9 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
         if let openWith = openWithMenuItem(for: items) { menu.addItem(openWith) }
         if items.count == 1, items[0].flags.contains(.package) {
             menu.addItem(withTitle: "Show Package Contents", action: #selector(showPackageContents(_:)), keyEquivalent: "")
+        }
+        if state.location.searchQuery != nil && items.count == 1 {
+            menu.addItem(withTitle: "Show in Enclosing Folder", action: #selector(showInEnclosingFolder(_:)), keyEquivalent: "")
         }
         menu.addItem(.separator())
         menu.addItem(withTitle: "Quick Look", action: #selector(toggleQuickLook(_:)), keyEquivalent: "")
@@ -283,6 +319,12 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
 
     @objc func openSelection(_ sender: Any?) { open(state.selectedItems, inNewTab: false) }
     @objc func openSelectionInNewTab(_ sender: Any?) { open(state.selectedItems, inNewTab: true) }
+
+    /// From search results: go to the item's folder with the item selected (Back returns to results).
+    @objc func showInEnclosingFolder(_ sender: Any?) {
+        guard let item = state.selectedItems.first else { return }
+        state.navigate(to: .folder(item.url.deletingLastPathComponent()), select: [item.name])
+    }
 
     @objc func showPackageContents(_ sender: Any?) {
         guard let item = state.selectedItems.first else { return }
@@ -430,6 +472,8 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
         case #selector(goBack(_:)): return state.history.canGoBack
         case #selector(goForward(_:)): return state.history.canGoForward
         case #selector(goEnclosing(_:)): return state.location != .computer
+        case #selector(showInEnclosingFolder(_:)):
+            return state.location.searchQuery != nil && state.selectedItems.count == 1
         case #selector(openSelection(_:)), #selector(copyPath(_:)), #selector(openSelectionInNewTab(_:)):
             return !state.selectedItems.isEmpty
         case #selector(toggleQuickLook(_:)): return !state.selectedItems.isEmpty || previewPanel != nil
@@ -439,6 +483,7 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
         case #selector(sortBy(_:)):
             let key = SortKey.allCases[safe: item.tag]
             item.state = a.primary.key == key ? .on : (a.sort.contains { $0.key == key } ? .mixed : .off)
+            item.isHidden = key == .folder && state.location.searchQuery == nil
             return key != .dateLastOpened && key != .tags && key != .manual
         case #selector(groupBy(_:)):
             item.state = (item.tag < 0 ? a.groupBy == nil : a.groupBy == GroupKey.allCases[safe: item.tag]) ? .on : .off

@@ -115,6 +115,9 @@ enum MainMenu {
         menu.addItem(item("Close Window", #selector(NSWindow.performClose(_:)), "w"))
         menu.addItem(.separator())
         menu.addItem(item("Quick Look", Commands.toggleQuickLook, "y"))
+        menu.addItem(item("Show in Enclosing Folder", Commands.showInEnclosingFolder, "r"))
+        menu.addItem(.separator())
+        menu.addItem(item("Find", Commands.focusSearch, "f"))
         menu.addItem(item("Copy Path", Commands.copyPath, "c", [.command, .option]))
         return menu
     }

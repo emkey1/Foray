@@ -258,7 +258,10 @@ extension ListContentViewController: NSTableViewDataSource, NSTableViewDelegate,
                 return cell
             }
             let cell = tableView.makeView(withIdentifier: .init("text"), owner: self) as? TextCell ?? TextCell()
-            cell.textField?.stringValue = Formatting.text(for: item, column: column, relativeDates: settings.presentation.list.relativeDates)
+            cell.textField?.stringValue = Formatting.text(
+                for: item, column: column, relativeDates: settings.presentation.list.relativeDates,
+                whereBase: host?.state.location.searchQuery?.scope.folderURL)
+            cell.textField?.lineBreakMode = column == .folder ? .byTruncatingHead : .byTruncatingTail
             cell.textField?.alignment = column == .size ? .right : .left
             return cell
         }

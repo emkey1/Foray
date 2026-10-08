@@ -40,7 +40,19 @@ enum Formatting {
 
     static func itemCount(_ n: Int) -> String { n == 1 ? "1 item" : "\(n.formatted()) items" }
 
-    static func text(for item: FileItem, column: ListColumn, relativeDates: Bool) -> String {
+    /// Search results' "Where": the enclosing folder relative to the search scope ("Projects/app/src"),
+    /// or the full path (with ~) when searching This Mac.
+    static func whereText(_ item: FileItem, base: URL?) -> String {
+        let parent = item.url.deletingLastPathComponent().standardizedFileURL.path
+        if let base {
+            let root = base.standardizedFileURL.path
+            if parent == root { return base.lastPathComponent }
+            if parent.hasPrefix(root + "/") { return base.lastPathComponent + parent.dropFirst(root.count) }
+        }
+        return (parent as NSString).abbreviatingWithTildeInPath
+    }
+
+    static func text(for item: FileItem, column: ListColumn, relativeDates: Bool, whereBase: URL? = nil) -> String {
         switch column {
         case .name: item.displayName
         case .dateModified: date(item.modified, relative: relativeDates)
@@ -49,6 +61,7 @@ enum Formatting {
         case .size: size(for: item)
         case .kind: KindNames.name(for: item)
         case .fileExtension: item.pathExtension.isEmpty ? "--" : item.pathExtension
+        case .folder: whereText(item, base: whereBase)
         }
     }
 }

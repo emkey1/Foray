@@ -95,7 +95,7 @@ public final class DirectoryWatcher: @unchecked Sendable {
 
     /// realpath(3), as FSEvents reports paths. (`URL.resolvingSymlinksInPath` deliberately strips
     /// "/private", so it doesn't match: /var/folders/… is reported as /private/var/folders/….)
-    static func canonicalPath(_ path: String) -> String {
+    public static func canonicalPath(_ path: String) -> String {
         guard let resolved = realpath(path, nil) else { return normalize(path) }
         defer { free(resolved) }
         return normalize(String(cString: resolved))

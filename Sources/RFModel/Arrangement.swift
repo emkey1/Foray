@@ -3,6 +3,8 @@ import Foundation
 public enum SortKey: String, Codable, Sendable, CaseIterable {
     case name, kind, size, dateModified, dateCreated, dateAdded, dateLastOpened, tags
     case fileExtension = "extension"
+    /// The enclosing folder's path (search results' "Where" column).
+    case folder
     /// Free icon positions (icon view). Other modes use the positions' reading order.
     case manual
 
@@ -25,6 +27,7 @@ public enum SortKey: String, Codable, Sendable, CaseIterable {
         case .dateLastOpened: "Date Last Opened"
         case .tags: "Tags"
         case .fileExtension: "Extension"
+        case .folder: "Where"
         case .manual: "None"
         }
     }

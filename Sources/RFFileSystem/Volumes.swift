@@ -54,6 +54,7 @@ public enum LocationInfo {
         switch location {
         case .folder(let url): FileManager.default.displayName(atPath: url.path)
         case .computer: Host.current().localizedName ?? "Computer"
+        case .search: location.fallbackTitle
         }
     }
 

@@ -1,6 +1,7 @@
 import AppKit
 import RFFileSystem
 import RFModel
+import RFSearch
 
 /// Per-tab state (DESIGN.md §5.3): location, history, settings, the arranged snapshot and the
 /// selection. Loading and arranging run off the main thread; results are applied here.
@@ -24,6 +25,8 @@ final class BrowserState {
     private(set) var details: LocationDetails
     private(set) var snapshot: ItemSnapshot = .empty
     private(set) var loadState: LoadState = .loading
+    /// Progress of the running search, when the location is a search.
+    private(set) var searchStatus: SearchStatus?
     private(set) var selection: Set<FileID> = []
     /// The item the keyboard is on; kept across mode switches and reloads.
     var focusAnchor: FileID?
@@ -96,6 +99,57 @@ final class BrowserState {
 
     func reload() { load() }
 
+    // MARK: Search (DESIGN.md §3.1)
+
+    /// The scope a new search from here gets: the current folder (including subfolders), This Mac
+    /// from Computer, and the same scope when refining a search.
+    var defaultSearchScope: SearchScope {
+        switch location {
+        case .folder(let url): .folder(url, recursive: true)
+        case .computer: .thisMac
+        case .search(let q): q.scope
+        }
+    }
+
+    /// The folder a search was started from (the scope bar's folder button).
+    var searchOrigin: URL? { location.searchQuery?.origin }
+
+    /// Typing in the search field. Starting a search is a history entry; refining it isn't.
+    func search(_ text: String) {
+        let trimmed = text.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return endSearch() }
+        if var q = location.searchQuery {
+            guard q.text != text else { return }
+            q.text = text
+            replaceSearch(q)
+        } else {
+            navigate(to: .search(SearchQuery(text: text, scope: defaultSearchScope)))
+        }
+    }
+
+    /// Scope bar changes (scope, subfolders, match mode, kind chips).
+    func updateSearch(_ change: (inout SearchQuery) -> Void) {
+        guard var q = location.searchQuery else { return }
+        change(&q)
+        replaceSearch(q)
+    }
+
+    private func replaceSearch(_ q: SearchQuery) {
+        history.replaceCurrent(.search(q))
+        switchTo(.search(q))
+    }
+
+    /// Escape or clearing the field: back to the folder, with its selection and scroll restored.
+    func endSearch() {
+        guard let q = location.searchQuery else { return }
+        if history.canGoBack {
+            goBack()
+        } else if let url = q.origin {
+            switchTo(.folder(url))
+            history.replaceCurrent(.folder(url))
+        }
+    }
+
     private func departingEntry() -> HistoryEntry {
         HistoryEntry(location: location, selectedNames: selectedItems.map(\.name))
     }
@@ -106,6 +160,7 @@ final class BrowserState {
         selection = []
         focusAnchor = nil
         snapshot = .empty
+        searchStatus = nil
         settings = AppModel.shared.resolve(newLocation.settingsClass, folder: nil).0
         notify(.location)
         notify(.settings)
@@ -133,6 +188,21 @@ final class BrowserState {
                 self.rawItems = LocationInfo.volumeItems()
                 self.setLoadState(.complete)
                 self.rearrange("volumes")
+            case .search(let query):
+                for await status in SearchEngine.run(query) {
+                    if Task.isCancelled { break }
+                    self.rawItems = status.items
+                    self.searchStatus = status
+                    let wasRunning = self.loadState != .complete
+                    self.setLoadState(status.isRunning ? .partial(status.items.count) : .complete)
+                    if !status.isRunning && wasRunning {
+                        self.rearrange("search-complete")
+                    } else if Date().timeIntervalSince(self.lastPartialArrange) > 0.15 || !status.isRunning {
+                        self.lastPartialArrange = Date()
+                        self.rearrange("search")
+                    }
+                    self.notify(.loadState)
+                }
             case .folder(let url):
                 for await event in FolderContents.observe(url) {
                     if Task.isCancelled { break }
@@ -170,7 +240,9 @@ final class BrowserState {
         requestedGeneration += 1
         let generation = requestedGeneration
         let items = rawItems
-        let arrangement = settings.arrangement
+        var arrangement = settings.arrangement
+        // Search results are already filtered for hidden items by the query (hidden:yes).
+        if case .search = location { arrangement.showHidden = true }
         Task.detached(priority: .userInitiated) {
             let snap = ArrangementEngine.arrange(items, with: arrangement, generation: generation)
             await self.apply(snap)

@@ -3,17 +3,19 @@ import RFModel
 
 /// One browser window (= one native tab): sidebar + browser, toolbar, title.
 @MainActor
-final class BrowserWindowController: NSWindowController, NSWindowDelegate, NSToolbarDelegate {
+final class BrowserWindowController: NSWindowController, NSWindowDelegate, NSToolbarDelegate, NSSearchFieldDelegate {
     let browser: BrowserViewController
     private let sidebar = SidebarViewController()
     private let splitController = NSSplitViewController()
     private var navigationGroup: NSToolbarItemGroup?
     private var modeGroup: NSToolbarItemGroup?
+    private var searchItem: NSSearchToolbarItem?
 
     private enum ToolbarID {
         static let navigation = NSToolbarItem.Identifier("navigation")
         static let mode = NSToolbarItem.Identifier("viewMode")
         static let arrange = NSToolbarItem.Identifier("arrange")
+        static let search = NSToolbarItem.Identifier("search")
     }
 
     init(location: Location) {
@@ -66,6 +68,7 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate, NSToo
         if let modeGroup, let i = ViewMode.allCases.firstIndex(of: state.settings.presentation.mode) {
             modeGroup.selectedIndex = i
         }
+        syncSearchField()
         WindowManager.shared.sessionChanged()
     }
 
@@ -85,7 +88,8 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate, NSToo
     // MARK: Toolbar
 
     func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
-        [.toggleSidebar, .sidebarTrackingSeparator, ToolbarID.navigation, .flexibleSpace, ToolbarID.mode, ToolbarID.arrange]
+        [.toggleSidebar, .sidebarTrackingSeparator, ToolbarID.navigation, .flexibleSpace, ToolbarID.mode, ToolbarID.arrange,
+         ToolbarID.search]
     }
 
     func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
@@ -110,10 +114,23 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate, NSToo
                 itemIdentifier: id, images: symbols.map { NSImage(systemSymbolName: $0, accessibilityDescription: nil)! },
                 selectionMode: .selectOne, labels: ViewMode.allCases.map(\.title), target: self, action: #selector(modeClicked(_:)))
             group.label = "View"
-            group.subitems[2].isEnabled = false  // column view: M4
-            group.subitems[3].isEnabled = false  // gallery view: M4
+            for i in [2, 3] {  // column and gallery views arrive in milestone M4
+                group.subitems[i].isEnabled = false
+                group.subitems[i].toolTip = "\(ViewMode.allCases[i].title) view isn't available yet"
+            }
             modeGroup = group
             return group
+        case ToolbarID.search:
+            let item = NSSearchToolbarItem(itemIdentifier: id)
+            item.searchField.delegate = self
+            item.searchField.sendsSearchStringImmediately = false
+            item.searchField.sendsWholeSearchString = false
+            item.searchField.target = self
+            item.searchField.action = #selector(searchFieldChanged(_:))
+            item.preferredWidthForSearchField = 220
+            searchItem = item
+            syncSearchField()
+            return item
         case ToolbarID.arrange:
             let item = NSMenuToolbarItem(itemIdentifier: id)
             item.image = NSImage(systemSymbolName: "arrow.up.arrow.down", accessibilityDescription: "Sort and Group")
@@ -127,12 +144,54 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate, NSToo
         }
     }
 
+    // MARK: Search (DESIGN.md §3.1)
+
+    /// ⌘F: focus the search field. Searches start in the current folder.
+    @objc func focusSearch(_ sender: Any?) {
+        guard let searchItem else { return }
+        searchItem.beginSearchInteraction()
+        window?.makeFirstResponder(searchItem.searchField)
+    }
+
+    @objc private func searchFieldChanged(_ field: NSSearchField) {
+        browser.state.search(field.stringValue)
+    }
+
+    /// Escape in the field ends the search and returns focus to the files.
+    func control(_ control: NSControl, textView: NSTextView, doCommandBy selector: Selector) -> Bool {
+        guard selector == #selector(NSResponder.cancelOperation(_:)) else { return false }
+        searchItem?.searchField.stringValue = ""
+        browser.state.endSearch()
+        searchItem?.endSearchInteraction()
+        window?.makeFirstResponder(browser.view)
+        return true
+    }
+
+    /// Keeps the field's text and placeholder in step with the tab (e.g. after Back).
+    private func syncSearchField() {
+        guard let field = searchItem?.searchField else { return }
+        let state = browser.state
+        // Never overwrite text the user is still typing; chips and Back change it while unfocused.
+        if field.currentEditor() == nil {
+            let text = state.location.searchQuery?.text ?? ""
+            if field.stringValue != text { field.stringValue = text }
+        }
+        let place: String = switch state.defaultSearchScope {
+        case .thisMac: "This Mac"
+        case .folder(let url, _): FileManager.default.displayName(atPath: url.path)
+        }
+        field.placeholderString = "Search “\(place)”"
+    }
+
     @objc private func navigationClicked(_ group: NSToolbarItemGroup) {
         if group.selectedIndex == 0 { browser.goBack(nil) } else { browser.goForward(nil) }
     }
 
     @objc private func modeClicked(_ group: NSToolbarItemGroup) {
-        guard let mode = ViewMode.allCases[safe: group.selectedIndex] else { return }
+        guard let mode = ViewMode.allCases[safe: group.selectedIndex], mode == .icon || mode == .list else {
+            syncChrome()
+            return
+        }
         browser.state.updatePresentation { $0.mode = mode }
     }
 }

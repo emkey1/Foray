@@ -46,10 +46,13 @@ public struct ViewSettingsDatabase: Codable, Sendable {
 
     public static func builtInDefault(for cls: LocationClass) -> ViewSettings {
         switch cls {
-        case .searchResults, .recents:
+        case .searchResults:
             var s = ViewSettings(presentation: Presentation(mode: .list))
-            s.presentation.list.columns.insert(ListColumnSpec(.dateModified), at: 1)
+            s.presentation.list.columns = [ListColumnSpec(.name), ListColumnSpec(.folder), ListColumnSpec(.dateModified),
+                                           ListColumnSpec(.size), ListColumnSpec(.kind)]
             return s
+        case .recents:
+            return ViewSettings(presentation: Presentation(mode: .list))
         default:
             return ViewSettings()
         }

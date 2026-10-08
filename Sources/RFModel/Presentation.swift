@@ -15,6 +15,8 @@ public enum ViewMode: String, Codable, Sendable, CaseIterable {
 
 public enum ListColumn: String, Codable, Sendable, CaseIterable {
     case name, dateModified, dateCreated, dateAdded, size, kind, fileExtension
+    /// Enclosing folder, relative to the search scope (search results).
+    case folder
 
     public var sortKey: SortKey {
         switch self {
@@ -25,6 +27,7 @@ public enum ListColumn: String, Codable, Sendable, CaseIterable {
         case .size: .size
         case .kind: .kind
         case .fileExtension: .fileExtension
+        case .folder: .folder
         }
     }
 
@@ -36,6 +39,7 @@ public enum ListColumn: String, Codable, Sendable, CaseIterable {
         case .kind: 140
         case .size: 80
         case .fileExtension: 70
+        case .folder: 220
         default: 160
         }
     }
