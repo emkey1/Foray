@@ -22,5 +22,6 @@ let package = Package(
 
         .testTarget(name: "RFModelTests", dependencies: ["RFModel"]),
         .testTarget(name: "RFFileSystemTests", dependencies: ["RFFileSystem"]),
+        .testTarget(name: "RFUITests", dependencies: ["RFUI"]),
     ]
 )

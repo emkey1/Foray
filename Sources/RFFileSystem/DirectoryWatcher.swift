@@ -1,129 +1,96 @@
 import CoreServices
 import Foundation
-import Synchronization
 
-/// One shared FSEvents stream covering every directory currently on screen (DESIGN.md §5.4).
-/// Subscribers register a directory and get called (on a background queue) when its contents
-/// change. Adding a directory restarts the stream before `subscribe` returns, so callers can list
-/// the directory afterwards without missing changes; removals are debounced. Restarts resume from
-/// the last event ID seen, so no events fall into the gap.
+/// Watches the directories currently on screen with FSEvents (DESIGN.md §5.4). Each watched
+/// directory has its own stream, shared by all subscribers to that directory, so adding or
+/// removing one never restarts (and never replays history into) the others. The stream is
+/// running before `subscribe` returns, so callers can list the directory afterwards without
+/// missing changes.
 public final class DirectoryWatcher: @unchecked Sendable {
     public static let shared = DirectoryWatcher()
 
     public struct Token: Hashable, Sendable { fileprivate let id: UInt64 }
 
-    private struct Subscription {
-        let path: String            // as given by the subscriber
-        let canonical: String       // symlinks resolved, as FSEvents reports it
-        let handler: @Sendable () -> Void
+    /// One FSEvents stream and its subscribers. Confined to `queue`.
+    private final class Watch {
+        let path: String         // canonical, as FSEvents reports it
+        var stream: FSEventStreamRef?
+        var handlers: [UInt64: @Sendable () -> Void] = [:]
+        init(path: String) { self.path = path }
     }
 
     private let queue = DispatchQueue(label: "rf.fsevents", qos: .utility)
-    private var subscriptions: [UInt64: Subscription] = [:]   // queue-confined
+    private var watches: [String: Watch] = [:]
+    private var pathForToken: [UInt64: String] = [:]
     private var nextID: UInt64 = 0
-    private var stream: FSEventStreamRef?
-    private var watchedPaths: Set<String> = []
-    private var rebuildScheduled = false
-    private var lastEventID: FSEventStreamEventId?   // nil until the first event
     private let latency: CFTimeInterval
 
     public init(latency: CFTimeInterval = 0.1) { self.latency = latency }
 
-    /// Calls `handler` whenever the directory's contents change (or FSEvents asks for a rescan).
+    /// Calls `handler` (on a background queue) whenever the directory's contents change, or when
+    /// FSEvents says it may have missed changes.
     public func subscribe(_ directory: URL, handler: @escaping @Sendable () -> Void) -> Token {
-        let path = Self.normalize(directory.path)
-        let canonical = Self.canonicalPath(directory.path)
+        let path = Self.canonicalPath(directory.path)
         return queue.sync {
             nextID += 1
-            subscriptions[nextID] = Subscription(path: path, canonical: canonical, handler: handler)
-            rebuild()
+            let watch = watches[path] ?? {
+                let w = Watch(path: path)
+                watches[path] = w
+                start(w)
+                return w
+            }()
+            watch.handlers[nextID] = handler
+            pathForToken[nextID] = path
             return Token(id: nextID)
         }
     }
 
     public func unsubscribe(_ token: Token) {
-        queue.async {
-            self.subscriptions[token.id] = nil
-            self.scheduleRebuild()
-        }
-    }
-
-    private func scheduleRebuild() {
-        guard !rebuildScheduled else { return }
-        rebuildScheduled = true
-        queue.asyncAfter(deadline: .now() + 0.5) { [self] in
-            rebuildScheduled = false
-            rebuild()
-        }
-    }
-
-    /// On `queue`.
-    private func rebuild() {
-        let wanted = Set(subscriptions.values.map(\.canonical))
-        guard wanted != watchedPaths else { return }
-        if let s = stream {
-            let latest = FSEventStreamGetLatestEventId(s)
-            if latest != FSEventStreamEventId(kFSEventStreamEventIdSinceNow) { lastEventID = max(lastEventID ?? 0, latest) }
-        }
-        stopStream()
-        watchedPaths = wanted
-        if !wanted.isEmpty { startStream(Array(wanted)) }
-    }
-
-    private func startStream(_ paths: [String]) {
-        var context = FSEventStreamContext(
-            version: 0, info: Unmanaged.passUnretained(self).toOpaque(), retain: nil, release: nil, copyDescription: nil)
-        let callback: FSEventStreamCallback = { _, info, count, eventPaths, eventFlags, eventIDs in
-            let watcher = Unmanaged<DirectoryWatcher>.fromOpaque(info!).takeUnretainedValue()
-            let paths = Unmanaged<CFArray>.fromOpaque(eventPaths).takeUnretainedValue() as! [String]
-            var events: [(String, FSEventStreamEventFlags)] = []
-            for i in 0..<count {
-                events.append((paths[i], eventFlags[i]))
-                // History-done markers carry no path change; don't let them move the cursor.
-                if eventFlags[i] & FSEventStreamEventFlags(kFSEventStreamEventFlagHistoryDone) == 0 {
-                    watcher.lastEventID = max(watcher.lastEventID ?? 0, eventIDs[i])
-                }
+        queue.async { [self] in
+            guard let path = pathForToken.removeValue(forKey: token.id), let watch = watches[path] else { return }
+            watch.handlers[token.id] = nil
+            if watch.handlers.isEmpty {
+                stop(watch)
+                watches[path] = nil
             }
-            watcher.deliver(events)
         }
-        let flags = FSEventStreamCreateFlags(kFSEventStreamCreateFlagUseCFTypes | kFSEventStreamCreateFlagNoDefer)
+    }
+
+    var watchedPathCount: Int { queue.sync { watches.count } }
+
+    private func start(_ watch: Watch) {
+        var context = FSEventStreamContext(
+            version: 0, info: Unmanaged.passUnretained(watch).toOpaque(), retain: nil, release: nil, copyDescription: nil)
+        let callback: FSEventStreamCallback = { _, info, count, eventPaths, eventFlags, _ in
+            let watch = Unmanaged<Watch>.fromOpaque(info!).takeUnretainedValue()
+            let paths = Unmanaged<CFArray>.fromOpaque(eventPaths).takeUnretainedValue() as! [String]
+            let rescan = FSEventStreamEventFlags(
+                kFSEventStreamEventFlagMustScanSubDirs | kFSEventStreamEventFlagUserDropped
+                    | kFSEventStreamEventFlagKernelDropped | kFSEventStreamEventFlagRootChanged)
+            // Directory-level events name the directory whose contents changed. FSEvents is
+            // recursive; changes deeper down don't affect this listing unless a rescan is needed.
+            let relevant = (0..<count).contains { i in
+                eventFlags[i] & rescan != 0 || DirectoryWatcher.normalize(paths[i]) == watch.path
+            }
+            if relevant { for handler in watch.handlers.values { handler() } }
+        }
+        let flags = FSEventStreamCreateFlags(
+            kFSEventStreamCreateFlagUseCFTypes | kFSEventStreamCreateFlagNoDefer | kFSEventStreamCreateFlagWatchRoot)
         guard let s = FSEventStreamCreate(
-            nil, callback, &context, paths as CFArray,
-            lastEventID ?? FSEventStreamEventId(kFSEventStreamEventIdSinceNow), latency, flags)
+            nil, callback, &context, [watch.path] as CFArray, FSEventStreamEventId(kFSEventStreamEventIdSinceNow),
+            latency, flags)
         else { return }
         FSEventStreamSetDispatchQueue(s, queue)
         FSEventStreamStart(s)
-        stream = s
+        watch.stream = s
     }
 
-    private func stopStream() {
-        guard let s = stream else { return }
+    private func stop(_ watch: Watch) {
+        guard let s = watch.stream else { return }
         FSEventStreamStop(s)
         FSEventStreamInvalidate(s)
         FSEventStreamRelease(s)
-        stream = nil
-    }
-
-    /// On `queue`. Directory-level events name the directory whose contents changed; FSEvents is
-    /// recursive, so events for unwatched subdirectories are ignored unless a rescan is requested.
-    private func deliver(_ events: [(String, FSEventStreamEventFlags)]) {
-        let rescanFlags = FSEventStreamEventFlags(
-            kFSEventStreamEventFlagMustScanSubDirs | kFSEventStreamEventFlagUserDropped
-                | kFSEventStreamEventFlagKernelDropped | kFSEventStreamEventFlagRootChanged)
-        var fired = Set<UInt64>()
-        for (rawPath, flags) in events {
-            if flags & FSEventStreamEventFlags(kFSEventStreamEventFlagHistoryDone) != 0 { continue }
-            let path = Self.normalize(rawPath)
-            let rescan = flags & rescanFlags != 0
-            for (id, sub) in subscriptions where !fired.contains(id) {
-                let hit = sub.canonical == path || sub.path == path
-                    || (rescan && (sub.canonical.hasPrefix(path + "/") || path == "/"))
-                if hit {
-                    fired.insert(id)
-                    sub.handler()
-                }
-            }
-        }
+        watch.stream = nil
     }
 
     /// realpath(3), as FSEvents reports paths. (`URL.resolvingSymlinksInPath` deliberately strips

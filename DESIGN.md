@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | Draft v0.2: M0 spike results folded in (see `Spikes/RESULTS.md`) |
+| Status | Draft v0.3: M0 results folded in (`Spikes/RESULTS.md`); M1 in progress |
 | Date | 2026-10-08 |
 | Toolchain baseline | Xcode 27, Swift 6.4, developed on macOS 26.6 |
 | Working name | RealFinder (see Q9) |
@@ -395,6 +395,13 @@ RealFinder/
 └─ Tests/               Fixtures, generated trees, disk-image filesystem matrix, perf suites
 ```
 
+**As built (M1):**
+- The project is a single Swift package rather than an Xcode project.
+- The targets are `CFastFS` (the C helper for `getattrlistbulk`), `RFModel`, `RFFileSystem`, `RFUI` and the `RealFinder` executable.
+- `scripts/bundle.sh` wraps the executable in an ad-hoc-signed `.app`.
+- Xcode opens `Package.swift` directly. An `.xcodeproj` can be added when signing and distribution need one.
+- `RFStore` isn't a separate target yet. A small JSON store in RFFileSystem (`AppSupportStore`) holds view settings and the session until the SQLite store lands.
+
 **Dependency rules:**
 
 - RFModel depends on nothing.
@@ -492,10 +499,12 @@ Views diff consecutive snapshots by `FileID`, so live changes animate in place w
   - Spotlight-only attributes (Date Last Opened, Version)
   - Folder sizes
   - Thumbnails
-- **Change monitoring.** One shared `FSEventStream` covers every directory currently on screen: all tabs, expanded list rows and column-view columns. The stream is rebuilt, with debouncing, when that set changes.
-  - It uses the `FileEvents | UseExtendedData` flags (paths and inodes) and about 50 ms latency.
-  - An event triggers a re-stat of the affected entries only.
+- **Change monitoring: one FSEvents stream per watched directory**, shared by every subscriber to that directory (decided in M1). The directories watched are those currently on screen: all tabs, expanded list rows and column-view columns.
+  - An earlier single shared stream had to restart whenever that set changed. A restart either loses events or replays history, and the replay caused spurious reloads of other folders, which a regression test now covers.
+  - Each stream is running before `subscribe` returns, so a folder listed afterwards can't miss a change.
+  - The streams use directory-level events. In M1 an event re-lists the folder (100k entries take ~270 ms). Re-statting only the affected entries comes later.
   - If events were dropped, or a subdirectory must be rescanned (`MustScanSubDirs`), that directory is fully rescanned.
+  - **Latency:** fseventsd delivers events 0.2–0.8 s after a change, even with the stream latency set to 0.1 s (measured in M1). RealFinder's own file operations (M2) update the view directly instead of waiting for FSEvents. A `kqueue`/`DispatchSource` watch on each visible directory could make adds, removes and renames from other apps instant (follow-up).
 - **Network volumes.** FSEvents doesn't report changes that other clients make on SMB or NFS volumes. Visible network folders are listed again when the window becomes active and polled every 5 s by default while visible. The diff is cheap.
 - **Per-volume isolation.** Each volume gets its own I/O executor (serial, or with a small fixed concurrency limit). A hung SMB mount stalls only its own executor.
   - After 3 s with no response, the tab shows "‹Server› isn't responding" with Retry and Disconnect buttons. The rest of the app is unaffected.

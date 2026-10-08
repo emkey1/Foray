@@ -148,8 +148,9 @@ final class TempDir: @unchecked Sendable {  // immutable after init
     }
 }
 
-/// Waits for `fired` to become true, polling, up to `seconds`.
-func eventually(_ seconds: Double = 5, _ fired: () -> Bool) async -> Bool {
+/// Waits for `fired` to become true, polling, up to `seconds`. FSEvents delivery takes 0.2–0.8 s
+/// on an idle machine (LatencyProbe) and more under parallel test load.
+func eventually(_ seconds: Double = 15, _ fired: () -> Bool) async -> Bool {
     let deadline = Date().addingTimeInterval(seconds)
     while Date() < deadline {
         if fired() { return true }
@@ -169,5 +170,55 @@ func eventually(_ seconds: Double = 5, _ fired: () -> Bool) async -> Bool {
         defer { watcher.unsubscribe(token) }
         tmp.file("new.txt")  // no delay: subscribe() guarantees the stream is running
         #expect(await eventually { flag.value })
+    }
+
+    /// Regression: with one shared stream, removing a subscriber restarted the stream and replayed
+    /// history into the remaining folders, causing spurious reloads.
+    @Test func unsubscribingOneFolderDoesNotDisturbAnother() async throws {
+        let a = try TempDir(), b = try TempDir()
+        a.file("setup.txt")
+        b.file("setup.txt")
+        let watcher = DirectoryWatcher()
+        let fired = Flag()
+        let tokenA = watcher.subscribe(a.url) { fired.value = true }
+        let tokenB = watcher.subscribe(b.url) {}
+        // Let late events from the setup writes drain first.
+        repeat {
+            fired.value = false
+            try await Task.sleep(for: .milliseconds(1500))
+        } while fired.value
+        watcher.unsubscribe(tokenB)
+        try await Task.sleep(for: .milliseconds(800))
+        #expect(!fired.value)
+        #expect(watcher.watchedPathCount == 1)
+        watcher.unsubscribe(tokenA)
+    }
+
+    /// Writes next to the watched folder (in its parent) must not count as changes to it.
+    @Test func changesInParentDirectoryAreIgnored() async throws {
+        let base = try TempDir()
+        let watched = try base.dir("watched")
+        let watcher = DirectoryWatcher()
+        let fired = Flag()
+        let token = watcher.subscribe(watched) { fired.value = true }
+        defer { watcher.unsubscribe(token) }
+        repeat {
+            fired.value = false
+            try await Task.sleep(for: .milliseconds(1500))
+        } while fired.value
+        base.file("sibling.txt")
+        try base.dir("sibling-dir")
+        try await Task.sleep(for: .milliseconds(800))
+        #expect(!fired.value)
+    }
+
+    @Test func subscribersToTheSameFolderShareOneStream() throws {
+        let tmp = try TempDir()
+        let watcher = DirectoryWatcher()
+        let t1 = watcher.subscribe(tmp.url) {}
+        let t2 = watcher.subscribe(tmp.url) {}
+        #expect(watcher.watchedPathCount == 1)
+        watcher.unsubscribe(t1)
+        watcher.unsubscribe(t2)
     }
 }
