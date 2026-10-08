@@ -1,4 +1,5 @@
 import Foundation
+import RFFileSystem
 
 /// What to do (DESIGN.md §5.7). Destinations are folders; names are chosen by the engine.
 public enum OperationRequest: Sendable, Equatable {
@@ -28,6 +29,17 @@ public enum OperationRequest: Sendable, Equatable {
     case changeTags([URL], add: [String], remove: [String])
     /// Sets each item's tags exactly (undo/redo of tag changes).
     case setTags([TagAssignment])
+    /// Get Info edits: Locked, Hide Extension, permissions, comments (only the fields given).
+    case setAttributes([AttributeAssignment])
+
+    public struct AttributeAssignment: Sendable, Equatable, Hashable {
+        public var url: URL
+        public var attributes: ItemAttributes
+        public init(url: URL, attributes: ItemAttributes) {
+            self.url = url
+            self.attributes = attributes
+        }
+    }
 
     public struct TagAssignment: Sendable, Equatable, Hashable {
         public var url: URL
@@ -65,6 +77,7 @@ public enum OperationRequest: Sendable, Equatable {
         case .expand(let items): return "Expanding \(n(items))"
         case .changeTags(let items, _, _): return "Tagging \(n(items))"
         case .setTags(let list): return list.count == 1 ? "Tagging “\(list[0].url.lastPathComponent)”" : "Tagging \(list.count) items"
+        case .setAttributes(let list): return list.count == 1 ? "Changing “\(list[0].url.lastPathComponent)”" : "Changing \(list.count) items"
         }
     }
 
@@ -85,6 +98,13 @@ public enum OperationRequest: Sendable, Equatable {
         case .compress: "Compress"
         case .expand: "Expand"
         case .changeTags, .setTags: "Tags"
+        case .setAttributes(let list):
+            switch list.first?.attributes {
+            case let a? where a.comment != nil: "Comment"
+            case let a? where a.locked != nil: "Locked"
+            case let a? where a.permissions != nil: "Permissions"
+            default: "Hide Extension"
+            }
         }
     }
 }
@@ -170,6 +190,8 @@ public struct OperationResult: Sendable {
         case trashed(OperationRequest.Pair)
         /// An item's tags changed from `before` to `after`.
         case tagged(URL, before: [String], after: [String])
+        /// Get Info attributes changed (only the fields that were set).
+        case attributes(URL, before: ItemAttributes, after: ItemAttributes)
     }
 
     /// In the order things happened.
@@ -203,6 +225,9 @@ public struct OperationResult: Sendable {
             case .moved(let p), .trashed(let p):
                 let back = OperationRequest.Pair(from: p.to, to: p.from)
                 if case .restore(let pairs) = steps.last { steps[steps.count - 1] = .restore(pairs + [back]) } else { steps.append(.restore([back])) }
+            case .attributes(let url, let before, _):
+                let back = OperationRequest.AttributeAssignment(url: url, attributes: before)
+                if case .setAttributes(let list) = steps.last { steps[steps.count - 1] = .setAttributes(list + [back]) } else { steps.append(.setAttributes([back])) }
             case .tagged(let url, let before, _):
                 let back = OperationRequest.TagAssignment(url: url, tags: before)
                 if case .setTags(let list) = steps.last { steps[steps.count - 1] = .setTags(list + [back]) } else { steps.append(.setTags([back])) }

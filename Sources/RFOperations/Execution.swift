@@ -99,6 +99,7 @@ final class Execution: @unchecked Sendable {
         case .newFolder(let dir, let name, let moving): await newFolder(in: dir, name: name, moving: moving)
         case .restore(let pairs), .putBack(let pairs): await restore(pairs)
         case .makeAlias(let items, let dir): await makeAliases(items, in: dir)
+        case .setAttributes(let list): await setAttributes(list)
         case .compress(let items): await compress(items)
         case .expand(let archives): await expand(archives)
         case .emptyTrash(let folders):
@@ -460,6 +461,30 @@ final class Execution: @unchecked Sendable {
                 }
             } else {
                 fail(url, rc, "tag")
+            }
+            update { $0.itemsDone += 1 }
+        }
+    }
+
+    private func setAttributes(_ list: [OperationRequest.AttributeAssignment]) async {
+        update {
+            $0.itemsTotal = list.count
+            $0.phase = .running
+        }
+        for change in list {
+            guard control.checkpoint() else { break }
+            update { $0.currentName = change.url.lastPathComponent }
+            let (before, rc) = await blocking {
+                let before = ItemAttributes.read(change.url, fields: change.attributes)
+                return (before, ItemAttributes.write(change.attributes, to: change.url))
+            }
+            if rc == 0 {
+                if before != change.attributes {
+                    result.record(.attributes(change.url, before: before, after: change.attributes))
+                    result.changedFolders.insert(change.url.deletingLastPathComponent())
+                }
+            } else {
+                fail(change.url, rc, "change")
             }
             update { $0.itemsDone += 1 }
         }

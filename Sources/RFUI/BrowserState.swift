@@ -39,6 +39,9 @@ final class BrowserState {
     /// Why each arrangement was requested (for tests and debugging).
     private(set) var rearrangeLog: [String] = []
     private var rawItems: [FileItem] = []
+    /// Folder totals for "Calculate all sizes", applied to items when arranging.
+    private var folderSizes: [FileID: Int64] = [:]
+    private var sizesTask: Task<Void, Never>?
     private var loadTask: Task<Void, Never>?
     private var detailsTask: Task<Void, Never>?
     private var requestedGeneration = 0
@@ -372,6 +375,9 @@ final class BrowserState {
 
     private func load() {
         loadTask?.cancel()
+        sizesTask?.cancel()
+        sizesTask = nil
+        folderSizes = [:]
         rawItems = []
         setLoadState(.loading)
         let location = self.location
@@ -434,6 +440,7 @@ final class BrowserState {
                         self.rawItems = items
                         self.setLoadState(.complete)
                         self.rearrange("complete")
+                        self.calculateFolderSizesIfWanted()
                     case .failed(let error):
                         self.rawItems = []
                         self.setLoadState(.failed(error.localizedDescription, permission: error.isPermissionDenied))
@@ -454,7 +461,8 @@ final class BrowserState {
         rearrangeLog.append(reason)
         requestedGeneration += 1
         let generation = requestedGeneration
-        let items = rawItems
+        let sizes = folderSizes
+        let items = sizes.isEmpty ? rawItems : rawItems.map { item in sizes[item.id].map { item.with(size: $0) } ?? item }
         var arrangement = settings.arrangement
         // Search results are already filtered for hidden items by the query (hidden:yes).
         if case .search = location { arrangement.showHidden = true }
@@ -526,6 +534,38 @@ final class BrowserState {
         AppModel.shared.record(s, cls: location.settingsClass, folder: details.folderKey)
     }
 
+    /// "Calculate all sizes": total each folder in the list in the background, re-sorting as
+    /// results arrive (at most a few times a second).
+    private func calculateFolderSizesIfWanted() {
+        sizesTask?.cancel()
+        sizesTask = nil
+        guard settings.presentation.list.calculateAllSizes, settings.presentation.mode == .list, loadState == .complete else {
+            if !folderSizes.isEmpty {
+                folderSizes = [:]
+                rearrange("sizes-off")
+            }
+            return
+        }
+        let folders = rawItems.filter(\.isNavigableFolder).filter { folderSizes[$0.id] == nil }
+        guard !folders.isEmpty else { return }
+        sizesTask = Task { [weak self] in
+            var lastArrange = Date.distantPast
+            await withTaskGroup(of: (FileID, Int64?).self) { group in
+                for folder in folders { group.addTask { (folder.id, await FolderSizes.shared.size(of: folder)) } }
+                for await (id, size) in group {
+                    guard let self, !Task.isCancelled else { return }
+                    if let size { self.folderSizes[id] = size }
+                    if Date().timeIntervalSince(lastArrange) > 0.3 {
+                        lastArrange = Date()
+                        self.rearrange("sizes")
+                    }
+                }
+            }
+            guard let self, !Task.isCancelled else { return }
+            self.rearrange("sizes-done")
+        }
+    }
+
     private func applyResolvedSettings() {
         let (s, source) = AppModel.shared.resolve(location.settingsClass, folder: details.folderKey)
         settingsSource = source
@@ -537,8 +577,11 @@ final class BrowserState {
     private func apply(settings new: ViewSettings) {
         guard new != settings else { return }
         let rearrangeNeeded = new.arrangement != settings.arrangement
+        let sizesChanged = new.presentation.list.calculateAllSizes != settings.presentation.list.calculateAllSizes
+            || new.presentation.mode != settings.presentation.mode
         settings = new
         notify(.settings)
+        if sizesChanged { calculateFolderSizesIfWanted() }
         if rearrangeNeeded {
             rearrange("settings")
             for id in children.keys { arrangeChildren(id) }

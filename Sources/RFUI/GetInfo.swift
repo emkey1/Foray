@@ -21,7 +21,10 @@ struct ItemInfo: Sendable {
     var owner = ""
     var group = ""
     var permissions = ""
+    var mode: UInt16 = 0
+    var ownedByMe = false
     var locked = false
+    var extensionHidden = false
     var tags: [Tag] = []
     var comment = ""
     var more: [(String, String)] = []
@@ -36,10 +39,13 @@ struct ItemInfo: Sendable {
             info.owner = getpwuid(st.st_uid).map { String(cString: $0.pointee.pw_name) } ?? "\(st.st_uid)"
             info.group = getgrgid(st.st_gid).map { String(cString: $0.pointee.gr_name) } ?? "\(st.st_gid)"
             info.permissions = Self.modeString(st.st_mode)
+            info.mode = UInt16(st.st_mode & 0o777)
+            info.ownedByMe = st.st_uid == getuid()
             info.locked = st.st_flags & UInt32(UF_IMMUTABLE) != 0
         }
+        info.extensionHidden = (try? item.url.resourceValues(forKeys: [.hasHiddenExtensionKey]))?.hasHiddenExtension ?? false
         info.tags = Tags.read(at: item.url)
-        info.comment = Self.comment(item.url)
+        info.comment = Comments.read(item.url)
         if let md = MDItemCreateWithURL(nil, item.url as CFURL) {
             func value(_ key: CFString) -> Any? { MDItemCopyAttribute(md, key) }
             info.lastOpened = value(kMDItemLastUsedDate) as? Date
@@ -72,15 +78,6 @@ struct ItemInfo: Sendable {
         return type + bits.map { mode & $0.0 != 0 ? $0.1 : "-" }.joined() + String(format: " (%o)", mode & 0o7777)
     }
 
-    /// The Spotlight comment Finder stores in an xattr (M0 S6: Finder also writes it there).
-    static func comment(_ url: URL) -> String {
-        let name = "com.apple.metadata:kMDItemFinderComment"
-        let size = getxattr(url.path, name, nil, 0, 0, XATTR_NOFOLLOW)
-        guard size > 0 else { return "" }
-        var data = Data(count: size)
-        _ = data.withUnsafeMutableBytes { getxattr(url.path, name, $0.baseAddress, size, 0, XATTR_NOFOLLOW) }
-        return (try? PropertyListSerialization.propertyList(from: data, format: nil) as? String) ?? ""
-    }
 }
 
 /// Live state behind one Get Info window.
@@ -92,6 +89,7 @@ final class InfoModel {
     var folderSize: (logical: Int64, allocated: Int64, items: Int)?
     var computingSize = false
     var editedName = ""
+    var editedComment = ""
     let item: FileItem
     private var sizeTask: Task<Void, Never>?
 
@@ -111,6 +109,7 @@ final class InfoModel {
                 var i = info
                 i.defaultApp = item.isNavigableFolder ? nil : app
                 self.info = i
+                self.editedComment = i.comment
                 if item.isNavigableFolder && self.folderSize == nil { self.computeFolderSize() }
             }
         }
@@ -145,6 +144,35 @@ final class InfoModel {
     }
 
     func cancel() { sizeTask?.cancel() }
+
+    /// Locked, Hide extension, permissions and comments go through the operations engine, so
+    /// they can be undone; the window refreshes when the change lands.
+    func set(_ attributes: ItemAttributes) {
+        FileOperationsUI.shared.submit(.setAttributes([.init(url: item.url, attributes: attributes)]), from: nil) { [weak self] _ in
+            self?.reload()
+        }
+    }
+
+    func commitComment() {
+        guard let info, editedComment != info.comment else { return }
+        set(ItemAttributes(comment: editedComment))
+    }
+
+    /// Owner/group/everyone access as Finder shows it: 0 no access, 1 read only, 2 write only, 3 read & write.
+    func access(_ who: Int) -> Int {
+        let bits = Int(info?.mode ?? 0) >> (6 - who * 3)
+        return (bits & 4 != 0 ? 1 : 0) + (bits & 2 != 0 ? 2 : 0)
+    }
+
+    func setAccess(_ who: Int, _ level: Int) {
+        guard let info else { return }
+        let shift = UInt16(6 - who * 3)
+        var mode = info.mode & ~(UInt16(0o6) << shift)
+        if level & 1 != 0 { mode |= 4 << shift }
+        if level & 2 != 0 { mode |= 2 << shift }
+        guard mode != info.mode else { return }
+        set(ItemAttributes(permissions: mode))
+    }
 
     func commitName() {
         let name = editedName.trimmingCharacters(in: .whitespaces)
@@ -196,7 +224,8 @@ struct InfoView: View {
                 row("Modified", date(model.info?.modified))
                 if let added = model.info?.added { row("Added", date(added)) }
                 if let opened = model.info?.lastOpened { row("Last opened", date(opened)) }
-                if model.info?.locked == true { row("Locked", "Yes") }
+                Toggle("Locked", isOn: Binding(get: { model.info?.locked ?? false }, set: { model.set(ItemAttributes(locked: $0)) }))
+                    .disabled(model.info == nil || model.info?.ownedByMe == false)
             }
             if let more = model.info?.more, !more.isEmpty {
                 Section("More Info") {
@@ -205,6 +234,11 @@ struct InfoView: View {
             }
             Section("Name & Extension") {
                 TextField("Name", text: $model.editedName).onSubmit { model.commitName() }
+                    .disabled(model.info?.locked == true)
+                if !model.item.pathExtension.isEmpty {
+                    Toggle("Hide extension", isOn: Binding(get: { model.info?.extensionHidden ?? false },
+                                                           set: { model.set(ItemAttributes(extensionHidden: $0)) }))
+                }
             }
             Section("Tags") {
                 if let tags = model.info?.tags, !tags.isEmpty {
@@ -220,16 +254,37 @@ struct InfoView: View {
                     Text("No tags").foregroundStyle(.secondary)
                 }
             }
-            if let comment = model.info?.comment, !comment.isEmpty {
-                Section("Comments") { Text(comment).textSelection(.enabled) }
+            Section("Comments") {
+                TextField("Add a comment", text: $model.editedComment, axis: .vertical)
+                    .lineLimit(2...6)
+                    .onSubmit { model.commitComment() }
+                if model.editedComment != (model.info?.comment ?? "") {
+                    HStack {
+                        Spacer()
+                        Button("Revert") { model.editedComment = model.info?.comment ?? "" }
+                        Button("Save Comment") { model.commitComment() }.keyboardShortcut(.defaultAction)
+                    }
+                }
             }
             if let app = model.info?.defaultApp {
                 Section("Opens With") { Text(app) }
             }
             Section("Sharing & Permissions") {
-                row("Owner", model.info?.owner ?? "")
-                row("Group", model.info?.group ?? "")
+                let labels = [model.info?.owner ?? "Owner", model.info?.group ?? "Group", "everyone"]
+                ForEach(0..<3, id: \.self) { who in
+                    Picker(who == 0 && model.info?.ownedByMe == true ? "\(labels[0]) (Me)" : labels[who], selection: Binding(get: { model.access(who) },
+                                                                                       set: { model.setAccess(who, $0) })) {
+                        Text("Read & Write").tag(3)
+                        Text("Read only").tag(1)
+                        Text("Write only").tag(2)
+                        Text("No Access").tag(0)
+                    }
+                    .disabled(model.info?.ownedByMe != true || model.info?.locked == true)
+                }
                 row("Permissions", model.info?.permissions ?? "").monospaced()
+                if model.info?.ownedByMe == false {
+                    Text("Only the owner can change these.").font(.callout).foregroundStyle(.secondary)
+                }
             }
         }
         .formStyle(.grouped)

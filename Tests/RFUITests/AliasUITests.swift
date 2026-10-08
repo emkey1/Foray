@@ -59,3 +59,42 @@ extension UISerial {
         }
     }
 }
+
+extension UISerial {
+    @MainActor
+    @Suite(.serialized) final class FolderSizeTests {
+        let base = TestDirs.make("foldersizes")
+        isolated deinit { try? FileManager.default.removeItem(at: base) }
+
+        @Test func calculateAllSizesSortsFoldersAmongFiles() async throws {
+            AppModel.shared = AppModel(store: AppSupportStore(directory: base.appendingPathComponent("store")))
+            let work = base.appendingPathComponent("W", isDirectory: true)
+            try FileManager.default.createDirectory(at: work.appendingPathComponent("Big/inner"), withIntermediateDirectories: true)
+            try FileManager.default.createDirectory(at: work.appendingPathComponent("Small"), withIntermediateDirectories: true)
+            FileManager.default.createFile(atPath: work.appendingPathComponent("Big/inner/x.bin").path, contents: Data(count: 50_000))
+            FileManager.default.createFile(atPath: work.appendingPathComponent("Small/y.bin").path, contents: Data(count: 10))
+            FileManager.default.createFile(atPath: work.appendingPathComponent("mid.bin").path, contents: Data(count: 1_000))
+
+            let state = BrowserState(location: .folder(work))
+            defer { state.invalidate() }
+            func waitFor(_ c: () -> Bool) async {
+                let deadline = Date().addingTimeInterval(15)
+                while !c() && Date() < deadline { try? await Task.sleep(for: .milliseconds(20)) }
+            }
+            await waitFor { state.loadState == .complete && state.snapshot.items.count == 3 }
+            state.updatePresentation { $0.mode = .list }
+            state.updateArrangement { $0.sort = [SortDescriptor(.size, ascending: false)]; $0.foldersFirst = false }
+            await waitFor { state.snapshot.items.map(\.name) == ["mid.bin", "Big", "Small"] }
+            #expect(state.snapshot.items.map(\.name) == ["mid.bin", "Big", "Small"])   // folders have no size yet
+
+            state.updatePresentation { $0.list.calculateAllSizes = true }
+            await waitFor { state.snapshot.items.map(\.name) == ["Big", "mid.bin", "Small"] }
+            #expect(state.snapshot.items.map(\.name) == ["Big", "mid.bin", "Small"])
+            #expect(state.snapshot.items.first?.size == 50_000)
+
+            state.updatePresentation { $0.list.calculateAllSizes = false }
+            await waitFor { state.snapshot.items.first?.name == "mid.bin" }
+            #expect(state.snapshot.items.first(where: { $0.name == "Big" })?.size == nil)
+        }
+    }
+}

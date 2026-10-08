@@ -78,6 +78,12 @@ public struct FileItem: Identifiable, Hashable, Sendable {
 
     public var pathExtension: String { (name as NSString).pathExtension.lowercased() }
 
+    public func with(size: Int64?) -> FileItem {
+        FileItem(id: id, url: url, name: name, displayName: displayName, contentType: contentType, flags: flags, size: size,
+                 allocatedSize: allocatedSize, created: created, modified: modified, changed: changed, added: added,
+                 lastOpened: lastOpened)
+    }
+
     public func with(lastOpened: Date?) -> FileItem {
         FileItem(id: id, url: url, name: name, displayName: displayName, contentType: contentType, flags: flags, size: size,
                  allocatedSize: allocatedSize, created: created, modified: modified, changed: changed, added: added,

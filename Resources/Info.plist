@@ -25,6 +25,8 @@
 	<string>NSApplication</string>
 	<key>NSHighResolutionCapable</key>
 	<true/>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>RealFinder asks Finder to save the comments you write in Get Info, so Finder shows them too.</string>
 	<key>NSSupportsAutomaticTermination</key>
 	<false/>
 	<!-- Lets `open -a RealFinder <folder>` and Dock drops deliver folders. Rank Alternate: never

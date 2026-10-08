@@ -147,6 +147,7 @@ struct ViewOptionsView: View {
                         Toggle(column.title, isOn: model.columnVisible(column))
                     }
                     Toggle("Use relative dates", isOn: model.presentation(\.list.relativeDates))
+                    Toggle("Calculate all sizes", isOn: model.presentation(\.list.calculateAllSizes))
                 }
             case .column:
                 Section("Columns") {

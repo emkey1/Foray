@@ -35,7 +35,7 @@ enum Formatting {
     }
 
     static func size(for item: FileItem) -> String {
-        item.isNavigableFolder ? "--" : size(item.size)
+        item.size == nil ? "--" : size(item.size)
     }
 
     static func itemCount(_ n: Int) -> String { n == 1 ? "1 item" : "\(n.formatted()) items" }

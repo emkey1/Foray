@@ -75,7 +75,22 @@ public struct ListOptions: Codable, Hashable, Sendable {
     public var relativeDates = true
     /// Show the sort key's column automatically when it isn't visible (rule 5, DESIGN.md §3.3).
     public var autoShowSortColumn = false
+    /// Total up folder sizes in the background (Finder's "Calculate all sizes").
+    public var calculateAllSizes = false
     public init() {}
+
+    // Settings saved before a field existed still load: missing fields take their defaults.
+    private enum CodingKeys: String, CodingKey { case columns, iconSize, relativeDates, autoShowSortColumn, calculateAllSizes }
+
+    public init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let d = ListOptions()
+        columns = try c.decodeIfPresent([ListColumnSpec].self, forKey: .columns) ?? d.columns
+        iconSize = try c.decodeIfPresent(Double.self, forKey: .iconSize) ?? d.iconSize
+        relativeDates = try c.decodeIfPresent(Bool.self, forKey: .relativeDates) ?? d.relativeDates
+        autoShowSortColumn = try c.decodeIfPresent(Bool.self, forKey: .autoShowSortColumn) ?? d.autoShowSortColumn
+        calculateAllSizes = try c.decodeIfPresent(Bool.self, forKey: .calculateAllSizes) ?? d.calculateAllSizes
+    }
 
     public func isVisible(_ key: SortKey) -> Bool { columns.contains { $0.column.sortKey == key } }
 }

@@ -32,6 +32,14 @@ import Testing
         #expect(info.comment == "a note")
         #expect(info.size == 5)
         #expect(info.kind == KindNames.name(for: item))
+        #expect(info.mode == 0o640 && info.ownedByMe)
+
+        // Owner/group/everyone access levels as Get Info shows them.
+        let model = InfoModel(item: item)
+        model.info = info
+        #expect(model.access(0) == 3)   // owner: read & write
+        #expect(model.access(1) == 1)   // group: read only
+        #expect(model.access(2) == 0)   // everyone: no access
     }
 
     @Test func rendersTheWindow() async throws {

@@ -100,7 +100,8 @@ public enum ArrangementEngine {
                 switch d.key {
                 case .name: return .name(ascending: d.ascending)
                 case .size:
-                    return .numeric(items.map { $0.isNavigableFolder ? .nan : $0.size.map(Double.init) ?? .nan }, ascending: d.ascending)
+                    // Folders have a size only when "Calculate all sizes" has totaled them.
+                    return .numeric(items.map { $0.size.map(Double.init) ?? .nan }, ascending: d.ascending)
                 case .dateModified: return .numeric(items.map { $0.modified?.timeIntervalSince1970 ?? .nan }, ascending: d.ascending)
                 case .dateCreated: return .numeric(items.map { $0.created?.timeIntervalSince1970 ?? .nan }, ascending: d.ascending)
                 case .dateAdded: return .numeric(items.map { $0.added?.timeIntervalSince1970 ?? .nan }, ascending: d.ascending)
@@ -179,7 +180,7 @@ public enum ArrangementEngine {
 
     static func isMissing(_ item: FileItem, _ key: SortKey) -> Bool {
         switch key {
-        case .size: item.isNavigableFolder || item.size == nil
+        case .size: item.size == nil
         case .dateModified: item.modified == nil
         case .dateCreated: item.created == nil
         case .dateAdded: item.added == nil
