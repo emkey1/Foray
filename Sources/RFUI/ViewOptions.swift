@@ -120,7 +120,8 @@ struct ViewOptionsView: View {
             }
             Section("Arrangement") {
                 Picker("Sort by", selection: model.sortKey) {
-                    ForEach(sortKeys, id: \.self) { Text($0.title).tag($0) }
+                    // None (arrange icons yourself) is an icon-view choice.
+                    ForEach((model.settings.presentation.mode == .icon ? [.manual] : []) + sortKeys, id: \.self) { Text($0.title).tag($0) }
                 }
                 Toggle("Ascending", isOn: model.ascending)
                 Picker("Group by", selection: model.arrangement(\.groupBy)) {

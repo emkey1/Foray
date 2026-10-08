@@ -16,6 +16,11 @@ public enum Menus {
 
     public static func sortMenu() -> NSMenu {
         let menu = NSMenu(title: "Sort By")
+        let none = NSMenuItem(title: "None", action: #selector(BrowserViewController.sortBy(_:)), keyEquivalent: "")
+        none.tag = SortKey.allCases.firstIndex(of: .manual)!
+        none.toolTip = "Arrange icons yourself (icon view)"
+        menu.addItem(none)
+        menu.addItem(.separator())
         for (i, key) in SortKey.allCases.enumerated() where key != .manual {
             let item = NSMenuItem(title: key.title, action: #selector(BrowserViewController.sortBy(_:)), keyEquivalent: "")
             item.tag = i
@@ -103,4 +108,5 @@ public enum Commands {
     public static let share = #selector(BrowserViewController.shareSelection(_:))
     public static let saveSearch = #selector(BrowserViewController.saveSearch(_:))
     public static let showInspector = #selector(BrowserViewController.showInspector(_:))
+    public static let cleanUp = #selector(BrowserViewController.cleanUp(_:))
 }

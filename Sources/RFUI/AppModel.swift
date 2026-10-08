@@ -142,6 +142,32 @@ public final class AppModel {
         for handler in favoriteObservers.values { handler() }
     }
 
+    // MARK: Icon positions (icon view, Sort By None)
+
+    private static let iconPositionsFile = "icon-positions.json"
+    private var iconPositionsSaveScheduled = false
+    /// Folder path → item name → top-left of its cell, in points.
+    private lazy var iconPositions: [String: [String: [Double]]] =
+        store.load([String: [String: [Double]]].self, from: Self.iconPositionsFile) ?? [:]
+
+    func iconPositions(in folder: URL) -> [String: CGPoint] {
+        (iconPositions[folder.standardizedFileURL.path] ?? [:]).compactMapValues { $0.count == 2 ? CGPoint(x: $0[0], y: $0[1]) : nil }
+    }
+
+    func setIconPositions(_ positions: [String: CGPoint], in folder: URL, replacing: Bool = false) {
+        let key = folder.standardizedFileURL.path
+        var current = replacing ? [:] : (iconPositions[key] ?? [:])
+        for (name, p) in positions { current[name] = [Double(p.x), Double(p.y)] }
+        iconPositions[key] = current
+        guard !iconPositionsSaveScheduled else { return }
+        iconPositionsSaveScheduled = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            guard let self else { return }
+            self.iconPositionsSaveScheduled = false
+            self.store.save(self.iconPositions, to: Self.iconPositionsFile)
+        }
+    }
+
     // MARK: Recent folders (Go › Recent Folders, the Dock menu)
 
     public static let recentFolderLimit = 10

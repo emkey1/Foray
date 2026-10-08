@@ -201,3 +201,80 @@ extension UISerial {
         }
     }
 }
+
+extension UISerial {
+    @MainActor
+    @Suite(.serialized) final class FreeArrangementTests {
+        let base = TestDirs.make("freearrange")
+        isolated deinit { try? FileManager.default.removeItem(at: base) }
+
+        @Test func gridPlacementSnappingAndDrops() {
+            let grid = FreeArrangement(cellSize: NSSize(width: 100, height: 100), spacing: 10, width: 360)
+            #expect(grid.columns == 3)
+            let frames = grid.frames(for: ["a", "b", "c", "d"], saved: ["b": CGPoint(x: 14, y: 10)])
+            #expect(frames[1].origin == CGPoint(x: 14, y: 10))     // b keeps its spot
+            #expect(frames[0].origin == CGPoint(x: 124, y: 10))    // a skips the taken first cell
+            #expect(frames[3].origin == CGPoint(x: 14, y: 120))    // wraps to the next row
+            let snapped = grid.snapped(["x": CGPoint(x: 130, y: 15), "y": CGPoint(x: 128, y: 12)])
+            #expect(Set(snapped.values.map(\.x)) == [124, 234] || Set(snapped.values.map(\.x)) == [14, 124])
+            #expect(Set(snapped.values.map { "\($0)" }).count == 2)   // never the same cell
+            #expect(grid.dropPositions(["n"], at: NSPoint(x: 200, y: 200))["n"] == CGPoint(x: 150, y: 150))
+        }
+
+        @Test func sortByNoneKeepsArrangementAndDragsMoveIcons() async throws {
+            AppModel.shared = AppModel(store: AppSupportStore(directory: base.appendingPathComponent("store")))
+            let w = base.appendingPathComponent("W", isDirectory: true)
+            try FileManager.default.createDirectory(at: w, withIntermediateDirectories: true)
+            for n in ["a.txt", "b.txt", "c.txt"] { FileManager.default.createFile(atPath: w.appendingPathComponent(n).path, contents: nil) }
+            let vc = BrowserViewController(location: .folder(w))
+            let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 800, height: 500), styleMask: [.titled], backing: .buffered, defer: false)
+            window.contentViewController = vc
+            defer { vc.state.invalidate() }
+            vc.state.updatePresentation { $0.mode = .icon }
+            let deadline = Date().addingTimeInterval(15)
+            while vc.state.snapshot.items.count < 3 && Date() < deadline { try await Task.sleep(for: .milliseconds(20)) }
+            try await Task.sleep(for: .milliseconds(100))
+            let icons = try #require(vc.content as? IconContentViewController)
+            let before = icons.currentPositions()
+
+            let none = NSMenuItem(title: "None", action: #selector(BrowserViewController.sortBy(_:)), keyEquivalent: "")
+            none.tag = SortKey.allCases.firstIndex(of: .manual)!
+            vc.sortBy(none)
+            while !icons.isFree && Date() < deadline { try await Task.sleep(for: .milliseconds(20)) }
+            #expect(icons.isFree)
+            #expect(AppModel.shared.iconPositions(in: w) == before)   // nothing jumped
+
+            // Drag a.txt 300 points right.
+            let a = try #require(vc.state.snapshot.items.firstIndex { $0.name == "a.txt" })
+            let start = icons.framesForTesting[a].origin
+            icons.beginDragForTesting([a], at: NSPoint(x: 0, y: 0))
+            icons.moveDragged(to: NSPoint(x: 300, y: 40))
+            #expect(AppModel.shared.iconPositions(in: w)["a.txt"] == CGPoint(x: start.x + 300, y: start.y + 40))
+            let i = try #require(vc.state.snapshot.items.firstIndex { $0.name == "a.txt" })
+            #expect(icons.framesForTesting[i].origin == CGPoint(x: start.x + 300, y: start.y + 40))
+
+            let clean = NSMenuItem(title: "", action: #selector(BrowserViewController.cleanUp(_:)), keyEquivalent: "")
+            #expect(vc.validateMenuItem(clean))
+            vc.cleanUp(nil)
+            let cleaned = AppModel.shared.iconPositions(in: w)
+            #expect(Set(cleaned.values.map { "\($0)" }).count == 3)
+            #expect(cleaned.values.allSatisfy { icons.arrangementGrid.snapped(["t": $0])["t"] == $0 })   // all on the grid
+        }
+    }
+}
+
+extension UISerial {
+    @MainActor
+    @Suite final class FreeArrangementScaleTests {
+        @Test func placesTenThousandIconsQuickly() {
+            let grid = FreeArrangement(cellSize: NSSize(width: 100, height: 112), spacing: 12, width: 1200)
+            let names = (0..<10_000).map { "f\($0)" }
+            var saved: [String: CGPoint] = [:]
+            for i in stride(from: 0, to: 10_000, by: 7) { saved[names[i]] = grid.cellOrigin(i * 3) }
+            let start = Date()
+            let frames = grid.frames(for: names, saved: saved)
+            #expect(Date().timeIntervalSince(start) < 0.5)
+            #expect(Set(frames.map { "\($0.origin)" }).count == 10_000)   // no two on the same spot
+        }
+    }
+}

@@ -271,7 +271,7 @@ Each of these is additive or controlled by a setting, so Finder habits keep work
 | Feature | Approach | Phase |
 |---|---|---|
 | Icon view: sizes, grid, label position, item info, icon previews, groups | NSCollectionView, custom layout | P1 |
-| Icon view: manual arrangement, snap to grid, Clean Up | Free-position layout + stored positions | P2 |
+| Icon view: manual arrangement, snap to grid, Clean Up | Free-position layout + stored positions | P2 ✅ (Sort By None; positions per folder path in `icon-positions.json`; Clean Up snaps; "keep snapped" option still to do) |
 | List view: columns, disclosure triangles, relative dates, groups | NSOutlineView | P1 |
 | Column view, including a preview column and resizable columns | Custom (§5.5) | P1 |
 | Gallery view, including metadata | QLPreviewView + thumbnail strip | P1 |

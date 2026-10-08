@@ -9,6 +9,11 @@ final class IconContentViewController: NSViewController, ContentView {
     private let collectionView = BrowserCollectionView()
     private let scrollView = NSScrollView()
     private let layout = NSCollectionViewFlowLayout()
+    private let freeLayout = FreeIconLayout()
+    /// Sort By None: items sit where they were put (one section; groups don't apply).
+    private(set) var isFree = false
+    private var dragStart: NSPoint?
+    private var draggedIndices: [Int] = []
     private var snapshot = ItemSnapshot.empty
     private var settings = ViewSettings()
     private var isApplying = false
@@ -50,7 +55,83 @@ final class IconContentViewController: NSViewController, ContentView {
         layout.minimumLineSpacing = icon.gridSpacing / 2
         layout.sectionInset = NSEdgeInsets(top: 10, left: 14, bottom: 14, right: 14)
         layout.headerReferenceSize = snapshot.groups.isEmpty ? .zero : NSSize(width: 0, height: 28)
+        isFree = settings.arrangement.primary.key == .manual
+        if isFree {
+            layoutFreely()
+            if collectionView.collectionViewLayout !== freeLayout { collectionView.collectionViewLayout = freeLayout }
+        } else if collectionView.collectionViewLayout !== layout {
+            collectionView.collectionViewLayout = layout
+        }
         collectionView.reloadData()
+    }
+
+    // MARK: Free arrangement (Sort By None)
+
+    private var folder: URL? { host?.state.location.folderURL }
+
+    var arrangementGrid: FreeArrangement {
+        FreeArrangement(cellSize: layout.itemSize, spacing: settings.presentation.icon.gridSpacing / 2,
+                        width: max(scrollView.contentSize.width, layout.itemSize.width + 28))
+    }
+
+    /// Saved positions, plus grid cells for items that have none (which are then saved, so they
+    /// stay put when other items come and go).
+    private func layoutFreely() {
+        let names = snapshot.items.map(\.name)
+        let saved = folder.map(AppModel.shared.iconPositions(in:)) ?? [:]
+        let frames = arrangementGrid.frames(for: names, saved: saved)
+        freeLayout.frames = frames
+        freeLayout.minimumSize = scrollView.contentSize
+        freeLayout.invalidateLayout()
+        if let folder {
+            var new: [String: CGPoint] = [:]
+            for (name, frame) in zip(names, frames) where saved[name] == nil { new[name] = frame.origin }
+            if !new.isEmpty { AppModel.shared.setIconPositions(new, in: folder) }
+        }
+    }
+
+    /// Where each item is drawn now (by name), to keep the arrangement when switching to None.
+    func currentPositions() -> [String: CGPoint] {
+        var out: [String: CGPoint] = [:]
+        let active = collectionView.collectionViewLayout
+        for section in 0..<numberOfSections(in: collectionView) {
+            for item in 0..<self.collectionView(collectionView, numberOfItemsInSection: section) {
+                let path = IndexPath(item: item, section: section)
+                if let frame = active?.layoutAttributesForItem(at: path)?.frame {
+                    out[snapshot.items[index(of: path)].name] = frame.origin
+                }
+            }
+        }
+        return out
+    }
+
+    /// View › Clean Up: every icon to the nearest grid cell.
+    func cleanUp() {
+        guard isFree, let folder else { return }
+        let snapped = arrangementGrid.snapped(Dictionary(uniqueKeysWithValues: zip(snapshot.items.map(\.name), freeLayout.frames.map(\.origin))))
+        AppModel.shared.setIconPositions(snapped, in: folder, replacing: true)
+        apply(snapshot, settings: settings)
+    }
+
+    /// Tests: what a drag of `indices` starting at `start` would record.
+    func beginDragForTesting(_ indices: [Int], at start: NSPoint) {
+        dragStart = start
+        draggedIndices = indices
+    }
+
+    var framesForTesting: [NSRect] { freeLayout.frames }
+
+    /// Moves the dragged icons by the distance the drag travelled.
+    func moveDragged(to point: NSPoint) {
+        guard isFree, let folder, let start = dragStart else { return }
+        let dx = point.x - start.x, dy = point.y - start.y
+        var moved: [String: CGPoint] = [:]
+        for i in draggedIndices where freeLayout.frames.indices.contains(i) {
+            let o = freeLayout.frames[i].origin
+            moved[snapshot.items[i].name] = CGPoint(x: max(0, o.x + dx), y: max(0, o.y + dy))
+        }
+        AppModel.shared.setIconPositions(moved, in: folder)
+        apply(snapshot, settings: settings)
     }
 
     func showSelection(_ ids: Set<FileID>, reveal: FileID?) {
@@ -80,12 +161,12 @@ final class IconContentViewController: NSViewController, ContentView {
     // MARK: Index mapping (sections = groups)
 
     fileprivate func index(of path: IndexPath) -> Int {
-        snapshot.groups.isEmpty ? path.item : snapshot.groups[path.section].range.lowerBound + path.item
+        snapshot.groups.isEmpty || isFree ? path.item : snapshot.groups[path.section].range.lowerBound + path.item
     }
 
     private func indexPath(for id: FileID) -> IndexPath? {
         guard let i = snapshot.index(of: id) else { return nil }
-        if snapshot.groups.isEmpty { return IndexPath(item: i, section: 0) }
+        if snapshot.groups.isEmpty || isFree { return IndexPath(item: i, section: 0) }
         guard let s = snapshot.groups.firstIndex(where: { $0.range.contains(i) }) else { return nil }
         return IndexPath(item: i - snapshot.groups[s].range.lowerBound, section: s)
     }
@@ -120,10 +201,10 @@ final class IconContentViewController: NSViewController, ContentView {
 }
 
 extension IconContentViewController: NSCollectionViewDataSource, NSCollectionViewDelegate {
-    func numberOfSections(in collectionView: NSCollectionView) -> Int { max(snapshot.groups.count, 1) }
+    func numberOfSections(in collectionView: NSCollectionView) -> Int { isFree ? 1 : max(snapshot.groups.count, 1) }
 
     func collectionView(_ collectionView: NSCollectionView, numberOfItemsInSection section: Int) -> Int {
-        snapshot.groups.isEmpty ? snapshot.items.count : snapshot.groups[section].range.count
+        snapshot.groups.isEmpty || isFree ? snapshot.items.count : snapshot.groups[section].range.count
     }
 
     func collectionView(_ collectionView: NSCollectionView, itemForRepresentedObjectAt indexPath: IndexPath) -> NSCollectionViewItem {
@@ -145,6 +226,18 @@ extension IconContentViewController: NSCollectionViewDataSource, NSCollectionVie
 
     func collectionView(_ collectionView: NSCollectionView, canDragItemsAt indexPaths: Set<IndexPath>, with event: NSEvent) -> Bool { true }
 
+    func collectionView(_ collectionView: NSCollectionView, draggingSession session: NSDraggingSession, willBeginAt screenPoint: NSPoint,
+                        forItemsAt indexPaths: Set<IndexPath>) {
+        guard let window = collectionView.window else { return }
+        dragStart = collectionView.convert(window.convertPoint(fromScreen: screenPoint), from: nil)
+        draggedIndices = indexPaths.map(index(of:))
+    }
+
+    /// A drag that started here and ends in empty space just moves the icons (Sort By None).
+    private func isRearranging(_ info: any NSDraggingInfo, onto folder: FileItem?) -> Bool {
+        isFree && folder == nil && (info.draggingSource as? NSCollectionView) === collectionView
+    }
+
     func collectionView(_ collectionView: NSCollectionView, pasteboardWriterForItemAt indexPath: IndexPath) -> (any NSPasteboardWriting)? {
         snapshot.items[index(of: indexPath)].url as NSURL
     }
@@ -154,14 +247,22 @@ extension IconContentViewController: NSCollectionViewDataSource, NSCollectionVie
                         proposedIndexPath path: AutoreleasingUnsafeMutablePointer<NSIndexPath>,
                         dropOperation: UnsafeMutablePointer<NSCollectionView.DropOperation>) -> NSDragOperation {
         let proposed = path.pointee as IndexPath
+        var onFolder: FileItem?
         if dropOperation.pointee == .on, proposed.section < numberOfSections(in: collectionView),
            proposed.item < self.collectionView(collectionView, numberOfItemsInSection: proposed.section) {
             let item = snapshot.items[index(of: proposed)]
-            if item.isNavigableFolder {
-                let op = DragAndDrop.operation(info, to: item.url)
-                SpringLoading.hover(op.isEmpty ? nil : item.url) { [weak self] url in self?.host?.state.navigate(to: .folder(url)) }
-                return op
+            if item.isNavigableFolder, !draggedIndices.contains(index(of: proposed)) || (info.draggingSource as? NSCollectionView) !== collectionView {
+                onFolder = item
             }
+        }
+        if isRearranging(info, onto: onFolder) {
+            SpringLoading.hover(nil)
+            return .move
+        }
+        if let item = onFolder {
+            let op = DragAndDrop.operation(info, to: item.url)
+            SpringLoading.hover(op.isEmpty ? nil : item.url) { [weak self] url in self?.host?.state.navigate(to: .folder(url)) }
+            return op
         }
         SpringLoading.hover(nil)
         guard let here = host?.state.location.folderURL else { return [] }
@@ -172,17 +273,33 @@ extension IconContentViewController: NSCollectionViewDataSource, NSCollectionVie
     func collectionView(_ collectionView: NSCollectionView, acceptDrop info: any NSDraggingInfo, indexPath: IndexPath,
                         dropOperation: NSCollectionView.DropOperation) -> Bool {
         var target = host?.state.location.folderURL
+        var onFolder: FileItem?
         if dropOperation == .on, indexPath.section < numberOfSections(in: collectionView),
            indexPath.item < self.collectionView(collectionView, numberOfItemsInSection: indexPath.section) {
             let item = snapshot.items[index(of: indexPath)]
-            if item.isNavigableFolder { target = item.url }
+            if item.isNavigableFolder, !draggedIndices.contains(index(of: indexPath)) || (info.draggingSource as? NSCollectionView) !== collectionView {
+                target = item.url
+                onFolder = item
+            }
+        }
+        let point = collectionView.convert(info.draggingLocation, from: nil)
+        if isRearranging(info, onto: onFolder) {
+            moveDragged(to: point)
+            return true
         }
         guard let target else { return false }
+        // Items arriving from elsewhere appear where they were dropped.
+        if isFree, onFolder == nil, let folder {
+            let names = DragAndDrop.fileURLs(info).map(\.lastPathComponent)
+            AppModel.shared.setIconPositions(arrangementGrid.dropPositions(names, at: point), in: folder)
+        }
         return DragAndDrop.perform(info, to: target, from: host?.state)
     }
 
     func collectionView(_ collectionView: NSCollectionView, draggingSession session: NSDraggingSession, endedAt screenPoint: NSPoint,
                         dragOperation operation: NSDragOperation) {
+        dragStart = nil
+        draggedIndices = []
         let urls = session.draggingPasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL] ?? []
         DragAndDrop.draggingEnded(operation, items: urls, state: host?.state)
     }

@@ -200,6 +200,7 @@ enum MainMenu {
         menu.addItem(item("Show Hidden Files", Commands.toggleHiddenFiles, ".", [.command, .shift]))
         menu.addItem(item("Use Relative Dates", Commands.toggleRelativeDates))
         menu.addItem(item("Remember Settings for This Folder", Commands.toggleRememberSettings))
+        menu.addItem(item("Clean Up", Commands.cleanUp))
         menu.addItem(item("Show View Options", Commands.showViewOptions, "j"))
         menu.addItem(.separator())
         menu.addItem(item("Reload", Commands.reloadFolder))

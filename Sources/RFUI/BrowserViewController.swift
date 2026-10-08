@@ -689,8 +689,16 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
 
     @objc func sortBy(_ sender: NSMenuItem) {
         guard let key = SortKey.allCases[safe: sender.tag] else { return }
+        // Switching to None keeps the icons where they are now.
+        if key == .manual, state.settings.arrangement.primary.key != .manual,
+           let icons = content as? IconContentViewController, let folder = state.location.folderURL {
+            AppModel.shared.setIconPositions(icons.currentPositions(), in: folder, replacing: true)
+        }
         state.updateArrangement { $0.setPrimary(key) }
     }
+
+    /// View › Clean Up (icon view, Sort By None): snap icons to the grid.
+    @objc func cleanUp(_ sender: Any?) { (content as? IconContentViewController)?.cleanUp() }
 
     @objc func groupBy(_ sender: NSMenuItem) {
         let key = sender.tag < 0 ? nil : GroupKey.allCases[safe: sender.tag]
@@ -737,6 +745,7 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
             return !state.selectedItems.isEmpty
         case #selector(toggleQuickLook(_:)): return !state.selectedItems.isEmpty || previewPanel != nil
         case #selector(ejectSelection(_:)): return !selectedEjectableVolumes.isEmpty
+        case #selector(cleanUp(_:)): return (content as? IconContentViewController)?.isFree == true && state.location.folderURL != nil
         case #selector(downloadNow(_:)): return !selectedCloudItems.isEmpty
         case #selector(removeDownload(_:)): return selectedCloudItems.contains { !$0.flags.contains(.dataless) }
         case #selector(showOriginal(_:)): return state.selectedItems.count == 1 && !selectedAliases.isEmpty
@@ -755,7 +764,8 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
             item.isHidden = key == .folder && state.location.searchQuery == nil
             // Only Recents knows when things were last opened.
             item.isHidden = item.isHidden || (key == .dateLastOpened && state.location != .recents)
-            return key != .tags && key != .manual
+            if key == .manual { item.isHidden = state.settings.presentation.mode != .icon && a.primary.key != .manual }
+            return key != .tags
         case #selector(groupBy(_:)):
             item.state = (item.tag < 0 ? a.groupBy == nil : a.groupBy == GroupKey.allCases[safe: item.tag]) ? .on : .off
         case #selector(filterByKind(_:)):
