@@ -32,6 +32,12 @@ enum FileOps {
         if err == EEXIST, sameFile(from, to), from.path != to.path {
             return Darwin.rename(from.path, to.path) == 0 ? 0 : errno
         }
+        // Some filesystems (exFAT, some network volumes) don't support RENAME_EXCL. Check first,
+        // then use a plain rename (a tiny race window instead of failing every rename there).
+        if err == ENOTSUP || err == EINVAL {
+            if exists(to) && !sameFile(from, to) { return EEXIST }
+            return Darwin.rename(from.path, to.path) == 0 ? 0 : errno
+        }
         return err
     }
 
@@ -52,7 +58,7 @@ enum FileOps {
         }
         let box = Box(progress)
         return withExtendedLifetime(box) {
-            rf_copy_file(from.path, to.path, { copied, ctx in
+            rf_copy_file(from.path, to.path, TestHooks.noClone ? 0 : 1, { copied, ctx in
                 let box = Unmanaged<Box>.fromOpaque(ctx!).takeUnretainedValue()
                 return (box.progress?(copied) ?? true) ? 0 : 1
             }, Unmanaged.passUnretained(box).toOpaque())
@@ -98,7 +104,19 @@ enum FileOps {
         return (bytes, items)
     }
 
+    /// Free space for the pre-flight check. "Available for important usage" (which counts purgeable
+    /// space on APFS) reports 0 on some volumes (disk images, external and network disks), which
+    /// would block every copy there; the plain statfs figure is always available, so use the larger.
     static func availableCapacity(_ folder: URL) -> Int64? {
-        try? folder.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey]).volumeAvailableCapacityForImportantUsage
+        var fs = statfs()
+        let plain: Int64? = statfs(folder.path, &fs) == 0 ? Int64(fs.f_bavail) * Int64(fs.f_bsize) : nil
+        let important = try? folder.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey])
+            .volumeAvailableCapacityForImportantUsage
+        switch (plain, important) {
+        case let (p?, i?): return max(p, i)
+        case let (p?, nil): return p
+        case let (nil, i?): return i > 0 ? i : nil
+        default: return nil
+        }
     }
 }

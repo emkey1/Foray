@@ -17,8 +17,9 @@ final class Sandbox {
     var answers: [ConflictAnswer] = []
     var questions: [ConflictQuestion] = []
 
-    init() throws {
-        root = FileManager.default.temporaryDirectory.appendingPathComponent("rf-ops-\(UUID().uuidString)", isDirectory: true)
+    /// `base`: where to put the sandbox (a mounted test disk image, for the filesystem matrix).
+    init(base: URL? = nil) throws {
+        root = (base ?? FileManager.default.temporaryDirectory).appendingPathComponent("rf-ops-\(UUID().uuidString)", isDirectory: true)
         work = root.appendingPathComponent("work", isDirectory: true)
         trashDir = root.appendingPathComponent("Trash", isDirectory: true)
         for d in [work, trashDir] { try FileManager.default.createDirectory(at: d, withIntermediateDirectories: true) }

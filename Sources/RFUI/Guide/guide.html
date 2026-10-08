@@ -51,6 +51,7 @@
   <a href="#syntax">Search filters</a>
   <a href="#kinds">File kinds</a>
   <a href="#files">Opening and previewing</a>
+  <a href="#ops">Copying, moving and renaming</a>
   <a href="#keys">Keyboard shortcuts</a>
   <a href="#access">Privacy and access</a>
   <a href="#coming">Not yet available</a>
@@ -175,6 +176,20 @@
   <li><b>Type to select:</b> start typing a name to jump to it.</li>
 </ul>
 
+<h2 id="ops">Copying, moving and renaming</h2>
+<ul>
+  <li><b>Copy and paste:</b> <kbd>⌘C</kbd>, then <kbd>⌘V</kbd> in another folder. Pasting into the same folder makes a copy (“report copy.pdf”).</li>
+  <li><b>Cut and paste moves:</b> <kbd>⌘X</kbd> dims the items; <kbd>⌘V</kbd> moves them. (<kbd>⌥⌘V</kbd> moves copied items, as in Finder.)</li>
+  <li><b>Drag and drop:</b> onto a folder, empty space, or a sidebar location. Within one disk a drag moves; to another disk it copies. Hold <kbd>⌥</kbd> to copy, <kbd>⌘</kbd> to move. Drag to the Trash in the Dock to delete.</li>
+  <li><b>Rename:</b> select an item and press <kbd>Return</kbd>. Type the new name, <kbd>Return</kbd> to keep it, <kbd>Esc</kbd> to cancel. You're asked before an extension changes.</li>
+  <li><b>New Folder</b> <kbd>⇧⌘N</kbd> (then name it), <b>New Folder with Selection</b> <kbd>⌃⌘N</kbd>, <b>Duplicate</b> <kbd>⌘D</kbd>.</li>
+  <li><b>Move to Trash</b> <kbd>⌘⌫</kbd>. <b>Delete Immediately</b> <kbd>⌥⌘⌫</kbd> asks first and can't be undone.</li>
+  <li><b>Undo</b> <kbd>⌘Z</kbd> and <b>Redo</b> <kbd>⇧⌘Z</kbd> work for everything except Delete Immediately, across all windows.</li>
+  <li><b>When a name is taken</b> you choose <b>Keep Both</b> (adds “2”), <b>Replace</b>, <b>Skip</b> or <b>Stop</b>, optionally for all remaining items. <b>Replace moves the old item to the Trash</b>, so you can undo it.</li>
+  <li><b>Progress:</b> the toolbar shows a spinner while files are being copied or moved; click it to see progress, pause, resume or stop.</li>
+  <li><b>Nothing half-copied:</b> copies are written under a hidden temporary name and only appear when complete. If an item can't be copied, the rest still are, and you get a list of what failed.</li>
+</ul>
+
 <h2 id="keys">Keyboard shortcuts</h2>
 <p>RealFinder uses Finder's shortcuts. Every command is in the menu bar, so you can change any shortcut in System Settings › Keyboard › Keyboard Shortcuts › App Shortcuts.</p>
 <table>
@@ -190,6 +205,11 @@
   <tr><td><kbd>⌘R</kbd></td><td>Show in Enclosing Folder (search results)</td></tr>
   <tr><td><kbd>⇧⌘.</kbd></td><td>Show or hide hidden files</td></tr>
   <tr><td><kbd>⌥⌘C</kbd></td><td>Copy path</td></tr>
+  <tr><td><kbd>⌘C</kbd> <kbd>⌘X</kbd> <kbd>⌘V</kbd> <kbd>⌥⌘V</kbd></td><td>Copy, cut, paste, move items here</td></tr>
+  <tr><td><kbd>Return</kbd></td><td>Rename</td></tr>
+  <tr><td><kbd>⌘D</kbd> <kbd>⇧⌘N</kbd> <kbd>⌃⌘N</kbd></td><td>Duplicate, new folder, new folder with selection</td></tr>
+  <tr><td><kbd>⌘⌫</kbd> <kbd>⌥⌘⌫</kbd></td><td>Move to Trash, delete immediately</td></tr>
+  <tr><td><kbd>⌘Z</kbd> <kbd>⇧⌘Z</kbd></td><td>Undo, redo</td></tr>
   <tr><td><kbd>⌃⌘S</kbd></td><td>Show or hide the sidebar</td></tr>
   <tr><td><kbd>⌘?</kbd></td><td>This guide</td></tr>
 </table>
@@ -200,7 +220,6 @@
 <h2 id="coming">Not yet available</h2>
 <p>RealFinder is under construction. Use Finder for these for now:</p>
 <ul>
-  <li>Copying, moving, renaming, duplicating and deleting files; drag and drop; undo.</li>
   <li>Column and Gallery views.</li>
   <li>Get Info, tags editing, comments, aliases, compressing.</li>
   <li>Recents, Trash, network browsing and Connect to Server, iCloud download controls.</li>

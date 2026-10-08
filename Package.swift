@@ -24,11 +24,13 @@ let package = Package(
         .target(name: "RFUI", dependencies: ["RFModel", "RFFileSystem", "RFSearch", "RFOperations"], resources: [.copy("Guide")]),
         // App entry point: menus, app delegate.
         .executableTarget(name: "RealFinder", dependencies: ["RFUI"]),
+        // Test helper: runs one copy so a test can kill it mid-way (DESIGN.md §9, M2 exit criteria).
+        .executableTarget(name: "rf-crash-probe", dependencies: ["RFOperations", "RFFileSystem"]),
 
         .testTarget(name: "RFModelTests", dependencies: ["RFModel"]),
         .testTarget(name: "RFFileSystemTests", dependencies: ["RFFileSystem"]),
         .testTarget(name: "RFSearchTests", dependencies: ["RFSearch"]),
-        .testTarget(name: "RFOperationsTests", dependencies: ["RFOperations"]),
+        .testTarget(name: "RFOperationsTests", dependencies: ["RFOperations", "rf-crash-probe"]),
         .testTarget(name: "RFUITests", dependencies: ["RFUI"]),
     ]
 )

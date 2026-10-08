@@ -162,14 +162,14 @@ static int copy_status(int what, int stage, copyfile_state_t state, const char *
     return COPYFILE_CONTINUE;
 }
 
-int rf_copy_file(const char *src, const char *dst, rf_copy_progress_cb cb, void *ctx) {
+int rf_copy_file(const char *src, const char *dst, int allow_clone, rf_copy_progress_cb cb, void *ctx) {
     copyfile_state_t state = copyfile_state_alloc();
     if (!state) return ENOMEM;
     rf_copy_ctx c = { cb, ctx };
     copyfile_state_set(state, COPYFILE_STATE_STATUS_CB, (const void *)&copy_status);
     copyfile_state_set(state, COPYFILE_STATE_STATUS_CTX, &c);
     // COPYFILE_CLONE tries a clone first and falls back to copying. EXCL: never overwrite.
-    int flags = COPYFILE_ALL | COPYFILE_CLONE | COPYFILE_NOFOLLOW | COPYFILE_EXCL | COPYFILE_DATA_SPARSE;
+    int flags = COPYFILE_ALL | COPYFILE_NOFOLLOW | COPYFILE_EXCL | COPYFILE_DATA_SPARSE | (allow_clone ? COPYFILE_CLONE : 0);
     int rc = copyfile(src, dst, state, flags);
     int err = rc == 0 ? 0 : (errno ? errno : EIO);
     copyfile_state_free(state);

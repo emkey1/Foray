@@ -49,6 +49,13 @@ public final class JobControl: Sendable {
 
 /// Runs one request. Blocking filesystem work happens on the job's own serial queue (never the
 /// main thread, never the cooperative pool); conflict questions are awaited in between.
+/// Test-only switches, read from the environment (used by rf-crash-probe to make a copy slow
+/// enough to kill mid-way). Never set in normal use.
+enum TestHooks {
+    static let noClone = ProcessInfo.processInfo.environment["RF_TEST_NO_CLONE"] != nil
+    static let slowCopy = ProcessInfo.processInfo.environment["RF_TEST_SLOW_COPY"] != nil
+}
+
 final class Execution: @unchecked Sendable {
     let request: OperationRequest
     let control: JobControl
@@ -234,7 +241,9 @@ final class Execution: @unchecked Sendable {
         let size = await blocking { FileOps.treeSize(item) }
 
         // Same APFS volume: clone the whole tree in one call (instant, metadata included).
-        var rc = await blocking { FileOps.sameVolume(item, target.deletingLastPathComponent()) ? FileOps.clone(item, to: temp) : ENOTSUP }
+        var rc = await blocking {
+            !TestHooks.noClone && FileOps.sameVolume(item, target.deletingLastPathComponent()) ? FileOps.clone(item, to: temp) : ENOTSUP
+        }
         if rc == 0 {
             update {
                 $0.bytesDone += size.bytes
@@ -294,6 +303,7 @@ final class Execution: @unchecked Sendable {
         }
         var reported: Int64 = 0
         let rc = FileOps.copyFile(src, to: dst) { copied in
+            if TestHooks.slowCopy { usleep(20_000) }
             self.update { $0.bytesDone += copied - reported }
             reported = copied
             return self.control.checkpoint()
