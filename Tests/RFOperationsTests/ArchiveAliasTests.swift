@@ -85,3 +85,38 @@ import Testing
         #expect(try FileManager.default.contentsOfDirectory(atPath: s.work.path) == ["fake.zip"])
     }
 }
+
+@MainActor
+@Suite struct BatchRenameEngineTests {
+    @Test func cyclesWorkAndUndoInOneStep() async throws {
+        let s = try Sandbox()
+        let a = s.file("a.txt", "A"), b = s.file("b.txt", "B"), c = s.file("c.txt", "C")
+        let dir = s.work
+        // a → b, b → c, c → a: a rotation that needs temporary names.
+        let r = await s.run(.batchRename([
+            .init(from: a, to: dir.appendingPathComponent("b.txt")),
+            .init(from: b, to: dir.appendingPathComponent("c.txt")),
+            .init(from: c, to: dir.appendingPathComponent("a.txt")),
+        ]))
+        #expect(r.errors.isEmpty)
+        #expect(s.tree() == ["b.txt": "A", "c.txt": "B", "a.txt": "C"])
+        #expect(s.center.undoManager.undoActionName == "Rename")
+        await s.undo()
+        #expect(s.tree() == ["a.txt": "A", "b.txt": "B", "c.txt": "C"])
+        await s.redo()
+        #expect(s.tree() == ["b.txt": "A", "c.txt": "B", "a.txt": "C"])
+    }
+
+    @Test func aClashWithAnOutsideItemLeavesThatItemAlone() async throws {
+        let s = try Sandbox()
+        let a = s.file("a.txt", "A"), b = s.file("b.txt", "B")
+        s.file("taken.txt", "T")
+        let r = await s.run(.batchRename([
+            .init(from: a, to: s.work.appendingPathComponent("taken.txt")),
+            .init(from: b, to: s.work.appendingPathComponent("bee.txt")),
+        ]))
+        #expect(r.errors.count == 1)
+        #expect(s.tree() == ["a.txt": "A", "bee.txt": "B", "taken.txt": "T"])
+        #expect(!(try FileManager.default.contentsOfDirectory(atPath: s.work.path)).contains { $0.hasPrefix(".rfrename") })
+    }
+}

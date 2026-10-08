@@ -1,5 +1,6 @@
 import AppKit
 import Foundation
+import SwiftUI
 import Testing
 
 @testable import RFFileSystem
@@ -96,6 +97,40 @@ extension UISerial {
             #expect(vc.writeSelection(to: pb, types: [.fileURL]))
             let urls = pb.readObjects(forClasses: [NSURL.self]) as? [URL]
             #expect(urls?.map(\.lastPathComponent) == ["s.txt"])
+        }
+    }
+}
+
+extension UISerial {
+    @MainActor
+    @Suite(.serialized) final class BatchRenameSheetTests {
+        @Test func previewAndPairs() throws {
+            func item(_ name: String, _ inode: UInt64) -> FileItem {
+                FileItem(id: FileID(device: 1, inode: inode), url: URL(fileURLWithPath: "/tmp/x/\(name)"), name: name,
+                         contentType: .jpeg, flags: [], size: 1)
+            }
+            let model = BatchRenameModel(items: [item("IMG_1.jpg", 1), item("IMG_2.jpg", 2)], existing: ["IMG_1.jpg", "IMG_2.jpg", "Trip 2.jpg"])
+            #expect(!model.canRename)   // nothing changes yet
+            model.rule.find = "IMG_"
+            model.rule.replacement = "Trip "
+            #expect(model.newNames == ["Trip 1.jpg", "Trip 2.jpg"])
+            #expect(model.problems[1] != nil && !model.canRename)   // "Trip 2.jpg" is taken
+            model.rule.replacement = "Beach "
+            #expect(model.canRename)
+            #expect(model.pairs.map(\.to.lastPathComponent) == ["Beach 1.jpg", "Beach 2.jpg"])
+
+            let host = NSHostingView(rootView: BatchRenameView(model: model))
+            host.frame = NSRect(x: 0, y: 0, width: 560, height: 470)
+            host.appearance = NSAppearance(named: .aqua)   // offscreen capture skips the window background
+            let window = NSWindow(contentRect: host.frame, styleMask: [.titled], backing: .buffered, defer: false)
+            window.contentView = host
+            host.layoutSubtreeIfNeeded()
+            RunLoop.main.run(until: Date().addingTimeInterval(0.5))
+            host.layoutSubtreeIfNeeded()
+            if let rep = host.bitmapImageRepForCachingDisplay(in: host.bounds) {
+                host.cacheDisplay(in: host.bounds, to: rep)
+                try rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: "/tmp/claude-501/rf-batchrename.png"))
+            }
         }
     }
 }

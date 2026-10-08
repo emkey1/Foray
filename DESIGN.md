@@ -303,7 +303,7 @@ Each of these is additive or controlled by a setting, so Finder habits keep work
 | Move to Trash, Delete Immediately, Empty Trash | | P1 |
 | Put Back | Journal + Finder's records (§5.7) | P2 |
 | Make Alias, Show Original, Fix Alias | Bookmark APIs | P2 ✅ |
-| Batch rename (Finder's Replace / Add / Format, plus I9) | | P2 |
+| Batch rename (Finder's Replace / Add / Format, plus I9) | | P2 ✅ |
 | Compress and expand | `ditto` for zip (same output as Finder); Archive Utility or libarchive for other formats | P2 ✅ (zip; other formats open in Archive Utility) |
 | Undo and redo for file operations | §5.7 | P1 |
 | Progress, pause, cancel | §5.7 | P1 |

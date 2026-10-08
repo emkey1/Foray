@@ -31,6 +31,9 @@ public enum OperationRequest: Sendable, Equatable {
     case setTags([TagAssignment])
     /// Get Info edits: Locked, Hide Extension, permissions, comments (only the fields given).
     case setAttributes([AttributeAssignment])
+    /// Renames many items at once (each pair: current URL → new URL in the same folder). Swaps
+    /// and cycles work; the whole batch undoes in one step.
+    case batchRename([Pair])
 
     public struct AttributeAssignment: Sendable, Equatable, Hashable {
         public var url: URL
@@ -78,6 +81,7 @@ public enum OperationRequest: Sendable, Equatable {
         case .changeTags(let items, _, _): return "Tagging \(n(items))"
         case .setTags(let list): return list.count == 1 ? "Tagging “\(list[0].url.lastPathComponent)”" : "Tagging \(list.count) items"
         case .setAttributes(let list): return list.count == 1 ? "Changing “\(list[0].url.lastPathComponent)”" : "Changing \(list.count) items"
+        case .batchRename(let pairs): return "Renaming \(pairs.count) items"
         }
     }
 
@@ -89,7 +93,7 @@ public enum OperationRequest: Sendable, Equatable {
         case .duplicate: "Duplicate"
         case .trash: "Move to Trash"
         case .delete: "Delete"
-        case .rename: "Rename"
+        case .rename, .batchRename: "Rename"
         case .newFolder: "New Folder"
         case .restore: "Restore"
         case .putBack: "Put Back"

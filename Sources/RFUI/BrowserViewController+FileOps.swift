@@ -102,6 +102,7 @@ extension BrowserViewController {
     // MARK: Rename (Return)
 
     @objc func renameSelection(_ sender: Any?) {
+        if state.selectedItems.count > 1 { return showBatchRename() }
         guard state.selectedItems.count == 1, let item = state.selectedItems.first else { return }
         beginRename(item)
     }
@@ -145,7 +146,9 @@ extension BrowserViewController {
         case #selector(newFolderWithSelection(_:)):
             return operationFolder != nil && hasSelection
         case #selector(renameSelection(_:)):
-            return state.selectedItems.count == 1 && state.location != .computer
+            let n = state.selectedItems.count
+            item.title = n > 1 ? "Rename \(n) Items…" : "Rename"
+            return n >= 1 && state.location != .computer && state.location != .trash
         default:
             return nil
         }

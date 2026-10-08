@@ -100,6 +100,7 @@ final class Execution: @unchecked Sendable {
         case .restore(let pairs), .putBack(let pairs): await restore(pairs)
         case .makeAlias(let items, let dir): await makeAliases(items, in: dir)
         case .setAttributes(let list): await setAttributes(list)
+        case .batchRename(let pairs): await batchRename(pairs)
         case .compress(let items): await compress(items)
         case .expand(let archives): await expand(archives)
         case .emptyTrash(let folders):
@@ -462,6 +463,40 @@ final class Execution: @unchecked Sendable {
             } else {
                 fail(url, rc, "tag")
             }
+            update { $0.itemsDone += 1 }
+        }
+    }
+
+    /// Two phases: every item to a temporary name, then each to its new name, so names can be
+    /// swapped or rotated. Each step is logged, so undo replays them backwards.
+    private func batchRename(_ pairs: [OperationRequest.Pair]) async {
+        update {
+            $0.itemsTotal = pairs.count
+            $0.phase = .running
+        }
+        var staged: [(pair: OperationRequest.Pair, temp: URL)] = []
+        for pair in pairs where pair.from.standardizedFileURL != pair.to.standardizedFileURL {
+            let temp = pair.from.deletingLastPathComponent().appendingPathComponent(".rfrename-\(UUID().uuidString.prefix(8))-\(pair.from.lastPathComponent)")
+            let rc = await blocking { FileOps.rename(pair.from, to: temp) }
+            if rc == 0 {
+                result.record(.moved(.init(from: pair.from, to: temp)))
+                staged.append((pair, temp))
+            } else {
+                fail(pair.from, rc, "rename")
+            }
+        }
+        for (pair, temp) in staged {
+            update { $0.currentName = pair.to.lastPathComponent }
+            let rc = await blocking { FileOps.rename(temp, to: pair.to) }
+            if rc == 0 {
+                result.record(.moved(.init(from: temp, to: pair.to)))
+            } else {
+                // Taken after all (e.g. by an item outside the batch): put it back as it was.
+                let back = await blocking { FileOps.rename(temp, to: pair.from) }
+                if back == 0 { result.record(.moved(.init(from: temp, to: pair.from))) }
+                fail(pair.from, rc, "rename")
+            }
+            result.changedFolders.insert(pair.to.deletingLastPathComponent())
             update { $0.itemsDone += 1 }
         }
     }

@@ -399,7 +399,7 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
         }
         menu.addItem(.separator())
         menu.addItem(withTitle: "Get Info", action: #selector(getInfo(_:)), keyEquivalent: "")
-        if items.count == 1 { menu.addItem(withTitle: "Rename", action: #selector(renameSelection(_:)), keyEquivalent: "") }
+        menu.addItem(withTitle: items.count == 1 ? "Rename" : "Rename \(items.count) Items…", action: #selector(renameSelection(_:)), keyEquivalent: "")
         menu.addItem(withTitle: compressTitle, action: #selector(compressSelection(_:)), keyEquivalent: "")
         if !selectedArchives.isEmpty {
             menu.addItem(withTitle: "Expand", action: #selector(expandSelection(_:)), keyEquivalent: "")
