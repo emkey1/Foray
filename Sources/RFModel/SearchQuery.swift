@@ -126,7 +126,33 @@ public enum QueryParser {
             }
         }
         if !current.isEmpty { tokens.append(current) }
-        return tokens
+        // Commas between filters ("size:>1MB, modified:<7d") are separators, not part of values.
+        return tokens.compactMap { token in
+            guard !token.hasSuffix("\"") else { return token }
+            let trimmed = String(token.reversed().drop(while: { $0 == "," }).reversed())
+            return trimmed.isEmpty ? nil : trimmed
+        }
+    }
+
+    static let knownKeys: Set<String> = [
+        "kind", "ext", "extension", "type", "uti", "size", "modified", "date", "created", "added", "opened",
+        "lastopened", "tag", "content", "contents", "text", "hidden",
+    ]
+
+    /// Filters that look like `key:value` with a known key but a value we can't read, e.g.
+    /// "size:>1XB" or "kind:nonsense". They're left out of the query (rather than becoming a name
+    /// search that silently matches nothing) and shown to the user.
+    public static func problems(in text: String, kinds: KindCatalog = .shared) -> [String] {
+        tokenize(text).filter { raw in
+            let token = raw.hasPrefix("-") ? String(raw.dropFirst()) : raw
+            guard let colon = token.firstIndex(of: ":"), !token.hasPrefix("\"") else { return false }
+            let key = token[..<colon].lowercased()
+            guard knownKeys.contains(key) else { return false }
+            let value = unquote(token[token.index(after: colon)...])
+            guard let term = keyed(key, value, now: Date(), calendar: .current) else { return true }
+            if case .kind(let ids) = term { return ids.contains { kinds.category($0) == nil } }
+            return false
+        }
     }
 
     public static func parse(_ text: String, now: Date = Date(), calendar: Calendar = .current) -> QueryNode {
@@ -180,6 +206,7 @@ public enum QueryParser {
             let key = token[..<colon].lowercased()
             let value = unquote(token[token.index(after: colon)...])
             if let term = keyed(key, value, now: now, calendar: calendar) { return .term(term) }
+            if knownKeys.contains(key) { return nil }  // reported by `problems(in:)`
         }
         let text = unquote(Substring(token))
         return text.isEmpty ? nil : .term(.name(text))

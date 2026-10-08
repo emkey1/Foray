@@ -190,7 +190,20 @@ private actor Search {
             }
         }
         status.crawlRunning = false
+        // The crawl is complete and exact for everything but contents and last-opened dates (which
+        // only Spotlight knows), so don't keep the search "running" while Spotlight finishes
+        // gathering. Spotlight keeps delivering live updates.
+        if crawlIsAuthoritative { status.spotlightRunning = false }
         dirty = true
+    }
+
+    private var crawlIsAuthoritative: Bool {
+        query.match == .names && !query.parsed.contains { term in
+            switch term {
+            case .content, .date(.opened, _, _): true
+            default: false
+            }
+        }
     }
 
     private func filterListing(_ url: URL) async {

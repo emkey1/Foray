@@ -59,6 +59,23 @@ private func matches(_ text: String, _ item: FileItem, mode: MatchMode = .names)
         #expect(QueryParser.parseDate(.modified, "nonsense", now: now, calendar: cal) == nil)
     }
 
+    /// Regression: "size:>1MB, modified:<7d, created:2026" found nothing because the commas made
+    /// each filter unreadable and it silently became a name search.
+    @Test func commasBetweenFiltersAreSeparators() {
+        let node = QueryParser.parse("size:>1MB, modified:<7d, created:2026")
+        guard case .all(let terms) = node else { Issue.record("expected AND"); return }
+        #expect(terms.count == 3)
+        #expect(terms.allSatisfy { if case .term(.name) = $0 { false } else { true } })
+        #expect(QueryParser.parse("kind:images,pdfs,") == .all([.term(.kind(["images", "pdfs"]))]))
+        #expect(QueryParser.problems(in: "size:>1MB, modified:<7d, created:2026").isEmpty)
+    }
+
+    @Test func unreadableFiltersAreReportedNotSearchedAsNames() {
+        #expect(QueryParser.parse("report size:>1XB") == .all([.term(.name("report"))]))
+        #expect(QueryParser.problems(in: "report size:>1XB modified:soon kind:nonsense kind:images") ==
+            ["size:>1XB", "modified:soon", "kind:nonsense"])
+    }
+
     @Test func unknownKeysAreNames() {
         #expect(QueryParser.parse("foo:bar") == .all([.term(.name("foo:bar"))]))
     }

@@ -11,6 +11,7 @@ final class SearchScopeBar: NSView {
     private let scope = NSSegmentedControl(labels: ["Folder", "This Mac"], trackingMode: .selectOne, target: nil, action: nil)
     private let subfolders = NSButton(checkboxWithTitle: "Subfolders", target: nil, action: nil)
     private let match = NSPopUpButton()
+    private let problems = NSTextField(labelWithString: "")
     private let follow = NSButton(checkboxWithTitle: "Keep searching in new folders", target: nil, action: nil)
     private let chips: NSSegmentedControl
     private let categories = KindCatalog.shared.categories
@@ -44,7 +45,10 @@ final class SearchScopeBar: NSView {
         follow.toolTip = "When you go to another folder (sidebar, path bar, Go menu), search there instead of ending the search"
         let top = NSStackView(views: [label, scope, subfolders, match, follow])
         top.spacing = 10
-        let all = NSStackView(views: [top, chips])
+        problems.textColor = .systemOrange
+        problems.font = .systemFont(ofSize: NSFont.smallSystemFontSize)
+        problems.isHidden = true
+        let all = NSStackView(views: [top, chips, problems])
         all.orientation = .vertical
         all.alignment = .leading
         all.spacing = 6
@@ -83,6 +87,10 @@ final class SearchScopeBar: NSView {
         }
         match.selectItem(at: q.match == .names ? 0 : 1)
         follow.state = BrowserState.searchFollowsFolderChanges ? .on : .off
+        let unreadable = QueryParser.problems(in: q.text)
+        problems.isHidden = unreadable.isEmpty
+        problems.stringValue = "Didn't understand: " + unreadable.joined(separator: ", ")
+            + " — try size:>1MB, modified:<7d, created:2026, kind:images"
         let kinds = q.kinds
         for (i, c) in categories.enumerated() { chips.setSelected(kinds.contains(c.id), forSegment: i) }
     }

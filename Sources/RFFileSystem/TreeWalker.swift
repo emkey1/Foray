@@ -10,10 +10,11 @@ public enum TreeWalker {
     public struct Options: Sendable {
         public var includeHidden = false
         public var includePackageContents = false
-        /// Folders scanned in parallel. SSDs benefit from ~8; spinning and network disks from ~2.
-        public var concurrency = 8
+        /// Folders scanned in parallel. Measured on an M5 SSD over 194k folders: 4 → 29.9 s,
+        /// 8 → 25.8 s, 16 → 19.0 s, 32 → 17.7 s (find(1): 63 s). Spinning and network disks want ~2.
+        public var concurrency = 16
 
-        public init(includeHidden: Bool = false, includePackageContents: Bool = false, concurrency: Int = 8) {
+        public init(includeHidden: Bool = false, includePackageContents: Bool = false, concurrency: Int = 16) {
             self.includeHidden = includeHidden
             self.includePackageContents = includePackageContents
             self.concurrency = concurrency

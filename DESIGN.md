@@ -583,7 +583,10 @@ protocol SearchBackend: Sendable {
 
 **Crawl details**
 
-- Breadth-first walk with bounded parallelism: about 8 directories in flight on SSDs and 2 on spinning disks or network volumes, based on volume properties.
+- Breadth-first walk with bounded parallelism: 16 directories in flight on SSDs, and about 2 on spinning disks or network volumes, based on volume properties.
+  - Measured in M3 on an M5 SSD, over a home folder of 194k folders, skipping hidden ones: 16 parallel folders took 19 s, 8 took 26 s, and `find(1)` took 63 s.
+  - The time goes to directory reads in the kernel, so large folder searches show Spotlight's results first while the crawl streams in.
+- A crawl-only query (names, sizes and dates, with no contents and no last-opened dates) counts as finished as soon as the crawl finishes. The search doesn't wait for Spotlight to finish gathering, which took ~3 s even for small folders.
 - Runs at utility QoS and delivers results in batches every 50 ms.
 - Doesn't descend into packages (unless `includePackageContents` is set), other volumes or symlinks.
 - Supports an optional user exclusion list, such as `.git` or `node_modules`.
