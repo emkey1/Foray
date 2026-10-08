@@ -13,6 +13,10 @@ public enum OperationRequest: Sendable, Equatable {
     case newFolder(in: URL, name: String? = nil, moving: [URL] = [])
     /// Moves each item back to an exact path (undo/redo, Put Back). Fails per item if taken.
     case restore([Pair])
+    /// Put Back: items in the Trash to where they came from (as `restore`, named for the menus).
+    case putBack([Pair])
+    /// Permanently deletes everything inside these Trash folders. Not undoable; the UI confirms.
+    case emptyTrash([URL])
     /// Adds and removes tags (by name) on each item, keeping its other tags.
     case changeTags([URL], add: [String], remove: [String])
     /// Sets each item's tags exactly (undo/redo of tag changes).
@@ -47,6 +51,8 @@ public enum OperationRequest: Sendable, Equatable {
         case .rename(let item, let name): return "Renaming “\(item.lastPathComponent)” to “\(name)”"
         case .newFolder: return "Creating a folder"
         case .restore(let pairs): return pairs.count == 1 ? "Restoring “\(pairs[0].to.lastPathComponent)”" : "Restoring \(pairs.count) items"
+        case .putBack(let pairs): return pairs.count == 1 ? "Putting back “\(pairs[0].to.lastPathComponent)”" : "Putting back \(pairs.count) items"
+        case .emptyTrash: return "Emptying the Trash"
         case .changeTags(let items, _, _): return "Tagging \(n(items))"
         case .setTags(let list): return list.count == 1 ? "Tagging “\(list[0].url.lastPathComponent)”" : "Tagging \(list.count) items"
         }
@@ -63,6 +69,8 @@ public enum OperationRequest: Sendable, Equatable {
         case .rename: "Rename"
         case .newFolder: "New Folder"
         case .restore: "Restore"
+        case .putBack: "Put Back"
+        case .emptyTrash: "Empty Trash"
         case .changeTags, .setTags: "Tags"
         }
     }

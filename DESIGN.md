@@ -679,6 +679,7 @@ protocol SearchBackend: Sendable {
 - For items Finder trashed, RealFinder reads the `ptbL`/`ptbN` records from `.DS_Store`. This is read-only parsing of a private format, isolated behind an adapter (S10).
 - Reading `~/.Trash` requires Full Disk Access. Without it, the Trash location shows the Full Disk Access explanation, but Move to Trash still works.
 - If there's no record, Put Back asks for a destination.
+- *As built (M5):* `trashItem` writes its `.DS_Store` record asynchronously, and items trashed in quick succession lose theirs (three trashed back to back kept one record). So RealFinder's journal (`putback.json`: path in the Trash → original path, plus the item's device and inode so a different item at that path isn't mistaken for it) is the primary source, and the `.DS_Store` reader (`DSStore`, read-only, bounds-checked) covers items Finder trashed. The Trash location (`Location.trash`) merges the home Trash and every volume's `.Trashes/<uid>`; if the home Trash can't be read, it shows the Full Disk Access explanation. Empty Trash (⇧⌘⌫, ⌥ skips the question) deletes the contents of every Trash as one job, and reports a Trash it can't read instead of skipping it.
 
 **Cut (I1)**
 

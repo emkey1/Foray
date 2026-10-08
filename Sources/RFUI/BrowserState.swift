@@ -222,7 +222,7 @@ final class BrowserState {
             case .computer:
                 q.scope = .thisMac
                 return navigate(to: .search(q))
-            case .search:
+            case .search, .trash:
                 break
             }
         }
@@ -262,6 +262,10 @@ final class BrowserState {
             rearrange("file-op")
             return
         }
+        if location == .trash {
+            if !result.log.isEmpty || !result.deleted.isEmpty { load() }
+            return
+        }
         guard let folder = location.folderURL?.standardizedFileURL else { return }
         let changed = result.changedFolders.contains { $0.standardizedFileURL.path == folder.path }
         let names = select.filter { $0.deletingLastPathComponent().standardizedFileURL.path == folder.path }.map(\.lastPathComponent)
@@ -296,6 +300,7 @@ final class BrowserState {
             }
         case .computer: .thisMac
         case .search(let q): q.scope
+        case .trash: .folder(TrashFolders.home, recursive: true)
         }
     }
 
@@ -407,8 +412,9 @@ final class BrowserState {
                     }
                     self.notify(.loadState)
                 }
-            case .folder(let url):
-                for await event in FolderContents.observe(url) {
+            case .folder, .trash:
+                let events = if case .folder(let url) = location { FolderContents.observe(url) } else { TrashContents.observe() }
+                for await event in events {
                     if Task.isCancelled { break }
                     switch event {
                     case .partial(let items):

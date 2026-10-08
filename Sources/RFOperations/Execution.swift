@@ -97,7 +97,19 @@ final class Execution: @unchecked Sendable {
         case .delete(let items): await delete(items)
         case .rename(let item, let name): await rename(item, to: name)
         case .newFolder(let dir, let name, let moving): await newFolder(in: dir, name: name, moving: moving)
-        case .restore(let pairs): await restore(pairs)
+        case .restore(let pairs), .putBack(let pairs): await restore(pairs)
+        case .emptyTrash(let folders):
+            var items: [URL] = []
+            for folder in folders {
+                let listing: Result<[URL], NSError> = await blocking {
+                    do { return .success(try FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)) } catch { return .failure(error as NSError) }
+                }
+                switch listing {
+                case .success(let list): items += list
+                case .failure(let error): fail(folder, Self.errno(of: error), "empty the Trash in")
+                }
+            }
+            await delete(items)
         case .changeTags(let items, let add, let remove):
             await tag(items.map { url in { (current: [String]) in
                 var tags = current.filter { name in !remove.contains { $0.caseInsensitiveCompare(name) == .orderedSame } }

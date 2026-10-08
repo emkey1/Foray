@@ -96,8 +96,10 @@ public final class OperationCenter {
             [weak self, weak job] question in
             await self?.ask(job, question) ?? ConflictAnswer(.skip)
         }
+        let journal = journal
         Task.detached(priority: .userInitiated) {
             let result = await execution.run()
+            journal.recordTrashed(result.trashed)
             await MainActor.run { self.complete(job, result) }
         }
     }
@@ -182,6 +184,13 @@ public final class OperationCenter {
 
     /// Removes temporary copies left by a crash or a kill. Call once at launch.
     public func recoverInterruptedOperations() { journal.recover() }
+
+    /// Where each item in the Trash came from: RealFinder's own records first, then Finder's.
+    public nonisolated func putBackDestinations(for items: [URL]) -> [URL: URL] {
+        var result = TrashFolders.putBackDestinations(for: items)
+        for item in items { if let original = journal.putBackLocation(for: item) { result[item] = original } }
+        return result
+    }
 }
 
 @MainActor

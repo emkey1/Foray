@@ -75,6 +75,8 @@ extension BrowserViewController {
 
     @objc func moveToTrash(_ sender: Any?) {
         guard !selectedURLs.isEmpty else { return }
+        // In the Trash, ⌘⌫ is Put Back (like Finder).
+        if !selectedTrashedURLs.isEmpty { return putBack(sender) }
         FileOperationsUI.shared.submit(.trash(selectedURLs), from: state)
     }
 
@@ -118,8 +120,14 @@ extension BrowserViewController {
     func validateFileCommand(_ item: NSMenuItem) -> Bool? {
         let hasSelection = !state.selectedItems.isEmpty
         switch item.action {
-        case #selector(copy(_:)), #selector(cut(_:)), #selector(duplicate(_:)), #selector(moveToTrash(_:)),
-             #selector(deleteImmediately(_:)):
+        case #selector(moveToTrash(_:)):
+            item.title = !selectedTrashedURLs.isEmpty ? "Put Back" : "Move to Trash"
+            return hasSelection && state.location != .computer
+        case #selector(putBack(_:)):
+            return !selectedTrashedURLs.isEmpty
+        case #selector(emptyTrash(_:)):
+            return true
+        case #selector(copy(_:)), #selector(cut(_:)), #selector(duplicate(_:)), #selector(deleteImmediately(_:)):
             return hasSelection && state.location != .computer
         case #selector(paste(_:)):
             if let clip = FileClipboard.read() {

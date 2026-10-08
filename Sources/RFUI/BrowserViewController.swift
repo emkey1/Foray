@@ -14,6 +14,8 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
     private let contentContainer = NSView()
     private let scopeBar = SearchScopeBar()
     private var scopeBarCollapsed: NSLayoutConstraint?
+    private let trashBar = TrashBar()
+    private var trashBarHeight: NSLayoutConstraint?
     private let messageLabel = NSTextField(wrappingLabelWithString: "")
     private let pathBar = NSPathControl()
     private let addressField = AddressField()
@@ -78,7 +80,8 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
         sizeSlider.action = #selector(iconSizeChanged)
 
         scopeBar.onChange = { [weak self] change in self?.state.updateSearch(change) }
-        let views: [NSView] = [scopeBar, contentContainer, messageLabel, pathBar, addressField, statusLabel, sizeSlider]
+        trashBar.onEmpty = { [weak self] in self?.emptyTrash(nil) }
+        let views: [NSView] = [trashBar, scopeBar, contentContainer, messageLabel, pathBar, addressField, statusLabel, sizeSlider]
         for v in views {
             v.translatesAutoresizingMaskIntoConstraints = false
             root.addSubview(v)
@@ -89,8 +92,13 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
         root.addSubview(separator)
 
         scopeBarCollapsed = scopeBar.heightAnchor.constraint(equalToConstant: 0)
+        trashBarHeight = trashBar.heightAnchor.constraint(equalToConstant: 0)
         NSLayoutConstraint.activate([
-            scopeBar.topAnchor.constraint(equalTo: root.safeAreaLayoutGuide.topAnchor),
+            trashBarHeight!,
+            trashBar.topAnchor.constraint(equalTo: root.safeAreaLayoutGuide.topAnchor),
+            trashBar.leadingAnchor.constraint(equalTo: root.leadingAnchor),
+            trashBar.trailingAnchor.constraint(equalTo: root.trailingAnchor),
+            scopeBar.topAnchor.constraint(equalTo: trashBar.bottomAnchor),
             scopeBar.leadingAnchor.constraint(equalTo: root.leadingAnchor),
             scopeBar.trailingAnchor.constraint(equalTo: root.trailingAnchor),
             contentContainer.topAnchor.constraint(equalTo: scopeBar.bottomAnchor),
@@ -140,6 +148,7 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
             restoreSelection()
             updateStatus()
         case .snapshot:
+            trashBar.update(isEmpty: state.snapshot.items.isEmpty)
             applyContentIfNeeded()
             prewarmOtherMode()
             restoreSelection()
@@ -164,6 +173,10 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
     }
 
     private func updateScopeBar() {
+        let inTrash = state.location == .trash
+        trashBar.isHidden = !inTrash
+        trashBarHeight?.constant = inTrash ? 32 : 0
+        trashBar.update(isEmpty: state.snapshot.items.isEmpty)
         if let q = state.location.searchQuery {
             scopeBar.show(q)
             scopeBar.isHidden = false
@@ -338,6 +351,10 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
     func contentMenu(clicked: FileID?) -> NSMenu? {
         let menu = NSMenu()
         let items = state.selectedItems
+        if items.isEmpty, state.location == .trash {
+            menu.addItem(withTitle: "Empty Trash…", action: #selector(emptyTrash(_:)), keyEquivalent: "")
+            return menu
+        }
         if items.isEmpty {
             menu.addItem(withTitle: "New Folder", action: #selector(newFolder(_:)), keyEquivalent: "")
             menu.addItem(withTitle: "Paste", action: #selector(paste(_:)), keyEquivalent: "")
@@ -362,7 +379,12 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
             menu.addItem(withTitle: "Eject", action: #selector(ejectSelection(_:)), keyEquivalent: "")
         }
         menu.addItem(.separator())
-        menu.addItem(withTitle: "Move to Trash", action: #selector(moveToTrash(_:)), keyEquivalent: "")
+        if !selectedTrashedURLs.isEmpty {
+            menu.addItem(withTitle: "Put Back", action: #selector(putBack(_:)), keyEquivalent: "")
+            menu.addItem(withTitle: "Delete Immediately…", action: #selector(deleteImmediately(_:)), keyEquivalent: "")
+        } else {
+            menu.addItem(withTitle: "Move to Trash", action: #selector(moveToTrash(_:)), keyEquivalent: "")
+        }
         menu.addItem(.separator())
         menu.addItem(withTitle: "Get Info", action: #selector(getInfo(_:)), keyEquivalent: "")
         if items.count == 1 { menu.addItem(withTitle: "Rename", action: #selector(renameSelection(_:)), keyEquivalent: "") }

@@ -6,6 +6,8 @@ public enum Location: Hashable, Codable, Sendable {
     case folder(URL)
     case computer
     case search(SearchQuery)
+    /// Every Trash folder (home and each volume's) together.
+    case trash
 
     public var searchQuery: SearchQuery? {
         if case .search(let q) = self { return q }
@@ -23,6 +25,7 @@ public enum Location: Hashable, Codable, Sendable {
         case .folder(let url): url.path == "/" ? "/" : url.lastPathComponent
         case .computer: "Computer"
         case .search(let q): "Searching “\(q.text)”"
+        case .trash: "Trash"
         }
     }
 
@@ -36,6 +39,8 @@ public enum Location: Hashable, Codable, Sendable {
             return .computer
         case .search:
             return .searchResults
+        case .trash:
+            return .trash
         }
     }
 }

@@ -51,6 +51,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc func showSettings(_ sender: Any?) { SettingsWindowController.shared.show() }
 
+    /// Works with no window open, like Finder.
+    @objc func emptyTrash(_ sender: Any?) { TrashUI.emptyTrash(window: NSApp.keyWindow) }
+
     @objc func showGuideSection(_ sender: NSMenuItem) {
         let section = (sender.representedObject as? String).flatMap(GuideWindowController.Section.init(rawValue:)) ?? .top
         GuideWindowController.shared.show(section)
@@ -106,6 +109,11 @@ enum MainMenu {
         let settings = item("Settings…", #selector(AppDelegate.showSettings(_:)), ",")
         settings.target = target
         menu.addItem(settings)
+        menu.addItem(.separator())
+        let backspace = String(UnicodeScalar(NSBackspaceCharacter)!)
+        let empty = item("Empty Trash…", #selector(AppDelegate.emptyTrash(_:)), backspace, [.command, .shift])
+        empty.target = target
+        menu.addItem(empty)
         menu.addItem(.separator())
         let services = NSMenu(title: "Services")
         NSApp.servicesMenu = services

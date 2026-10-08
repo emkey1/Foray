@@ -35,6 +35,7 @@ final class SidebarViewController: NSViewController {
 
     private let outline = SidebarOutlineView()
     private var sections: [Node] = []
+    var sectionsForTesting: [Node] { sections }
     private var favoritesSection: Node? { sections.first }
     private var observers: [NSObjectProtocol] = []
     private var favoritesObserver: UUID?
@@ -88,7 +89,8 @@ final class SidebarViewController: NSViewController {
                     Node(title: v.name, location: .folder(v.url),
                          icon: NSImage(systemSymbolName: v.isEjectable ? "externaldrive" : "internaldrive", accessibilityDescription: nil),
                          ejectURL: v.isEjectable ? v.url : nil)
-                }),
+                }
+                + [Node(title: "Trash", location: .trash, icon: TrashUI.icon)]),
             // Clicking a tag shows every file with it (a This Mac search for tag:"Name").
             Node(title: "Tags", children: Tags.finderFavorites().map { tag in
                 Node(title: tag.name,
@@ -244,6 +246,12 @@ extension SidebarViewController: NSOutlineViewDataSource, NSOutlineViewDelegate 
            case .folder(let url) = node.location {
             return DragAndDrop.operation(info, to: url)
         }
+        // Files dropped on the Trash go to the Trash.
+        if let node = item as? Node, node.location == .trash, index == NSOutlineViewDropOnItemIndex,
+           info.draggingPasteboard.availableType(from: [Self.favoriteDragType]) == nil,
+           !DragAndDrop.fileURLs(info).isEmpty {
+            return .delete
+        }
         // Otherwise (between rows) folders are added as favorites.
         var target = index
         if let node = item as? Node, node !== favorites {
@@ -264,6 +272,12 @@ extension SidebarViewController: NSOutlineViewDataSource, NSOutlineViewDelegate 
     func outlineView(_ outlineView: NSOutlineView, acceptDrop info: any NSDraggingInfo, item: Any?, childIndex index: Int) -> Bool {
         if let node = item as? Node, !node.isSection, index == NSOutlineViewDropOnItemIndex, case .folder(let url) = node.location {
             return DragAndDrop.perform(info, to: url, from: nil)
+        }
+        if let node = item as? Node, node.location == .trash, index == NSOutlineViewDropOnItemIndex {
+            let urls = TrashUI.trashedItems(DragAndDrop.fileURLs(info)).isEmpty ? DragAndDrop.fileURLs(info) : []
+            guard !urls.isEmpty else { return false }
+            FileOperationsUI.shared.submit(.trash(urls), from: nil)
+            return true
         }
         if let s = info.draggingPasteboard.string(forType: Self.favoriteDragType), let from = Int(s) {
             AppModel.shared.moveFavorite(from: from, to: index)
