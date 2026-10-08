@@ -10,6 +10,12 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate, NSToo
     private var navigationGroup: NSToolbarItemGroup?
     private var modeGroup: NSToolbarItemGroup?
     private var searchItem: NSSearchToolbarItem?
+    private var recentsObserver: UUID?
+    /// A search shown in the field but not running (restored at launch, or the most recent one).
+    /// Return runs it exactly as saved; editing the text starts a new search here instead.
+    var pendingSearch: SearchQuery? {
+        didSet { syncSearchField() }
+    }
 
     private enum ToolbarID {
         static let navigation = NSToolbarItem.Identifier("navigation")
@@ -19,7 +25,8 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate, NSToo
         static let guide = NSToolbarItem.Identifier("guide")
     }
 
-    init(location: Location) {
+    init(location: Location, pendingSearch: SearchQuery? = nil) {
+        self.pendingSearch = pendingSearch
         browser = BrowserViewController(location: location)
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1000, height: 620),
                               styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
@@ -133,6 +140,8 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate, NSToo
             item.searchField.action = #selector(searchFieldChanged(_:))
             item.preferredWidthForSearchField = 220
             searchItem = item
+            updateRecentsMenu()
+            recentsObserver = AppModel.shared.observeRecentSearches { [weak self] in self?.updateRecentsMenu() }
             syncSearchField()
             return item
         case ToolbarID.guide:
@@ -170,18 +179,73 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate, NSToo
     }
 
     @objc private func searchFieldChanged(_ field: NSSearchField) {
+        if let pending = pendingSearch, field.stringValue == pending.text { return }  // shown, not edited
+        pendingSearch = nil
         browser.state.search(field.stringValue)
     }
 
-    /// Escape in the field ends the search and returns focus to the files.
     func control(_ control: NSControl, textView: NSTextView, doCommandBy selector: Selector) -> Bool {
-        guard selector == #selector(NSResponder.cancelOperation(_:)) else { return false }
-        searchItem?.searchField.stringValue = ""
-        browser.state.endSearch()
-        searchItem?.endSearchInteraction()
-        window?.makeFirstResponder(browser.view)
-        return true
+        switch selector {
+        case #selector(NSResponder.insertNewline(_:)):
+            // Return on a restored/recent search runs it exactly as saved (scope and match mode).
+            guard let pending = pendingSearch, searchItem?.searchField.stringValue == pending.text else { return false }
+            pendingSearch = nil
+            browser.state.runSearch(pending)
+            return true
+        case #selector(NSResponder.cancelOperation(_:)):
+            // Escape ends the search and returns focus to the files.
+            pendingSearch = nil
+            searchItem?.searchField.stringValue = ""
+            browser.state.endSearch()
+            searchItem?.endSearchInteraction()
+            window?.makeFirstResponder(browser.view)
+            return true
+        default:
+            return false
+        }
     }
+
+    // MARK: Recent searches (the field's magnifying-glass menu)
+
+    private func updateRecentsMenu() {
+        guard let field = searchItem?.searchField else { return }
+        let menu = NSMenu(title: "Recent Searches")
+        let recents = AppModel.shared.recentSearches
+        let header = NSMenuItem(title: recents.isEmpty ? "No Recent Searches" : "Recent Searches", action: nil, keyEquivalent: "")
+        header.isEnabled = false
+        menu.addItem(header)
+        for (i, q) in recents.enumerated() {
+            let item = NSMenuItem(title: Self.title(for: q), action: #selector(recentSearchChosen(_:)), keyEquivalent: "")
+            item.target = self
+            item.tag = i
+            item.toolTip = q.scope.folderURL.map { ($0.path as NSString).abbreviatingWithTildeInPath } ?? "This Mac"
+            menu.addItem(item)
+        }
+        if !recents.isEmpty {
+            menu.addItem(.separator())
+            let clear = NSMenuItem(title: "Clear Recent Searches", action: #selector(clearRecentSearches(_:)), keyEquivalent: "")
+            clear.target = self
+            menu.addItem(clear)
+        }
+        field.searchMenuTemplate = menu
+    }
+
+    static func title(for q: SearchQuery) -> String {
+        let place = switch q.scope {
+        case .thisMac: "This Mac"
+        case .folder(let url, let recursive): FileManager.default.displayName(atPath: url.path) + (recursive ? "" : " (top level)")
+        }
+        return "\(q.text)  —  \(place)" + (q.match == .namesAndContents ? ", names & contents" : "")
+    }
+
+    @objc private func recentSearchChosen(_ sender: NSMenuItem) {
+        guard let q = AppModel.shared.recentSearches[safe: sender.tag] else { return }
+        pendingSearch = nil
+        searchItem?.searchField.stringValue = q.text
+        browser.state.runSearch(q)
+    }
+
+    @objc private func clearRecentSearches(_ sender: Any?) { AppModel.shared.clearRecentSearches() }
 
     /// Keeps the field's text and placeholder in step with the tab (e.g. after Back).
     private func syncSearchField() {
@@ -189,9 +253,10 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate, NSToo
         let state = browser.state
         // Never overwrite text the user is still typing; chips and Back change it while unfocused.
         if field.currentEditor() == nil {
-            let text = state.location.searchQuery?.text ?? ""
+            let text = state.location.searchQuery?.text ?? pendingSearch?.text ?? ""
             if field.stringValue != text { field.stringValue = text }
         }
+        field.toolTip = pendingSearch.map { "Press Return to search again: \(Self.title(for: $0))" }
         let place: String = switch state.defaultSearchScope {
         case .thisMac: "This Mac"
         case .folder(let url, _): FileManager.default.displayName(atPath: url.path)
@@ -248,7 +313,16 @@ public final class WindowManager {
     }
 
     private func make(_ location: Location) -> BrowserWindowController {
-        let controller = BrowserWindowController(location: location)
+        // Searches are never re-run on their own (e.g. at launch): the tab opens on the folder the
+        // search started from, with the search in the field, ready for Return.
+        var start = location
+        var pending: SearchQuery?
+        if let q = location.searchQuery {
+            pending = q
+            start = q.origin.map(Location.folder) ?? .computer
+            AppModel.shared.recordSearch(q)   // and keep it in Recent Searches
+        }
+        let controller = BrowserWindowController(location: start, pendingSearch: pending)
         controller.browser.openInNewTab = { [weak self, weak controller] location in self?.openTab(location, nextTo: controller) }
         controllers.append(controller)
         return controller
@@ -274,6 +348,7 @@ public final class WindowManager {
     }
 
     public func prepareForTermination() {
+        for c in controllers { c.browser.state.recordSearchIfLeaving() }
         saveSession()
         isTerminating = true
         AppModel.shared.flush()
@@ -286,7 +361,12 @@ public final class WindowManager {
             guard let window = controller.window, !seen.contains(ObjectIdentifier(window)) else { continue }
             let group = window.tabbedWindows ?? [window]
             group.forEach { seen.insert(ObjectIdentifier($0)) }
-            let tabs = group.compactMap { w in controllers.first { $0.window === w }?.browser.state.location }
+            // A tab with a search waiting in its field saves the search, so it waits again next launch.
+            let tabs = group.compactMap { w -> Location? in
+                guard let c = controllers.first(where: { $0.window === w }) else { return nil }
+                if let pending = c.pendingSearch, c.browser.state.location.searchQuery == nil { return .search(pending) }
+                return c.browser.state.location
+            }
             let selected = group.firstIndex { $0 == window.tabGroup?.selectedWindow } ?? 0
             windows.append(.init(tabs: tabs, selectedTab: selected, frame: NSStringFromRect(window.frame)))
         }
@@ -309,5 +389,14 @@ public final class WindowManager {
             tabWindows[safe: saved.selectedTab]?.makeKeyAndOrderFront(nil)
         }
         return true
+    }
+
+    /// At launch: if no restored tab has a search waiting, put the most recent search in the key
+    /// window's field (not running; Return runs it).
+    public func prefillMostRecentSearch() {
+        guard !controllers.contains(where: { $0.pendingSearch != nil }),
+              let recent = AppModel.shared.recentSearches.first else { return }
+        let key = controllers.first { $0.window?.isKeyWindow == true } ?? controllers.first
+        key?.pendingSearch = recent
     }
 }

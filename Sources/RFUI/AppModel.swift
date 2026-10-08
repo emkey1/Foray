@@ -130,6 +130,40 @@ public final class AppModel {
         for handler in favoriteObservers.values { handler() }
     }
 
+    // MARK: Recent searches
+
+    public static let recentSearchLimit = 12
+    private static let recentSearchesFile = "recent-searches.json"
+    private var recentSearchObservers: [UUID: @MainActor () -> Void] = [:]
+
+    /// Most recent first. A search is recorded when the user leaves it, not on every keystroke.
+    public private(set) lazy var recentSearches: [SearchQuery] =
+        store.load([SearchQuery].self, from: Self.recentSearchesFile) ?? []
+
+    func recordSearch(_ q: SearchQuery) {
+        guard !q.isEmpty else { return }
+        recentSearches.removeAll { $0.text == q.text && $0.scope == q.scope && $0.match == q.match }
+        recentSearches.insert(q, at: 0)
+        if recentSearches.count > Self.recentSearchLimit { recentSearches.removeLast(recentSearches.count - Self.recentSearchLimit) }
+        recentSearchesChanged()
+    }
+
+    func clearRecentSearches() {
+        recentSearches = []
+        recentSearchesChanged()
+    }
+
+    func observeRecentSearches(_ handler: @escaping @MainActor () -> Void) -> UUID {
+        let id = UUID()
+        recentSearchObservers[id] = handler
+        return id
+    }
+
+    private func recentSearchesChanged() {
+        store.save(recentSearches, to: Self.recentSearchesFile)
+        for handler in recentSearchObservers.values { handler() }
+    }
+
     // MARK: Session
 
     public struct Session: Codable {

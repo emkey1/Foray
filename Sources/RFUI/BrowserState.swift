@@ -57,7 +57,22 @@ final class BrowserState {
         load()
     }
 
+    /// Leaving a search (or closing its tab) saves it to Recent Searches.
+    func recordSearchIfLeaving() {
+        if let q = location.searchQuery { AppModel.shared.recordSearch(q) }
+    }
+
+    /// Runs a saved search exactly as it was (scope and match mode included).
+    func runSearch(_ q: SearchQuery) {
+        if location.searchQuery != nil {
+            replaceSearch(q)
+        } else {
+            navigate(to: .search(q))
+        }
+    }
+
     func invalidate() {
+        recordSearchIfLeaving()
         loadTask?.cancel()
         detailsTask?.cancel()
         childTasks.values.forEach { $0.cancel() }
@@ -159,18 +174,21 @@ final class BrowserState {
 
     func navigate(to newLocation: Location, select names: [String] = []) {
         guard newLocation != location else { return }
+        recordSearchIfLeaving()
         history.visit(newLocation, leaving: departingEntry())
         pendingSelection = names
         switchTo(newLocation)
     }
 
     func goBack() {
+        recordSearchIfLeaving()
         guard let entry = history.goBack(leaving: departingEntry()) else { return }
         pendingSelection = entry.selectedNames
         switchTo(entry.location)
     }
 
     func goForward() {
+        recordSearchIfLeaving()
         guard let entry = history.goForward(leaving: departingEntry()) else { return }
         pendingSelection = entry.selectedNames
         switchTo(entry.location)
@@ -269,6 +287,7 @@ final class BrowserState {
         if history.canGoBack {
             goBack()
         } else if let url = q.origin {
+            recordSearchIfLeaving()
             switchTo(.folder(url))
             history.replaceCurrent(.folder(url))
         }

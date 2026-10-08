@@ -9,6 +9,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if !openedFromLaunchURLs && !WindowManager.shared.restoreSession() {
             WindowManager.shared.openWindow()
         }
+        WindowManager.shared.prefillMostRecentSearch()
         NSApp.activate()
     }
 
