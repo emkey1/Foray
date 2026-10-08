@@ -221,6 +221,7 @@ private final class IconItem: NSCollectionViewItem {
     private let iconBackground = NSView()
     private let label = NSTextField(wrappingLabelWithString: "")
     private let dots = TagDotsView()
+    private let cloud = CloudBadgeView()
     private var item: FileItem?
     private var iconSize: CGFloat = 64
 
@@ -238,7 +239,7 @@ private final class IconItem: NSCollectionViewItem {
         label.font = .systemFont(ofSize: 12)
         label.wantsLayer = true
         label.layer?.cornerRadius = 4
-        for v in [iconBackground, iconView, label, dots] { view.addSubview(v) }
+        for v in [iconBackground, iconView, label, dots, cloud] { view.addSubview(v) }
     }
 
     func configure(_ item: FileItem, options: IconOptions, scale: CGFloat) {
@@ -258,6 +259,7 @@ private final class IconItem: NSCollectionViewItem {
                 self?.iconView.image = image
             }
         }
+        cloud.show(for: item)
         dots.tags = TagProvider.shared.cached(item) ?? []
         TagProvider.shared.load(item) { [weak self] tags in
             guard let self, self.item?.id == item.id, self.dots.tags != tags else { return }
@@ -280,6 +282,9 @@ private final class IconItem: NSCollectionViewItem {
         // Tag dots just left of the name's first line.
         dots.frame = NSRect(x: max(0, label.frame.minX - dots.dotsWidth - 3), y: label.frame.maxY - TagDotsView.diameter - 3,
                             width: dots.dotsWidth, height: TagDotsView.diameter)
+        // Not downloaded: a cloud at the icon's lower right.
+        let s = CloudBadgeView.size + 2
+        cloud.frame = NSRect(x: iconFrame.maxX - s / 2, y: iconFrame.minY, width: s, height: s)
     }
 
     override func prepareForReuse() {

@@ -121,3 +121,26 @@ import Testing
         if p.terminationStatus != 0 { throw NSError(domain: "hdiutil", code: Int(p.terminationStatus)) }
     }
 }
+
+struct CloudLocationTests {
+    @Test func listsICloudAndProvidersByFriendlyName() throws {
+        let base = FileManager.default.temporaryDirectory.appendingPathComponent("rf-cloud-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: base) }
+        let storage = base.appendingPathComponent("CloudStorage"), icloud = base.appendingPathComponent("CloudDocs")
+        for d in ["GoogleDrive-me@example.com", "Dropbox", "OneDrive-Personal", ".hidden"] {
+            try FileManager.default.createDirectory(at: storage.appendingPathComponent(d), withIntermediateDirectories: true)
+        }
+        FileManager.default.createFile(atPath: storage.appendingPathComponent("stray.txt").path, contents: nil)
+        #expect(CloudLocations.places(cloudStorage: storage, iCloud: icloud).map(\.name) == ["Dropbox", "Google Drive", "OneDrive"])
+        try FileManager.default.createDirectory(at: icloud, withIntermediateDirectories: true)
+        let places = CloudLocations.places(cloudStorage: storage, iCloud: icloud)
+        #expect(places.first?.name == "iCloud Drive" && places.first?.isICloud == true)
+    }
+
+    @Test func recognizesCloudPaths() {
+        #expect(CloudLocations.isCloudItem(CloudLocations.cloudStorageURL.appendingPathComponent("Dropbox/a.txt")))
+        #expect(CloudLocations.isCloudItem(CloudLocations.iCloudDriveURL.appendingPathComponent("Notes/b.txt")))
+        #expect(!CloudLocations.isCloudItem(FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Documents/c.txt")))
+        #expect(CloudLocations.displayName(providerFolder: "Box-Box") == "Box")
+    }
+}

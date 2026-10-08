@@ -87,6 +87,10 @@ final class SidebarViewController: NSViewController {
             Node(title: "Favorites", children:
                 [Node(title: "Recents", location: .recents, icon: NSImage(systemSymbolName: "clock", accessibilityDescription: nil))]
                 + favorites),
+            Node(title: "Cloud", children: CloudLocations.places().map { place in
+                Node(title: place.name, location: .folder(place.url),
+                     icon: NSImage(systemSymbolName: place.isICloud ? "icloud" : "externaldrive.connected.to.line.below", accessibilityDescription: nil))
+            }),
             Node(title: "Locations", children:
                 [Node(title: "Computer", location: .computer, icon: NSImage(systemSymbolName: "desktopcomputer", accessibilityDescription: nil))]
                 + Volumes.mounted().map { v in
@@ -102,6 +106,8 @@ final class SidebarViewController: NSViewController {
                      icon: TagDotsView.image(for: tag.color))
             }),
         ]
+        // Sections with nothing in them (Cloud with no services, Tags with none) are left out.
+        sections = sections.enumerated().filter { $0.offset == 0 || !$0.element.children.isEmpty }.map(\.element)
         outline.reloadData()
         for s in sections { outline.expandItem(s) }
         highlight(highlighted)

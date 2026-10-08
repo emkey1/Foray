@@ -468,6 +468,7 @@ final class BrowserOutlineView: NSOutlineView {
 private final class NameCell: NSTableCellView {
     private var itemID: FileID?
     private let dots = TagDotsView()
+    private let cloud = CloudBadgeView()
 
     init() {
         super.init(frame: .zero)
@@ -479,6 +480,7 @@ private final class NameCell: NSTableCellView {
         addSubview(image)
         addSubview(text)
         addSubview(dots)
+        addSubview(cloud)
         imageView = image
         textField = text
     }
@@ -491,11 +493,15 @@ private final class NameCell: NSTableCellView {
         imageView?.frame = NSRect(x: 2, y: (h - 16) / 2, width: 16, height: 16)
         let textSize = textField?.intrinsicContentSize ?? .zero
         let dotsWidth = dots.isHidden ? 0 : dots.dotsWidth + 6
-        let available = max(0, bounds.width - 26 - dotsWidth)
+        let cloudWidth = cloud.isHidden ? 0 : CloudBadgeView.size + 6
+        let available = max(0, bounds.width - 26 - dotsWidth - cloudWidth)
         let textWidth = min(textSize.width, available)
         textField?.frame = NSRect(x: 24, y: (h - textSize.height) / 2, width: textWidth, height: textSize.height)
         // Tag dots right after the name, like Finder.
         dots.frame = NSRect(x: 24 + textWidth + 4, y: (h - TagDotsView.diameter) / 2, width: dots.dotsWidth, height: TagDotsView.diameter)
+        // Not downloaded: a cloud at the right edge of the name column, like Finder.
+        let s = CloudBadgeView.size
+        cloud.frame = NSRect(x: bounds.width - s - 4, y: (h - s) / 2, width: s, height: s)
     }
 
     func configure(_ item: FileItem) {
@@ -507,6 +513,7 @@ private final class NameCell: NSTableCellView {
             guard self?.itemID == item.id else { return }
             self?.imageView?.image = image
         }
+        cloud.show(for: item)
         dots.tags = TagProvider.shared.cached(item) ?? []
         TagProvider.shared.load(item) { [weak self] tags in
             guard let self, self.itemID == item.id, self.dots.tags != tags else { return }

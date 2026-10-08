@@ -338,8 +338,8 @@ Each of these is additive or controlled by a setting, so Finder habits keep work
 | Volumes in the sidebar and in Computer; eject with "in use by" details; Eject All | DiskArbitration | P1 |
 | Connect to Server (Cmd-K), with favorite and recent servers | NetFS `NetFSMountURLAsync` | P2 |
 | Network browsing | `NWBrowser` (Bonjour `_smb._tcp`) | P2 |
-| iCloud Drive: status badges, Download Now, Remove Download | Ubiquitous-item resource keys | P2 |
-| File Provider locations (Dropbox, Google Drive, OneDrive, Box): sidebar entries, status, download and remove download | `~/Library/CloudStorage` + the same APIs | P2 |
+| iCloud Drive: status badges, Download Now, Remove Download | Ubiquitous-item resource keys | P2 ✅ (badge from `SF_DATALESS`; upload status still to do) |
+| File Provider locations (Dropbox, Google Drive, OneDrive, Box): sidebar entries, status, download and remove download | `~/Library/CloudStorage` + the same APIs | P2 ✅ |
 | Send selection via AirDrop | `NSSharingService(named: .sendViaAirDrop)` | P2 ✅ (in Share…) |
 | iCloud sharing and collaboration | `NSSharingService` | P3 |
 | AirDrop window for discovering nearby devices | ✗ No public API | |

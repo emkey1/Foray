@@ -381,6 +381,14 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
         if !selectedEjectableVolumes.isEmpty {
             menu.addItem(withTitle: "Eject", action: #selector(ejectSelection(_:)), keyEquivalent: "")
         }
+        if !selectedCloudItems.isEmpty {
+            if selectedCloudItems.contains(where: { $0.flags.contains(.dataless) || $0.isNavigableFolder }) {
+                menu.addItem(withTitle: "Download Now", action: #selector(downloadNow(_:)), keyEquivalent: "")
+            }
+            if selectedCloudItems.contains(where: { !$0.flags.contains(.dataless) }) {
+                menu.addItem(withTitle: "Remove Download", action: #selector(removeDownload(_:)), keyEquivalent: "")
+            }
+        }
         menu.addItem(.separator())
         if !selectedTrashedURLs.isEmpty {
             menu.addItem(withTitle: "Put Back", action: #selector(putBack(_:)), keyEquivalent: "")
@@ -728,6 +736,8 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
             return !state.selectedItems.isEmpty
         case #selector(toggleQuickLook(_:)): return !state.selectedItems.isEmpty || previewPanel != nil
         case #selector(ejectSelection(_:)): return !selectedEjectableVolumes.isEmpty
+        case #selector(downloadNow(_:)): return !selectedCloudItems.isEmpty
+        case #selector(removeDownload(_:)): return selectedCloudItems.contains { !$0.flags.contains(.dataless) }
         case #selector(showOriginal(_:)): return state.selectedItems.count == 1 && !selectedAliases.isEmpty
         case #selector(expandSelection(_:)): return !selectedArchives.isEmpty
         case #selector(shareSelection(_:)): return !state.selectedItems.isEmpty
