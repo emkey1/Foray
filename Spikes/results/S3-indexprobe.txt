@@ -1,0 +1,30 @@
+/Users/mke/Documents/RealFinder/Spikes/fixtures
+  A mdutil(/System/Volumes/Data): Indexing enabled.
+  B folder visible to Spotlight: yes (87 ms)
+  D any indexed item inside: no (2 ms; folder non-empty: yes)
+  C new file indexed after: 1.49 s
+/tmp/claude-501/-Users-mke-Documents-RealFinder/cad4b6dd-7962-4240-9bbd-6c45c6804c74/scratchpad/enum/flat-1000
+  A mdutil(/System/Volumes/Data): Indexing enabled.
+  B folder visible to Spotlight: no (2 ms)
+  D any indexed item inside: no (15 ms; folder non-empty: yes)
+  C new file indexed after: not within 15 s
+/Users/mke/Library/Caches
+  A mdutil(/System/Volumes/Data): Indexing enabled.
+  B folder visible to Spotlight: no (46 ms)
+  D any indexed item inside: yes (371 ms; folder non-empty: yes)
+  C new file indexed after: 0.21 s
+/Volumes/Bambu Studio
+  A mdutil(/Volumes/Bambu Studio): Indexing disabled.
+  B folder visible to Spotlight: no (11 ms)
+  D any indexed item inside: yes (2 ms; folder non-empty: yes)
+  C (can't write here; skipped)
+/usr/lib
+  A mdutil(/): Indexing enabled.
+  B folder visible to Spotlight: yes (17 ms)
+  D any indexed item inside: no (2 ms; folder non-empty: yes)
+  C (can't write here; skipped)
+/Users/mke/Library/Preferences
+  A mdutil(/System/Volumes/Data): Indexing enabled.
+  B folder visible to Spotlight: no (103 ms)
+  D any indexed item inside: no (5 ms; folder non-empty: yes)
+  C new file indexed after: not within 15 s

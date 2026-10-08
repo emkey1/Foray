@@ -1,0 +1,11 @@
+sortbench (10 cores)
+10000 names:
+  serial localizedStandardCompare    54.7 ms
+  A. parallel (10 chunks) localizedStandardCompare    80.8 ms
+  B. precomputed natural keys (incl. key build)    25.9 ms
+    B adjacent-pair disagreements with Finder order: 0 (0.00%)
+100000 names:
+  serial localizedStandardCompare   930.6 ms
+  A. parallel (10 chunks) localizedStandardCompare   814.2 ms
+  B. precomputed natural keys (incl. key build)   251.8 ms
+    B adjacent-pair disagreements with Finder order: 0 (0.00%)

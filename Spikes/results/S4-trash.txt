@@ -1,0 +1,1 @@
+~/.Trash readable: NO (The file “Trash” couldn’t be opened because you don’t have permission to view it.) — grant Full Disk Access to the terminal running this and rerun

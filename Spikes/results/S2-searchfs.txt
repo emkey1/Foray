@@ -1,0 +1,17 @@
+/ [apfs] VOL_CAP_INT_SEARCHFS=1
+  searchfs("DESIGN"): ok, 8776 matches, 8776 paths resolved, 4675 ms
+    /System/Applications/App Store.app/Contents/PlugIns/DockTile.docktileplugin/Contents/_CodeSignature
+    /System/Applications/App Store.app/Contents/_CodeSignature
+    /System/Applications/Apps.app/Contents/_CodeSignature
+    /System/Applications/Automator.app/Contents/Resources/AUCodeSigning.loctable
+    /System/Applications/Automator.app/Contents/_CodeSignature
+/System/Volumes/Data [apfs] VOL_CAP_INT_SEARCHFS=1
+  searchfs("DESIGN"): ok, 5921 matches, 5921 paths resolved, 160240 ms
+    /Library/Apple/System/Library/CoreServices/XProtect.bundle/Contents/_CodeSignature
+    /System/Library/Speech/Synthesizers/MacinTalk.SpeechSynthesizer/Contents/_CodeSignature
+    /System/Library/AssetsV2/PreinstalledAssetsV2/InstallWithOs/com_apple_MobileAsset_MobileAccessoryUpdate_MouseFirmware_1/353b04679835b9909af5066322b2c446901f36b1.asset/_CodeSignature
+    /System/Library/AssetsV2/PreinstalledAssetsV2/InstallWithOs/com_apple_MobileAsset_MobileAccessoryUpdate_MouseFirmware_1/353b04679835b9909af5066322b2c446901f36b1.asset/_CodeSignature/CodeSignature
+    /System/Library/AssetsV2/PreinstalledAssetsV2/InstallWithOs/com_apple_MobileAsset_MobileAccessoryUpdate_KeyboardFirmware_5/642a6e4f4a17e3ffef360bb37a13a554e708e7de.asset/_CodeSignature
+/Volumes/Bambu Studio [hfs] VOL_CAP_INT_SEARCHFS=1
+  searchfs("DESIGN"): ok, 1 matches, 1 paths resolved, 110 ms
+    /Volumes/Bambu Studio/BambuStudio.app/Contents/_CodeSignature

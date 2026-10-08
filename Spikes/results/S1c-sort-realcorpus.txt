@@ -1,0 +1,5 @@
+real corpus: 85905 names
+  serial localizedStandardCompare   227.6 ms
+  B. precomputed natural keys    85.5 ms
+  disagreements: 1; identical order: false
+    keys: "Zzzz.pl" < "• Pro Tools.logikcs"

@@ -1,0 +1,61 @@
+   .pdf     com.adobe.pdf
+   .txt     public.plain-text
+   .md      net.daringfireball.markdown
+   .rtf     public.rtf
+   .docx    org.openxmlformats.wordprocessingml.document
+   .doc     com.microsoft.word.doc
+   .xlsx    org.openxmlformats.spreadsheetml.sheet
+   .pptx    org.openxmlformats.presentationml.presentation
+   .pages   com.apple.iwork.pages.sffpages
+   .numbers com.apple.iwork.numbers.sffnumbers
+   .key     com.apple.iwork.keynote.sffkey
+   .epub    org.idpf.epub-container
+   .csv     public.comma-separated-values-text
+   .html    public.html
+   .jpg     public.jpeg
+   .heic    public.heic
+   .png     public.png
+   .svg     public.svg-image
+   .cr2     com.canon.cr2-raw-image
+   .dng     com.adobe.raw-image
+   .webp    org.webmproject.webp
+   .psd     com.adobe.photoshop-image
+   .mov     com.apple.quicktime-movie
+   .mp4     public.mpeg-4
+   .mkv     dyn.ah62d4rv4ge804450 (DYNAMIC)
+   .avi     public.avi
+   .mp3     public.mp3
+   .m4a     com.apple.m4a-audio
+   .flac    org.xiph.flac
+   .wav     com.microsoft.waveform-audio
+   .app     com.apple.application-bundle
+   .sh      public.shell-script
+   .command com.apple.terminal.shell-script
+   .py      public.python-script
+   .zip     public.zip-archive
+   .gz      org.gnu.gnu-zip-archive
+   .tar     public.tar-archive
+   .dmg     com.apple.disk-image-udif
+   .7z      org.7-zip.7-zip-archive
+   .rar     dyn.ah62d4rv4ge81e2pw (DYNAMIC)
+   .tgz     org.gnu.gnu-zip-tar-archive
+   .xz      org.tukaani.xz-archive
+   .swift   public.swift-source
+   .c       public.c-source
+   .m       public.objective-c-source
+   .js      com.netscape.javascript-source
+   .ts      public.mpeg-2-transport-stream
+   .json    public.json
+   .yaml    public.yaml
+   .xml     public.xml
+   .plist   com.apple.property-list
+   .rs      dyn.ah62d4rv4ge81e62 (DYNAMIC)
+   .go      dyn.ah62d4rv4ge80s52 (DYNAMIC)
+   .toml    public.toml
+   .ttf     public.truetype-ttf-font
+   .otf     public.opentype-font
+   .woff2   dyn.ah62d4rv4ge81s55gq23a (DYNAMIC)
+
+no-extension executable resolves via file URL to: public.unix-executable
+
+0 mismatches

@@ -1,0 +1,4 @@
+/Users/mke/Documents/RealFinder/Spikes/fixtures/a.txt
+  dataless before=false after=false  type=2  (294 ms)
+/System/Applications/Calculator.app
+  dataless before=false after=false  error: The operation couldn’t be completed. (QLThumbnailErrorDomain error 0.)  (171 ms)

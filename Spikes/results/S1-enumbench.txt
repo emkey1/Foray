@@ -1,0 +1,32 @@
+S1 — enumeration (mikes-macbook-air.local)
+/private/tmp/claude-501/-Users-mke-Documents-RealFinder/cad4b6dd-7962-4240-9bbd-6c45c6804c74/scratchpad/enum/flat-1000:
+  getattrlistbulk (names+attrs)      3.4 ms median  (min 2.1, n=1000)
+  getattrlistbulk + UTType (memoized by ext)      6.5 ms median  (min 3.7, n=1000)
+  FileManager, minimal keys     38.2 ms median  (min 22.1, n=1000)
+  FileManager, full FileItem keys    322.1 ms median  (min 198.2, n=1000)
+/private/tmp/claude-501/-Users-mke-Documents-RealFinder/cad4b6dd-7962-4240-9bbd-6c45c6804c74/scratchpad/enum/flat-10000:
+  getattrlistbulk (names+attrs)     35.1 ms median  (min 30.5, n=10000)
+  getattrlistbulk + UTType (memoized by ext)     49.4 ms median  (min 43.0, n=10000)
+  FileManager, minimal keys    233.2 ms median  (min 180.2, n=10000)
+  FileManager, full FileItem keys   2958.4 ms median  (min 2063.4, n=10000)
+/private/tmp/claude-501/-Users-mke-Documents-RealFinder/cad4b6dd-7962-4240-9bbd-6c45c6804c74/scratchpad/enum/flat-100000:
+  getattrlistbulk (names+attrs)    181.8 ms median  (min 157.6, n=100000)
+  getattrlistbulk + UTType (memoized by ext)    271.7 ms median  (min 258.5, n=100000)
+  FileManager, minimal keys   1288.1 ms median  (min 916.0, n=100000)
+  FileManager, full FileItem keys  18172.6 ms median  (min 16950.2, n=100000)
+/Applications:
+  getattrlistbulk (names+attrs)      0.1 ms median  (min 0.0, n=24)
+  getattrlistbulk + UTType (memoized by ext)      0.1 ms median  (min 0.1, n=24)
+  FileManager, minimal keys      0.7 ms median  (min 0.3, n=24)
+  FileManager, full FileItem keys      9.1 ms median  (min 5.8, n=24)
+/usr/lib:
+  getattrlistbulk (names+attrs)      0.2 ms median  (min 0.1, n=32)
+  getattrlistbulk + UTType (memoized by ext)      0.1 ms median  (min 0.1, n=32)
+  FileManager, minimal keys      0.4 ms median  (min 0.3, n=32)
+  FileManager, full FileItem keys      4.3 ms median  (min 3.7, n=32)
+
+Natural-order sort (localizedStandardCompare):
+  sort 10000 names     71.6 ms median  (min 71.2, n=10000)
+  sort 10000 names, folded keys + numeric compare    277.9 ms median  (min 273.9, n=10000)
+  sort 100000 names    836.2 ms median  (min 827.2, n=100000)
+  sort 100000 names, folded keys + numeric compare   5962.8 ms median  (min 2903.8, n=100000)
