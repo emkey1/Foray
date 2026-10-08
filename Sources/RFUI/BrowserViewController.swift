@@ -193,8 +193,7 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
 
     /// Swaps the content view when the mode changes. Same snapshot, same selection (§3.3 rule 1–2).
     private func installContent() {
-        var mode = state.settings.presentation.mode
-        if mode == .column || mode == .gallery { mode = .list }  // M4
+        let mode = state.settings.presentation.mode
         guard mode != contentMode else { return }
         let hadFocus = view.window?.firstResponder === content?.firstResponderView
         content?.view.isHidden = true
@@ -211,7 +210,12 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
     /// The cached content view for a mode, created (hidden) if needed.
     private func contentView(for mode: ViewMode) -> ContentView {
         if let cached = contentCache[mode] { return cached }
-        let new: ContentView = mode == .icon ? IconContentViewController() : ListContentViewController()
+        let new: ContentView = switch mode {
+        case .icon: IconContentViewController()
+        case .column: ColumnContentViewController()
+        case .gallery: GalleryContentViewController()
+        case .list: ListContentViewController()
+        }
         new.host = self
         addChild(new)
         new.view.translatesAutoresizingMaskIntoConstraints = false
@@ -573,7 +577,7 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
 
     @objc func setViewMode(_ sender: Any?) {
         let tag = (sender as? NSMenuItem)?.tag ?? (sender as? NSToolbarItemGroup)?.selectedIndex ?? 0
-        guard let mode = ViewMode.allCases[safe: tag], mode == .icon || mode == .list else { return }
+        guard let mode = ViewMode.allCases[safe: tag] else { return }
         state.updatePresentation { $0.mode = mode }
     }
 
@@ -626,7 +630,7 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
         case #selector(toggleQuickLook(_:)): return !state.selectedItems.isEmpty || previewPanel != nil
         case #selector(setViewMode(_:)):
             item.state = item.tag == ViewMode.allCases.firstIndex(of: state.settings.presentation.mode) ? .on : .off
-            return item.tag <= 1
+            return true
         case #selector(sortBy(_:)):
             let key = SortKey.allCases[safe: item.tag]
             item.state = a.primary.key == key ? .on : (a.sort.contains { $0.key == key } ? .mixed : .off)

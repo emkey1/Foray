@@ -10,6 +10,6 @@ guard args.count == 4 else {
     exit(2)
 }
 let journal = OperationJournal(store: AppSupportStore(directory: URL(fileURLWithPath: args[3])))
-let center = await OperationCenter(journal: journal, trash: Trash.system)
+let center = OperationCenter(journal: journal, trash: Trash.system)
 let result = await center.run(.copy([URL(fileURLWithPath: args[1])], to: URL(fileURLWithPath: args[2])))
 print(result.errors.isEmpty ? "done" : "errors: \(result.errors.map(\.message))")

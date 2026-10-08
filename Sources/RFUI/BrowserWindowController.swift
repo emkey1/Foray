@@ -130,10 +130,6 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate, NSToo
                 itemIdentifier: id, images: symbols.map { NSImage(systemSymbolName: $0, accessibilityDescription: nil)! },
                 selectionMode: .selectOne, labels: ViewMode.allCases.map(\.title), target: self, action: #selector(modeClicked(_:)))
             group.label = "View"
-            for i in [2, 3] {  // column and gallery views arrive in milestone M4
-                group.subitems[i].isEnabled = false
-                group.subitems[i].toolTip = "\(ViewMode.allCases[i].title) view isn't available yet"
-            }
             modeGroup = group
             return group
         case ToolbarID.search:
@@ -281,7 +277,7 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate, NSToo
     }
 
     @objc private func modeClicked(_ group: NSToolbarItemGroup) {
-        guard let mode = ViewMode.allCases[safe: group.selectedIndex], mode == .icon || mode == .list else {
+        guard let mode = ViewMode.allCases[safe: group.selectedIndex] else {
             syncChrome()
             return
         }
