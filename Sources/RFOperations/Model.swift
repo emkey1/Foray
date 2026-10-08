@@ -17,6 +17,13 @@ public enum OperationRequest: Sendable, Equatable {
     case putBack([Pair])
     /// Permanently deletes everything inside these Trash folders. Not undoable; the UI confirms.
     case emptyTrash([URL])
+    /// An alias to each item, next to it or in `in` ("report.pdf alias").
+    case makeAlias([URL], in: URL? = nil)
+    /// One item → "name.zip"; several → "Archive.zip" in their folder (the same zip Finder makes).
+    case compress([URL])
+    /// Expands each archive next to itself: a single top-level item lands beside the archive;
+    /// several go into a folder named after it.
+    case expand([URL])
     /// Adds and removes tags (by name) on each item, keeping its other tags.
     case changeTags([URL], add: [String], remove: [String])
     /// Sets each item's tags exactly (undo/redo of tag changes).
@@ -53,6 +60,9 @@ public enum OperationRequest: Sendable, Equatable {
         case .restore(let pairs): return pairs.count == 1 ? "Restoring “\(pairs[0].to.lastPathComponent)”" : "Restoring \(pairs.count) items"
         case .putBack(let pairs): return pairs.count == 1 ? "Putting back “\(pairs[0].to.lastPathComponent)”" : "Putting back \(pairs.count) items"
         case .emptyTrash: return "Emptying the Trash"
+        case .makeAlias(let items, _): return "Making \(items.count == 1 ? "an alias" : "\(items.count) aliases")"
+        case .compress(let items): return "Compressing \(n(items))"
+        case .expand(let items): return "Expanding \(n(items))"
         case .changeTags(let items, _, _): return "Tagging \(n(items))"
         case .setTags(let list): return list.count == 1 ? "Tagging “\(list[0].url.lastPathComponent)”" : "Tagging \(list.count) items"
         }
@@ -71,6 +81,9 @@ public enum OperationRequest: Sendable, Equatable {
         case .restore: "Restore"
         case .putBack: "Put Back"
         case .emptyTrash: "Empty Trash"
+        case .makeAlias: "Make Alias"
+        case .compress: "Compress"
+        case .expand: "Expand"
         case .changeTags, .setTags: "Tags"
         }
     }

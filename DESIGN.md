@@ -302,9 +302,9 @@ Each of these is additive or controlled by a setting, so Finder habits keep work
 | Duplicate | | P1 |
 | Move to Trash, Delete Immediately, Empty Trash | | P1 |
 | Put Back | Journal + Finder's records (§5.7) | P2 |
-| Make Alias, Show Original, Fix Alias | Bookmark APIs | P2 |
+| Make Alias, Show Original, Fix Alias | Bookmark APIs | P2 ✅ |
 | Batch rename (Finder's Replace / Add / Format, plus I9) | | P2 |
-| Compress and expand | `ditto` for zip (same output as Finder); Archive Utility or libarchive for other formats | P2 |
+| Compress and expand | `ditto` for zip (same output as Finder); Archive Utility or libarchive for other formats | P2 ✅ (zip; other formats open in Archive Utility) |
 | Undo and redo for file operations | §5.7 | P1 |
 | Progress, pause, cancel | §5.7 | P1 |
 | Operations that need admin authentication | Privileged helper (§5.11) | P3 |
@@ -340,7 +340,7 @@ Each of these is additive or controlled by a setting, so Finder habits keep work
 | Network browsing | `NWBrowser` (Bonjour `_smb._tcp`) | P2 |
 | iCloud Drive: status badges, Download Now, Remove Download | Ubiquitous-item resource keys | P2 |
 | File Provider locations (Dropbox, Google Drive, OneDrive, Box): sidebar entries, status, download and remove download | `~/Library/CloudStorage` + the same APIs | P2 |
-| Send selection via AirDrop | `NSSharingService(named: .sendViaAirDrop)` | P2 |
+| Send selection via AirDrop | `NSSharingService(named: .sendViaAirDrop)` | P2 ✅ (in Share…) |
 | iCloud sharing and collaboration | `NSSharingService` | P3 |
 | AirDrop window for discovering nearby devices | ✗ No public API | |
 | Badges and menus from third-party Finder Sync extensions | ✗ Delivered only to Finder | |
@@ -352,7 +352,7 @@ Each of these is additive or controlled by a setting, so Finder habits keep work
 | Feature | Approach | Phase |
 |---|---|---|
 | Services and Quick Actions in the menu bar and context menus | `NSServicesMenuRequestor` | P2 |
-| Share menu | `NSSharingServicePicker` | P2 |
+| Share menu | `NSSharingServicePicker` | P2 ✅ |
 | Default file viewer ("Show in Finder" in other apps opens RealFinder) | §5.12 | P2 |
 | Dock menu with windows and recent folders | | P2 |
 | `realfinder://` URL scheme | | P2 |

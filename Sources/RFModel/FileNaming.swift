@@ -35,6 +35,11 @@ public enum FileNaming {
         }
     }
 
+    /// The name itself if free, else the Keep Both name ("Archive.zip" → "Archive 2.zip").
+    public static func keepBothFreeName(_ name: String, isTaken: (String) -> Bool) -> String {
+        isTaken(name) ? keepBothName(for: name, isTaken: isTaken) : name
+    }
+
     /// Duplicate: "report.pdf" → "report copy.pdf" → "report copy 2.pdf".
     public static func duplicateName(for name: String, isTaken: (String) -> Bool) -> String {
         let (base, ext) = split(name)

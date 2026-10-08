@@ -375,6 +375,9 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
         if state.location.searchQuery != nil && items.count == 1 {
             menu.addItem(withTitle: "Show in Enclosing Folder", action: #selector(showInEnclosingFolder(_:)), keyEquivalent: "")
         }
+        if items.count == 1, !selectedAliases.isEmpty {
+            menu.addItem(withTitle: "Show Original", action: #selector(showOriginal(_:)), keyEquivalent: "")
+        }
         if !selectedEjectableVolumes.isEmpty {
             menu.addItem(withTitle: "Eject", action: #selector(ejectSelection(_:)), keyEquivalent: "")
         }
@@ -388,7 +391,12 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
         menu.addItem(.separator())
         menu.addItem(withTitle: "Get Info", action: #selector(getInfo(_:)), keyEquivalent: "")
         if items.count == 1 { menu.addItem(withTitle: "Rename", action: #selector(renameSelection(_:)), keyEquivalent: "") }
+        menu.addItem(withTitle: compressTitle, action: #selector(compressSelection(_:)), keyEquivalent: "")
+        if !selectedArchives.isEmpty {
+            menu.addItem(withTitle: "Expand", action: #selector(expandSelection(_:)), keyEquivalent: "")
+        }
         menu.addItem(withTitle: "Duplicate", action: #selector(duplicate(_:)), keyEquivalent: "")
+        menu.addItem(withTitle: "Make Alias", action: #selector(makeAlias(_:)), keyEquivalent: "")
         menu.addItem(withTitle: "Copy", action: #selector(copy(_:)), keyEquivalent: "")
         menu.addItem(withTitle: "Cut", action: #selector(cut(_:)), keyEquivalent: "")
         menu.addItem(.separator())
@@ -398,6 +406,7 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
         }
         menu.addItem(.separator())
         menu.addItem(withTitle: "Quick Look", action: #selector(toggleQuickLook(_:)), keyEquivalent: "")
+        menu.addItem(withTitle: "Share…", action: #selector(shareSelection(_:)), keyEquivalent: "")
         menu.addItem(withTitle: "Copy Path", action: #selector(copyPath(_:)), keyEquivalent: "")
         if items.allSatisfy(\.isNavigableFolder) {
             menu.addItem(withTitle: "Add to Sidebar", action: #selector(addToSidebar(_:)), keyEquivalent: "")
@@ -482,6 +491,8 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
     // MARK: Opening
 
     func open(_ items: [FileItem], inNewTab: Bool) {
+        // Aliases and symlinks resolve here, so folder aliases open in RealFinder, not Finder.
+        let items = items.filter { !openAlias($0, inNewTab: inNewTab || items.count > 1) }
         let folders = items.filter(\.isNavigableFolder)
         let files = items.filter { !$0.isNavigableFolder }
         if folders.count == 1 && files.isEmpty && !inNewTab {
@@ -495,8 +506,10 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
     @objc func openSelection(_ sender: Any?) { open(state.selectedItems, inNewTab: false) }
     @objc func openSelectionInNewTab(_ sender: Any?) { open(state.selectedItems, inNewTab: true) }
 
-    /// From search results: go to the item's folder with the item selected (Back returns to results).
+    /// ⌘R. From search results: go to the item's folder with the item selected (Back returns to
+    /// results). Elsewhere, on an alias: Show Original.
     @objc func showInEnclosingFolder(_ sender: Any?) {
+        guard state.location.searchQuery != nil else { return showOriginal(sender) }
         guard let item = state.selectedItems.first else { return }
         state.navigate(to: .folder(item.url.deletingLastPathComponent()), select: [item.name])
     }
@@ -708,11 +721,19 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
         case #selector(goForward(_:)): return state.history.canGoForward
         case #selector(goEnclosing(_:)): return state.location != .computer
         case #selector(showInEnclosingFolder(_:)):
-            return state.location.searchQuery != nil && state.selectedItems.count == 1
+            let inSearch = state.location.searchQuery != nil
+            item.title = inSearch ? "Show in Enclosing Folder" : "Show Original"
+            return state.selectedItems.count == 1 && (inSearch || !selectedAliases.isEmpty)
         case #selector(openSelection(_:)), #selector(copyPath(_:)), #selector(openSelectionInNewTab(_:)):
             return !state.selectedItems.isEmpty
         case #selector(toggleQuickLook(_:)): return !state.selectedItems.isEmpty || previewPanel != nil
         case #selector(ejectSelection(_:)): return !selectedEjectableVolumes.isEmpty
+        case #selector(showOriginal(_:)): return state.selectedItems.count == 1 && !selectedAliases.isEmpty
+        case #selector(expandSelection(_:)): return !selectedArchives.isEmpty
+        case #selector(shareSelection(_:)): return !state.selectedItems.isEmpty
+        case #selector(makeAlias(_:)), #selector(compressSelection(_:)):
+            if item.action == #selector(compressSelection(_:)) { item.title = state.selectedItems.isEmpty ? "Compress" : compressTitle }
+            return !state.selectedItems.isEmpty && state.location != .computer && state.location != .trash
         case #selector(setViewMode(_:)):
             item.state = item.tag == ViewMode.allCases.firstIndex(of: state.settings.presentation.mode) ? .on : .off
             return true

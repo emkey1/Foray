@@ -96,4 +96,9 @@ public enum Commands {
     public static let showInEnclosingFolder = #selector(BrowserViewController.showInEnclosingFolder(_:))
     public static let eject = #selector(BrowserViewController.ejectSelection(_:))
     public static let emptyTrash = #selector(BrowserViewController.emptyTrash(_:))
+    public static let makeAlias = #selector(BrowserViewController.makeAlias(_:))
+    public static let showOriginal = #selector(BrowserViewController.showOriginal(_:))
+    public static let compress = #selector(BrowserViewController.compressSelection(_:))
+    public static let expand = #selector(BrowserViewController.expandSelection(_:))
+    public static let share = #selector(BrowserViewController.shareSelection(_:))
 }

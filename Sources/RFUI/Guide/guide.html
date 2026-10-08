@@ -204,6 +204,9 @@
   <li><b>Move to Trash</b> <kbd>⌘⌫</kbd>, or drag items onto <b>Trash</b> in the sidebar. <b>Delete Immediately</b> <kbd>⌥⌘⌫</kbd> asks first and can't be undone.</li>
   <li><b>The Trash</b> (in the sidebar, under Locations) shows everything you've trashed, from every disk. Select items and press <kbd>⌘⌫</kbd> (or right-click › <b>Put Back</b>) to return them where they came from; if their folder is gone, it's recreated. Put Back works for things Finder trashed too. If RealFinder can't tell where something came from, it asks for a folder.</li>
   <li><b>Empty Trash</b>: the <b>Empty…</b> button at the top of the Trash, or <b>RealFinder › Empty Trash…</b> <kbd>⇧⌘⌫</kbd>. It asks first (hold <kbd>⌥</kbd> to skip the question) and can't be undone. Seeing and emptying the Trash need Full Disk Access.</li>
+  <li><b>Make Alias</b> <kbd>⌃⌘A</kbd> puts “name alias” next to the item. Aliases keep working when the original moves. Opening a folder alias opens the folder here. <b>Show Original</b> <kbd>⌘R</kbd> goes to the original. If the original is gone, RealFinder offers <b>Fix Alias…</b> to point it somewhere new.</li>
+  <li><b>Compress</b> (File menu or right-click) makes “name.zip”, or “Archive.zip” for several items, the same zip Finder makes. <b>Expand</b> unpacks a .zip next to itself: a single item lands beside it; several go into a folder named after the archive.</li>
+  <li><b>Share…</b> (right-click or File menu) sends the selection with AirDrop, Mail, Messages and so on.</li>
   <li><b>Undo</b> <kbd>⌘Z</kbd> and <b>Redo</b> <kbd>⇧⌘Z</kbd> work for everything except Delete Immediately, across all windows.</li>
   <li><b>When a name is taken</b> you choose <b>Keep Both</b> (adds “2”), <b>Replace</b>, <b>Skip</b> or <b>Stop</b>, optionally for all remaining items. <b>Replace moves the old item to the Trash</b>, so you can undo it.</li>
   <li><b>Progress:</b> the toolbar shows a spinner while files are being copied or moved; click it to see progress, pause, resume or stop.</li>
@@ -234,6 +237,7 @@
   <tr><td><kbd>⇧⌘.</kbd></td><td>Show or hide hidden files</td></tr>
   <tr><td><kbd>⌥⌘C</kbd></td><td>Copy path</td></tr>
   <tr><td><kbd>⌘I</kbd></td><td>Get Info</td></tr>
+  <tr><td><kbd>⌃⌘A</kbd> <kbd>⌘R</kbd></td><td>Make Alias, Show Original (in search results: Show in Enclosing Folder)</td></tr>
   <tr><td><kbd>⌘E</kbd></td><td>Eject the selected disk</td></tr>
   <tr><td><kbd>⌘,</kbd></td><td>Settings</td></tr>
   <tr><td><kbd>⌘C</kbd> <kbd>⌘X</kbd> <kbd>⌘V</kbd> <kbd>⌥⌘V</kbd></td><td>Copy, cut, paste, move items here</td></tr>
@@ -252,7 +256,7 @@
 <h2 id="coming">Not yet available</h2>
 <p>RealFinder is under construction. Use Finder for these for now:</p>
 <ul>
-  <li>Editing comments, permissions and the Locked setting; aliases; compressing.</li>
+  <li>Editing comments, permissions and the Locked setting.</li>
   <li>Network browsing and Connect to Server, iCloud download controls.</li>
   <li>Saved searches (smart folders).</li>
 </ul>

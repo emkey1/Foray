@@ -65,7 +65,7 @@ final class Execution: @unchecked Sendable {
     let ask: @Sendable (ConflictQuestion) async -> ConflictAnswer
     let trashItem: TrashFunction
     private let io = DispatchQueue(label: "rf.op", qos: .userInitiated)
-    private var result = OperationResult()
+    var result = OperationResult()
     private var applyToAll: ConflictResolution?
 
     init(_ request: OperationRequest, control: JobControl, progress: ProgressBox, journal: OperationJournal,
@@ -78,13 +78,13 @@ final class Execution: @unchecked Sendable {
         self.ask = ask
     }
 
-    private func blocking<T: Sendable>(_ work: @escaping @Sendable () -> T) async -> T {
+    func blocking<T: Sendable>(_ work: @escaping @Sendable () -> T) async -> T {
         await withCheckedContinuation { c in io.async { c.resume(returning: work()) } }
     }
 
-    private func update(_ change: (inout JobProgress) -> Void) { progress.update(change) }
+    func update(_ change: (inout JobProgress) -> Void) { progress.update(change) }
 
-    private func fail(_ url: URL, _ code: Int32, _ action: String) {
+    func fail(_ url: URL, _ code: Int32, _ action: String) {
         if code != 0 { result.errors.append(ItemError(url: url, code: code, action: action)) }
     }
 
@@ -98,6 +98,9 @@ final class Execution: @unchecked Sendable {
         case .rename(let item, let name): await rename(item, to: name)
         case .newFolder(let dir, let name, let moving): await newFolder(in: dir, name: name, moving: moving)
         case .restore(let pairs), .putBack(let pairs): await restore(pairs)
+        case .makeAlias(let items, let dir): await makeAliases(items, in: dir)
+        case .compress(let items): await compress(items)
+        case .expand(let archives): await expand(archives)
         case .emptyTrash(let folders):
             var items: [URL] = []
             for folder in folders {
