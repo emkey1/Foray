@@ -17,6 +17,7 @@ final class ListContentViewController: NSViewController, ContentView {
     private let chip = NSTextField(labelWithString: "")
     private let chipButton = NSButton(title: "Show Column", target: nil, action: nil)
     private let chipBar = NSStackView()
+    private var chipBarHeight: NSLayoutConstraint?
     private var snapshot = ItemSnapshot.empty
     private var settings = ViewSettings()
     private var rows: [Row] = []
@@ -59,13 +60,25 @@ final class ListContentViewController: NSViewController, ContentView {
         chipBar.addArrangedSubview(NSView())
         chipBar.isHidden = true
 
-        let stack = NSStackView(views: [chipBar, scrollView])
-        stack.orientation = .vertical
-        stack.spacing = 0
-        stack.alignment = .leading
-        chipBar.widthAnchor.constraint(equalTo: stack.widthAnchor).isActive = true
-        scrollView.widthAnchor.constraint(equalTo: stack.widthAnchor).isActive = true
-        view = stack
+        // Plain container with explicit constraints: an NSStackView root shrinks to its fitting
+        // size, which is zero height for a scroll view.
+        let root = NSView()
+        for v in [chipBar, scrollView] as [NSView] {
+            v.translatesAutoresizingMaskIntoConstraints = false
+            root.addSubview(v)
+        }
+        chipBarHeight = chipBar.heightAnchor.constraint(equalToConstant: 0)
+        NSLayoutConstraint.activate([
+            chipBar.topAnchor.constraint(equalTo: root.topAnchor),
+            chipBar.leadingAnchor.constraint(equalTo: root.leadingAnchor),
+            chipBar.trailingAnchor.constraint(equalTo: root.trailingAnchor),
+            chipBarHeight!,
+            scrollView.topAnchor.constraint(equalTo: chipBar.bottomAnchor),
+            scrollView.leadingAnchor.constraint(equalTo: root.leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: root.trailingAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: root.bottomAnchor),
+        ])
+        view = root
 
         NotificationCenter.default.addObserver(self, selector: #selector(columnsChanged), name: NSTableView.columnDidResizeNotification, object: tableView)
         NotificationCenter.default.addObserver(self, selector: #selector(columnsChanged), name: NSTableView.columnDidMoveNotification, object: tableView)
@@ -156,6 +169,7 @@ final class ListContentViewController: NSViewController, ContentView {
         let primary = settings.arrangement.primary
         let hidden = primary.key != .manual && !settings.presentation.list.isVisible(primary.key)
         chipBar.isHidden = !hidden
+        chipBarHeight?.constant = hidden ? 24 : 0
         chip.stringValue = "Sorted by \(primary.key.title) \(primary.ascending ? "↑" : "↓")"
         chipButton.isHidden = ListColumn.allCases.first { $0.sortKey == primary.key } == nil
     }

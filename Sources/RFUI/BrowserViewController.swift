@@ -156,9 +156,14 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
         let new: ContentView = mode == .icon ? IconContentViewController() : ListContentViewController()
         new.host = self
         addChild(new)
-        new.view.frame = contentContainer.bounds
-        new.view.autoresizingMask = [.width, .height]
+        new.view.translatesAutoresizingMaskIntoConstraints = false
         contentContainer.addSubview(new.view)
+        NSLayoutConstraint.activate([
+            new.view.topAnchor.constraint(equalTo: contentContainer.topAnchor),
+            new.view.bottomAnchor.constraint(equalTo: contentContainer.bottomAnchor),
+            new.view.leadingAnchor.constraint(equalTo: contentContainer.leadingAnchor),
+            new.view.trailingAnchor.constraint(equalTo: contentContainer.trailingAnchor),
+        ])
         content = new
         contentMode = mode
         sizeSlider.isHidden = mode != .icon
