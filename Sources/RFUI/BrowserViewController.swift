@@ -359,6 +359,7 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
         menu.addItem(.separator())
         menu.addItem(withTitle: "Move to Trash", action: #selector(moveToTrash(_:)), keyEquivalent: "")
         menu.addItem(.separator())
+        menu.addItem(withTitle: "Get Info", action: #selector(getInfo(_:)), keyEquivalent: "")
         if items.count == 1 { menu.addItem(withTitle: "Rename", action: #selector(renameSelection(_:)), keyEquivalent: "") }
         menu.addItem(withTitle: "Duplicate", action: #selector(duplicate(_:)), keyEquivalent: "")
         menu.addItem(withTitle: "Copy", action: #selector(copy(_:)), keyEquivalent: "")

@@ -82,6 +82,7 @@ public enum Commands {
     public static let goEnclosing = #selector(BrowserViewController.goEnclosing(_:))
     public static let goToStandardLocation = #selector(BrowserViewController.goToStandardLocation(_:))
     public static let goToFolder = #selector(BrowserViewController.goToFolder(_:))
+    public static let getInfo = #selector(BrowserViewController.getInfo(_:))
     public static let newFolder = #selector(BrowserViewController.newFolder(_:))
     public static let newFolderWithSelection = #selector(BrowserViewController.newFolderWithSelection(_:))
     public static let duplicate = #selector(BrowserViewController.duplicate(_:))
