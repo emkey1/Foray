@@ -229,7 +229,7 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
             parts.append("\(selected.count.formatted()) of \(snap.items.count.formatted()) selected" + (bytes > 0 ? ", \(Formatting.size(bytes))" : ""))
         }
         if snap.totalCount > snap.items.count { parts.append("\((snap.totalCount - snap.items.count).formatted()) hidden") }
-        if let free = state.details.availableCapacity { parts.append("\(Formatting.size(free)) available") }
+        if let free = state.availableCapacity { parts.append("\(Formatting.size(free)) available") }
         if case .partial(let n) = state.loadState { parts.append("loading \(n.formatted())…") }
         statusLabel.stringValue = parts.joined(separator: "  ·  ")
     }

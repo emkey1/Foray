@@ -1,5 +1,6 @@
 import Foundation
 import RFModel
+import Synchronization
 
 /// Everything about a location that needs filesystem access, gathered in one call off the main
 /// thread (on the location's volume queue, so a hung mount doesn't block the UI).
@@ -7,27 +8,40 @@ public struct LocationDetails: Sendable {
     public var displayName: String
     /// Volume root first, the location itself last.
     public var pathChain: [(url: URL, name: String)]
-    public var availableCapacity: Int64?
     public var folderKey: FolderKey?
 
     public static func fallback(_ location: Location) -> LocationDetails {
-        LocationDetails(displayName: location.fallbackTitle, pathChain: [], availableCapacity: nil, folderKey: nil)
+        LocationDetails(displayName: location.fallbackTitle, pathChain: [], folderKey: nil)
     }
 }
+
+/// Free space per volume. The lookup ("available for important usage", which matches Finder and
+/// counts purgeable space) takes 17–170 ms, so it's cached briefly and never runs on a listing path.
+private let capacityCache = Mutex<[String: (value: Int64, at: Date)]>([:])
 
 extension LocationInfo {
     public static func details(for location: Location) async -> LocationDetails {
         guard let url = location.folderURL else {
-            return LocationDetails(displayName: displayName(location), pathChain: [], availableCapacity: nil, folderKey: nil)
+            return LocationDetails(displayName: displayName(location), pathChain: [], folderKey: nil)
         }
         return await withCheckedContinuation { continuation in
-            DirectoryLoader.shared.queue(for: url).async {
+            DirectoryLoader.shared.metadataQueue(for: url).async {
                 let chain = pathChain(url).map { (url: $0, name: FileManager.default.displayName(atPath: $0.path)) }
-                let capacity = try? url.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey])
-                    .volumeAvailableCapacityForImportantUsage
                 continuation.resume(returning: LocationDetails(
-                    displayName: displayName(location), pathChain: chain, availableCapacity: capacity,
-                    folderKey: folderKey(url)))
+                    displayName: displayName(location), pathChain: chain, folderKey: folderKey(url)))
+            }
+        }
+    }
+
+    public static func availableCapacity(for url: URL) async -> Int64? {
+        let key = DirectoryLoader.volumeKey(url)
+        if let hit = capacityCache.withLock({ $0[key] }), Date().timeIntervalSince(hit.at) < 30 { return hit.value }
+        return await withCheckedContinuation { continuation in
+            DirectoryLoader.shared.metadataQueue(for: url).async {
+                let value = try? url.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey])
+                    .volumeAvailableCapacityForImportantUsage
+                if let value { capacityCache.withLock { $0[key] = (value, Date()) } }
+                continuation.resume(returning: value)
             }
         }
     }

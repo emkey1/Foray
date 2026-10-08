@@ -186,7 +186,8 @@ import Testing
         #expect(q.scope == .folder(folder, recursive: true))
         #expect(q.origin == folder)
         await wait { state.loadState == .complete && state.snapshot.items.count == 3 }
-        #expect(Set(state.snapshot.items.map(\.name)) == ["report.pdf", "report notes.txt", "photo report.jpg"])
+        #expect(Set(state.snapshot.items.map(\.name)) == ["report.pdf", "report notes.txt", "photo report.jpg"],
+                "got \(state.snapshot.items.map(\.url.path)) state=\(state.loadState) status=\(String(describing: state.searchStatus.map { ($0.items.count, $0.crawlRunning, $0.spotlightRunning) }))")
         #expect(state.settings.presentation.mode == .list)  // search results class default
 
         state.search("report kind:images")       // refine: replaces, doesn't add history

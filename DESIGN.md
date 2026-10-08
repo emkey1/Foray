@@ -506,7 +506,9 @@ Views diff consecutive snapshots by `FileID`, so live changes animate in place w
   - If events were dropped, or a subdirectory must be rescanned (`MustScanSubDirs`), that directory is fully rescanned.
   - **Latency:** fseventsd delivers events 0.2–0.8 s after a change, even with the stream latency set to 0.1 s (measured in M1). RealFinder's own file operations (M2) update the view directly instead of waiting for FSEvents. A `kqueue`/`DispatchSource` watch on each visible directory could make adds, removes and renames from other apps instant (follow-up).
 - **Network volumes.** FSEvents doesn't report changes that other clients make on SMB or NFS volumes. Visible network folders are listed again when the window becomes active and polled every 5 s by default while visible. The diff is cheap.
-- **Per-volume isolation.** Each volume gets its own I/O executor (serial, or with a small fixed concurrency limit). A hung SMB mount stalls only its own executor.
+- **Per-volume isolation.** Each volume gets its own listing queue (up to 4 listings at once) and its own serial queue for metadata lookups. A hung SMB mount stalls only its own queues.
+  - Metadata such as path chains, folder keys and free space loads in parallel with the listing, never in front of it.
+  - Free space ("available for important usage") takes 17–170 ms to compute, so it's cached per volume for 30 s. Before M3 it ran ahead of every listing on a serial queue, and under load it delayed listings by seconds.
   - After 3 s with no response, the tab shows "‹Server› isn't responding" with Retry and Disconnect buttons. The rest of the app is unaffected.
   - Navigating away cancels any loads in progress (structured concurrency).
 

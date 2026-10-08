@@ -173,25 +173,25 @@ func eventually(_ seconds: Double = 15, _ fired: () -> Bool) async -> Bool {
     }
 
     /// Regression: with one shared stream, removing a subscriber restarted the stream and replayed
-    /// history into the remaining folders, causing spurious reloads.
+    /// history into the remaining folders, causing spurious reloads. Checked structurally (the other
+    /// folder's stream is untouched) because FSEvents delivery timing under load isn't predictable.
     @Test func unsubscribingOneFolderDoesNotDisturbAnother() async throws {
         let a = try TempDir(), b = try TempDir()
-        a.file("setup.txt")
-        b.file("setup.txt")
         let watcher = DirectoryWatcher()
-        let fired = Flag()
-        let tokenA = watcher.subscribe(a.url) { fired.value = true }
+        let tokenA = watcher.subscribe(a.url) {}
         let tokenB = watcher.subscribe(b.url) {}
-        // Let late events from the setup writes drain first.
-        repeat {
-            fired.value = false
-            try await Task.sleep(for: .milliseconds(1500))
-        } while fired.value
+        let streamA = try #require(watcher.streamIdentity(for: a.url))
         watcher.unsubscribe(tokenB)
-        try await Task.sleep(for: .milliseconds(800))
-        #expect(!fired.value)
         #expect(watcher.watchedPathCount == 1)
+        #expect(watcher.streamIdentity(for: a.url) == streamA)
+        #expect(watcher.streamIdentity(for: b.url) == nil)
+        let fired = Flag()
+        let tokenA2 = watcher.subscribe(a.url) { fired.value = true }
+        #expect(watcher.streamIdentity(for: a.url) == streamA)   // second subscriber shares it
+        a.file("still-watched.txt")
+        #expect(await eventually { fired.value })
         watcher.unsubscribe(tokenA)
+        watcher.unsubscribe(tokenA2)
     }
 
     /// Writes next to the watched folder (in its parent) must not count as changes to it.

@@ -16,6 +16,8 @@ public final class DirectoryWatcher: @unchecked Sendable {
         let path: String         // canonical, as FSEvents reports it
         var stream: FSEventStreamRef?
         var handlers: [UInt64: @Sendable () -> Void] = [:]
+        /// Recent relevant events ("path flags=0x…"), for diagnostics.
+        var recent: [String] = []
         init(path: String) { self.path = path }
     }
 
@@ -58,6 +60,17 @@ public final class DirectoryWatcher: @unchecked Sendable {
 
     var watchedPathCount: Int { queue.sync { watches.count } }
 
+    /// Identity of the stream watching `directory` (tests: streams must not be restarted).
+    func streamIdentity(for directory: URL) -> UInt? {
+        let path = Self.canonicalPath(directory.path)
+        return queue.sync { watches[path]?.stream.map { UInt(bitPattern: $0) } }
+    }
+
+    func recentEvents(for directory: URL) -> [String] {
+        let path = Self.canonicalPath(directory.path)
+        return queue.sync { watches[path]?.recent ?? [] }
+    }
+
     private func start(_ watch: Watch) {
         var context = FSEventStreamContext(
             version: 0, info: Unmanaged.passUnretained(watch).toOpaque(), retain: nil, release: nil, copyDescription: nil)
@@ -72,7 +85,13 @@ public final class DirectoryWatcher: @unchecked Sendable {
             let relevant = (0..<count).contains { i in
                 eventFlags[i] & rescan != 0 || DirectoryWatcher.normalize(paths[i]) == watch.path
             }
-            if relevant { for handler in watch.handlers.values { handler() } }
+            if relevant {
+                for i in 0..<count where eventFlags[i] & rescan != 0 || DirectoryWatcher.normalize(paths[i]) == watch.path {
+                    watch.recent.append("\(paths[i]) flags=0x\(String(eventFlags[i], radix: 16))")
+                }
+                if watch.recent.count > 20 { watch.recent.removeFirst(watch.recent.count - 20) }
+                for handler in watch.handlers.values { handler() }
+            }
         }
         let flags = FSEventStreamCreateFlags(
             kFSEventStreamCreateFlagUseCFTypes | kFSEventStreamCreateFlagNoDefer | kFSEventStreamCreateFlagWatchRoot)

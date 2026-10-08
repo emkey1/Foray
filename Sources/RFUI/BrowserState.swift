@@ -23,6 +23,8 @@ final class BrowserState {
     private(set) var settings: ViewSettings
     private(set) var settingsSource: SettingsSource = .classDefault(.folder)
     private(set) var details: LocationDetails
+    /// Free space on the location's volume (fetched separately; it's slow).
+    private(set) var availableCapacity: Int64?
     private(set) var snapshot: ItemSnapshot = .empty
     private(set) var loadState: LoadState = .loading
     /// Progress of the running search, when the location is a search.
@@ -35,6 +37,7 @@ final class BrowserState {
     private(set) var rearrangeLog: [String] = []
     private var rawItems: [FileItem] = []
     private var loadTask: Task<Void, Never>?
+    private var detailsTask: Task<Void, Never>?
     private var requestedGeneration = 0
     private var appliedGeneration = -1
     private var lastPartialArrange = Date.distantPast
@@ -54,6 +57,7 @@ final class BrowserState {
 
     func invalidate() {
         loadTask?.cancel()
+        detailsTask?.cancel()
         if let settingsObserver { AppModel.shared.removeObserver(settingsObserver) }
     }
 
@@ -207,13 +211,23 @@ final class BrowserState {
         setLoadState(.loading)
         let location = self.location
 
-        loadTask = Task { [weak self] in
+        // Folder info (title, path, per-folder settings key) and free space load alongside the
+        // listing, never in front of it.
+        detailsTask?.cancel()
+        detailsTask = Task { [weak self] in
             let details = await LocationInfo.details(for: location)
             guard let self, !Task.isCancelled, self.location == location else { return }
             self.details = details
             self.applyResolvedSettings()
             self.notify(.details)
+            let capacity = await LocationInfo.availableCapacity(for: location.folderURL ?? location.searchQuery?.origin ?? URL(fileURLWithPath: "/"))
+            guard !Task.isCancelled, self.location == location else { return }
+            self.availableCapacity = capacity
+            self.notify(.details)
+        }
 
+        loadTask = Task { [weak self] in
+            guard let self else { return }
             switch location {
             case .computer:
                 self.rawItems = LocationInfo.volumeItems()

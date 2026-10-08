@@ -30,18 +30,39 @@ public struct FileSystemError: Error, LocalizedError, Sendable {
 public final class DirectoryLoader: Sendable {
     public static let shared = DirectoryLoader()
 
-    private let queues = Mutex<[String: DispatchQueue]>([:])
+    private let queues = Mutex<[String: OperationQueue]>([:])
+    private let metadataQueues = Mutex<[String: DispatchQueue]>([:])
 
     public init() {}
 
-    /// One serial queue per volume, so a hung network mount stalls only its own loads.
-    /// Keyed by mount path derived from the URL alone: no syscalls before we're on the queue.
-    func queue(for url: URL) -> DispatchQueue {
+    /// Volume key derived from the URL alone: no syscalls before we're on the volume's queue.
+    static func volumeKey(_ url: URL) -> String {
         let components = url.standardizedFileURL.pathComponents
-        let key = components.count >= 3 && components[1] == "Volumes" ? "/Volumes/\(components[2])" : "/"
+        return components.count >= 3 && components[1] == "Volumes" ? "/Volumes/\(components[2])" : "/"
+    }
+
+    /// Listing queue per volume, up to 4 listings at a time: a huge folder in one tab doesn't
+    /// block the others, and a hung network mount ties up only its own queue.
+    func queue(for url: URL) -> OperationQueue {
+        let key = Self.volumeKey(url)
         return queues.withLock { q in
             if let existing = q[key] { return existing }
-            let new = DispatchQueue(label: "rf.io.\(key)", qos: .userInitiated)
+            let new = OperationQueue()
+            new.name = "rf.io.\(key)"
+            new.maxConcurrentOperationCount = 4
+            new.qualityOfService = .userInitiated
+            q[key] = new
+            return new
+        }
+    }
+
+    /// Serial queue per volume for metadata lookups (path chains, capacity), kept off the listing
+    /// queue so slow lookups never delay a listing.
+    func metadataQueue(for url: URL) -> DispatchQueue {
+        let key = Self.volumeKey(url)
+        return metadataQueues.withLock { q in
+            if let existing = q[key] { return existing }
+            let new = DispatchQueue(label: "rf.meta.\(key)", qos: .utility)
             q[key] = new
             return new
         }
@@ -52,7 +73,7 @@ public final class DirectoryLoader: Sendable {
         AsyncThrowingStream { continuation in
             let state = LoadState(directory: directory, continuation: continuation, firstBatch: firstBatch)
             continuation.onTermination = { _ in state.cancelled.store(true, ordering: .relaxed) }
-            queue(for: directory).async {
+            queue(for: directory).addOperation {
                 let rc = rf_enumerate(directory.path, { entry, ctx in
                     let state = Unmanaged<LoadState>.fromOpaque(ctx!).takeUnretainedValue()
                     return state.add(entry!.pointee) ? 0 : 1
