@@ -13,6 +13,19 @@ public enum OperationRequest: Sendable, Equatable {
     case newFolder(in: URL, name: String? = nil, moving: [URL] = [])
     /// Moves each item back to an exact path (undo/redo, Put Back). Fails per item if taken.
     case restore([Pair])
+    /// Adds and removes tags (by name) on each item, keeping its other tags.
+    case changeTags([URL], add: [String], remove: [String])
+    /// Sets each item's tags exactly (undo/redo of tag changes).
+    case setTags([TagAssignment])
+
+    public struct TagAssignment: Sendable, Equatable, Hashable {
+        public var url: URL
+        public var tags: [String]
+        public init(url: URL, tags: [String]) {
+            self.url = url
+            self.tags = tags
+        }
+    }
 
     public struct Pair: Sendable, Equatable, Hashable {
         public var from: URL
@@ -34,6 +47,8 @@ public enum OperationRequest: Sendable, Equatable {
         case .rename(let item, let name): return "Renaming “\(item.lastPathComponent)” to “\(name)”"
         case .newFolder: return "Creating a folder"
         case .restore(let pairs): return pairs.count == 1 ? "Restoring “\(pairs[0].to.lastPathComponent)”" : "Restoring \(pairs.count) items"
+        case .changeTags(let items, _, _): return "Tagging \(n(items))"
+        case .setTags(let list): return list.count == 1 ? "Tagging “\(list[0].url.lastPathComponent)”" : "Tagging \(list.count) items"
         }
     }
 
@@ -48,6 +63,7 @@ public enum OperationRequest: Sendable, Equatable {
         case .rename: "Rename"
         case .newFolder: "New Folder"
         case .restore: "Restore"
+        case .changeTags, .setTags: "Tags"
         }
     }
 }
@@ -131,6 +147,8 @@ public struct OperationResult: Sendable {
         /// An item went to the Trash: original location → location in the Trash. Includes items
         /// replaced by a conflict resolution.
         case trashed(OperationRequest.Pair)
+        /// An item's tags changed from `before` to `after`.
+        case tagged(URL, before: [String], after: [String])
     }
 
     /// In the order things happened.
@@ -164,6 +182,9 @@ public struct OperationResult: Sendable {
             case .moved(let p), .trashed(let p):
                 let back = OperationRequest.Pair(from: p.to, to: p.from)
                 if case .restore(let pairs) = steps.last { steps[steps.count - 1] = .restore(pairs + [back]) } else { steps.append(.restore([back])) }
+            case .tagged(let url, let before, _):
+                let back = OperationRequest.TagAssignment(url: url, tags: before)
+                if case .setTags(let list) = steps.last { steps[steps.count - 1] = .setTags(list + [back]) } else { steps.append(.setTags([back])) }
             }
         }
         return steps.isEmpty ? nil : steps

@@ -363,6 +363,8 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
         menu.addItem(withTitle: "Duplicate", action: #selector(duplicate(_:)), keyEquivalent: "")
         menu.addItem(withTitle: "Copy", action: #selector(copy(_:)), keyEquivalent: "")
         menu.addItem(withTitle: "Cut", action: #selector(cut(_:)), keyEquivalent: "")
+        menu.addItem(.separator())
+        menu.addItem(tagsMenuItem())
         if operationFolder != nil && items.count > 1 {
             menu.addItem(withTitle: "New Folder with Selection", action: #selector(newFolderWithSelection(_:)), keyEquivalent: "")
         }

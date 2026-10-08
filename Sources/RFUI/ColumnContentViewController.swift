@@ -447,6 +447,7 @@ private final class ColumnCell: NSTableCellView {
     let icon = NSImageView()
     let label = NSTextField(labelWithString: "")
     private let chevron = NSImageView(image: NSImage(systemSymbolName: "chevron.right", accessibilityDescription: nil)!)
+    private let dots = TagDotsView()
     private var itemID: FileID?
 
     init() {
@@ -455,7 +456,7 @@ private final class ColumnCell: NSTableCellView {
         label.lineBreakMode = .byTruncatingMiddle
         icon.imageScaling = .scaleProportionallyUpOrDown
         chevron.contentTintColor = .tertiaryLabelColor
-        for v in [icon, label, chevron] as [NSView] { addSubview(v) }
+        for v in [icon, label, chevron, dots] as [NSView] { addSubview(v) }
         imageView = icon
         textField = label
     }
@@ -468,7 +469,11 @@ private final class ColumnCell: NSTableCellView {
         icon.frame = NSRect(x: 6, y: (h - 16) / 2, width: 16, height: 16)
         chevron.frame = NSRect(x: bounds.width - 16, y: (h - 10) / 2, width: 8, height: 10)
         let th = label.intrinsicContentSize.height
-        label.frame = NSRect(x: 28, y: (h - th) / 2, width: max(0, bounds.width - 28 - (chevron.isHidden ? 6 : 22)), height: th)
+        let trailing: CGFloat = chevron.isHidden ? 6 : 22
+        let dotsWidth = dots.isHidden ? 0 : dots.dotsWidth + 6
+        label.frame = NSRect(x: 28, y: (h - th) / 2, width: max(0, bounds.width - 28 - trailing - dotsWidth), height: th)
+        dots.frame = NSRect(x: bounds.width - trailing - dotsWidth + 2, y: (h - TagDotsView.diameter) / 2,
+                            width: dots.dotsWidth, height: TagDotsView.diameter)
     }
 
     func configure(_ item: FileItem) {
@@ -480,6 +485,12 @@ private final class ColumnCell: NSTableCellView {
         IconProvider.shared.loadFileIcon(for: item) { [weak self] image in
             guard self?.itemID == item.id else { return }
             self?.icon.image = image
+        }
+        dots.tags = TagProvider.shared.cached(item) ?? []
+        TagProvider.shared.load(item) { [weak self] tags in
+            guard let self, self.itemID == item.id, self.dots.tags != tags else { return }
+            self.dots.tags = tags
+            self.needsLayout = true
         }
         needsLayout = true
     }

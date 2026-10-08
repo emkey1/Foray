@@ -220,6 +220,7 @@ private final class IconItem: NSCollectionViewItem {
     private let iconView = NSImageView()
     private let iconBackground = NSView()
     private let label = NSTextField(wrappingLabelWithString: "")
+    private let dots = TagDotsView()
     private var item: FileItem?
     private var iconSize: CGFloat = 64
 
@@ -237,7 +238,7 @@ private final class IconItem: NSCollectionViewItem {
         label.font = .systemFont(ofSize: 12)
         label.wantsLayer = true
         label.layer?.cornerRadius = 4
-        for v in [iconBackground, iconView, label] { view.addSubview(v) }
+        for v in [iconBackground, iconView, label, dots] { view.addSubview(v) }
     }
 
     func configure(_ item: FileItem, options: IconOptions, scale: CGFloat) {
@@ -257,6 +258,12 @@ private final class IconItem: NSCollectionViewItem {
                 self?.iconView.image = image
             }
         }
+        dots.tags = TagProvider.shared.cached(item) ?? []
+        TagProvider.shared.load(item) { [weak self] tags in
+            guard let self, self.item?.id == item.id, self.dots.tags != tags else { return }
+            self.dots.tags = tags
+            self.view.needsLayout = true
+        }
         view.needsLayout = true
         updateSelection()
     }
@@ -270,6 +277,9 @@ private final class IconItem: NSCollectionViewItem {
         let fitted = label.sizeThatFits(NSSize(width: b.width - 4, height: 34))
         let w = min(b.width - 4, fitted.width + 8)
         label.frame = NSRect(x: (b.width - w) / 2, y: iconFrame.minY - 6 - min(fitted.height, 34), width: w, height: min(fitted.height, 34))
+        // Tag dots just left of the name's first line.
+        dots.frame = NSRect(x: max(0, label.frame.minX - dots.dotsWidth - 3), y: label.frame.maxY - TagDotsView.diameter - 3,
+                            width: dots.dotsWidth, height: TagDotsView.diameter)
     }
 
     override func prepareForReuse() {

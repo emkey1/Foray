@@ -67,6 +67,7 @@ enum ItemBuilder {
             allocatedSize: isDir ? nil : e.allocsize,
             created: date(e.crtime),
             modified: date(e.modtime),
+            changed: date(e.chgtime),
             added: e.addedtime.tv_sec == 0 ? nil : date(e.addedtime))
     }
 

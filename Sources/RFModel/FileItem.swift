@@ -44,12 +44,15 @@ public struct FileItem: Identifiable, Hashable, Sendable {
     public let allocatedSize: Int64?
     public let created: Date?
     public let modified: Date?
+    /// Status change time: moves when metadata such as tags changes (used to invalidate caches).
+    public let changed: Date?
     public let added: Date?
     public let sortKey: NaturalSortKey
 
     public init(
         id: FileID, url: URL, name: String, displayName: String? = nil, contentType: UTType, flags: ItemFlags,
-        size: Int64?, allocatedSize: Int64? = nil, created: Date? = nil, modified: Date? = nil, added: Date? = nil
+        size: Int64?, allocatedSize: Int64? = nil, created: Date? = nil, modified: Date? = nil, changed: Date? = nil,
+        added: Date? = nil
     ) {
         self.id = id
         self.url = url
@@ -61,6 +64,7 @@ public struct FileItem: Identifiable, Hashable, Sendable {
         self.allocatedSize = allocatedSize
         self.created = created
         self.modified = modified
+        self.changed = changed
         self.added = added
         self.sortKey = NaturalSortKey(self.displayName)
     }

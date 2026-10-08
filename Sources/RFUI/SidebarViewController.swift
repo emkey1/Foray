@@ -89,6 +89,12 @@ final class SidebarViewController: NSViewController {
                          icon: NSImage(systemSymbolName: v.isEjectable ? "externaldrive" : "internaldrive", accessibilityDescription: nil),
                          ejectURL: v.isEjectable ? v.url : nil)
                 }),
+            // Clicking a tag shows every file with it (a This Mac search for tag:"Name").
+            Node(title: "Tags", children: Tags.finderFavorites().map { tag in
+                Node(title: tag.name,
+                     location: .search(SearchQuery(text: "tag:\"\(tag.name)\"", scope: .thisMac)),
+                     icon: TagDotsView.image(for: tag.color))
+            }),
         ]
         outline.reloadData()
         for s in sections { outline.expandItem(s) }
@@ -172,7 +178,7 @@ extension SidebarViewController: NSOutlineViewDataSource, NSOutlineViewDelegate 
         }
         let cell = NSTableCellView()
         let image = NSImageView(image: node.icon ?? NSImage())
-        image.contentTintColor = .controlAccentColor
+        if node.icon?.isTemplate != false { image.contentTintColor = .controlAccentColor }
         let label = NSTextField(labelWithString: node.title)
         label.lineBreakMode = .byTruncatingTail
         var views: [NSView] = [image, label]

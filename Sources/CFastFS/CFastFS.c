@@ -20,7 +20,7 @@ static void make_attrlist(struct attrlist *al) {
     memset(al, 0, sizeof *al);
     al->bitmapcount = ATTR_BIT_MAP_COUNT;
     al->commonattr = ATTR_CMN_RETURNED_ATTRS | ATTR_CMN_ERROR | ATTR_CMN_NAME | ATTR_CMN_DEVID |
-                     ATTR_CMN_OBJTYPE | ATTR_CMN_CRTIME | ATTR_CMN_MODTIME | ATTR_CMN_FNDRINFO |
+                     ATTR_CMN_OBJTYPE | ATTR_CMN_CRTIME | ATTR_CMN_MODTIME | ATTR_CMN_CHGTIME | ATTR_CMN_FNDRINFO |
                      ATTR_CMN_ACCESSMASK | ATTR_CMN_FLAGS | ATTR_CMN_FILEID | ATTR_CMN_ADDEDTIME;
     al->dirattr = ATTR_DIR_MOUNTSTATUS;
     al->fileattr = ATTR_FILE_ALLOCSIZE | ATTR_FILE_DATALENGTH;
@@ -57,6 +57,7 @@ static uint32_t parse_record(const char *entry, rf_entry *e) {
     take(&e->objtype, &cur, sizeof e->objtype);
     take(&e->crtime, &cur, sizeof e->crtime);
     take(&e->modtime, &cur, sizeof e->modtime);
+    take(&e->chgtime, &cur, sizeof e->chgtime);
 
     uint8_t finderinfo[32];
     take(finderinfo, &cur, sizeof finderinfo);

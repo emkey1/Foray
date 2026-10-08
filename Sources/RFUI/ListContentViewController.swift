@@ -467,6 +467,7 @@ final class BrowserOutlineView: NSOutlineView {
 /// noticeably slower (DESIGN.md §5.13 view-switch budget).
 private final class NameCell: NSTableCellView {
     private var itemID: FileID?
+    private let dots = TagDotsView()
 
     init() {
         super.init(frame: .zero)
@@ -477,6 +478,7 @@ private final class NameCell: NSTableCellView {
         text.lineBreakMode = .byTruncatingMiddle
         addSubview(image)
         addSubview(text)
+        addSubview(dots)
         imageView = image
         textField = text
     }
@@ -487,8 +489,13 @@ private final class NameCell: NSTableCellView {
         super.layout()
         let h = bounds.height
         imageView?.frame = NSRect(x: 2, y: (h - 16) / 2, width: 16, height: 16)
-        let textHeight = textField?.intrinsicContentSize.height ?? 16
-        textField?.frame = NSRect(x: 24, y: (h - textHeight) / 2, width: max(0, bounds.width - 26), height: textHeight)
+        let textSize = textField?.intrinsicContentSize ?? .zero
+        let dotsWidth = dots.isHidden ? 0 : dots.dotsWidth + 6
+        let available = max(0, bounds.width - 26 - dotsWidth)
+        let textWidth = min(textSize.width, available)
+        textField?.frame = NSRect(x: 24, y: (h - textSize.height) / 2, width: textWidth, height: textSize.height)
+        // Tag dots right after the name, like Finder.
+        dots.frame = NSRect(x: 24 + textWidth + 4, y: (h - TagDotsView.diameter) / 2, width: dots.dotsWidth, height: TagDotsView.diameter)
     }
 
     func configure(_ item: FileItem) {
@@ -500,6 +507,13 @@ private final class NameCell: NSTableCellView {
             guard self?.itemID == item.id else { return }
             self?.imageView?.image = image
         }
+        dots.tags = TagProvider.shared.cached(item) ?? []
+        TagProvider.shared.load(item) { [weak self] tags in
+            guard let self, self.itemID == item.id, self.dots.tags != tags else { return }
+            self.dots.tags = tags
+            self.needsLayout = true
+        }
+        needsLayout = true
     }
 }
 

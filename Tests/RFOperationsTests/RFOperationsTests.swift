@@ -368,3 +368,30 @@ final class Sandbox {
         #expect(afterCrash.pending.isEmpty)
     }
 }
+
+@MainActor
+@Suite struct TagTests {
+    @Test func addRemoveUndoRedo() async throws {
+        let s = try Sandbox()
+        let a = s.file("a.txt"), b = s.file("b.txt")
+        _ = Tags.write(["Work"], to: b)
+        let r = await s.run(.changeTags([a, b], add: ["Red", "Project X"], remove: ["Work"]))
+        #expect(r.errors.isEmpty)
+        #expect(Tags.names(at: a) == ["Red", "Project X"])
+        #expect(Tags.names(at: b) == ["Red", "Project X"])
+        #expect(Tags.read(at: a).first?.color == .red)            // standard tags get their color
+        await s.undo()
+        #expect(Tags.names(at: a).isEmpty && Tags.names(at: b) == ["Work"])
+        await s.redo()
+        #expect(Tags.names(at: a) == ["Red", "Project X"] && Tags.names(at: b) == ["Red", "Project X"])
+    }
+
+    @Test func settingExactTags() async throws {
+        let s = try Sandbox()
+        let a = s.file("a.txt")
+        _ = await s.run(.setTags([.init(url: a, tags: ["Blue", "Green"])]))
+        #expect(Tags.read(at: a).map(\.color) == [.blue, .green])
+        let unchanged = await s.run(.changeTags([a], add: ["Blue"], remove: []))   // already there
+        #expect(unchanged.log.isEmpty)
+    }
+}

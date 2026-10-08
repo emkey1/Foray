@@ -16,6 +16,7 @@ typedef struct {
     int64_t allocsize;          // allocated bytes (files only)
     struct timespec crtime;
     struct timespec modtime;
+    struct timespec chgtime;    // status change: also moves when xattrs (e.g. tags) change
     struct timespec addedtime;  // tv_sec == 0 when unknown
     uint16_t finderflags;       // FileInfo.finderFlags, host byte order (kHasBundle, kIsAlias, ...)
     uint8_t ismountpoint;       // directory is a mount point

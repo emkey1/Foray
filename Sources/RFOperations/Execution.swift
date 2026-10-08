@@ -1,5 +1,6 @@
 import Darwin
 import Foundation
+import RFFileSystem
 import RFModel
 import Synchronization
 
@@ -97,6 +98,14 @@ final class Execution: @unchecked Sendable {
         case .rename(let item, let name): await rename(item, to: name)
         case .newFolder(let dir, let name, let moving): await newFolder(in: dir, name: name, moving: moving)
         case .restore(let pairs): await restore(pairs)
+        case .changeTags(let items, let add, let remove):
+            await tag(items.map { url in { (current: [String]) in
+                var tags = current.filter { name in !remove.contains { $0.caseInsensitiveCompare(name) == .orderedSame } }
+                for name in add where !tags.contains(where: { $0.caseInsensitiveCompare(name) == .orderedSame }) { tags.append(name) }
+                return (url, tags)
+            } })
+        case .setTags(let list):
+            await tag(list.map { a in { (_: [String]) in (a.url, a.tags) } })
         }
         update { $0.phase = .finished }
         return result
@@ -410,6 +419,34 @@ final class Execution: @unchecked Sendable {
             let target = folder.appendingPathComponent(item.lastPathComponent)
             let mrc = await blocking { FileOps.rename(item, to: target) }
             if mrc == 0 { result.record(.moved(.init(from: item, to: target))) } else { fail(item, mrc, "move") }
+        }
+    }
+
+    /// Each closure gets an item's current tags and returns the item and its new tags.
+    private func tag(_ changes: [@Sendable ([String]) -> (URL, [String])]) async {
+        update {
+            $0.itemsTotal = changes.count
+            $0.phase = .running
+        }
+        for change in changes {
+            guard control.checkpoint() else { break }
+            let outcome: (URL, [String], [String], Int32) = await blocking {
+                let probe = change([])
+                let current = Tags.names(at: probe.0)
+                let (url, new) = change(current)
+                if new == current { return (url, current, new, 0) }
+                return (url, current, new, Tags.write(new, to: url))
+            }
+            let (url, before, after, rc) = outcome
+            if rc == 0 {
+                if before != after {
+                    result.record(.tagged(url, before: before, after: after))
+                    result.changedFolders.insert(url.deletingLastPathComponent())
+                }
+            } else {
+                fail(url, rc, "tag")
+            }
+            update { $0.itemsDone += 1 }
         }
     }
 

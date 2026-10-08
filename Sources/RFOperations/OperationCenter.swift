@@ -1,5 +1,6 @@
 import Foundation
 import RFFileSystem
+import RFModel
 import Synchronization
 
 /// One submitted operation, observed by the UI.
