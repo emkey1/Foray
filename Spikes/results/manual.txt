@@ -1,0 +1,19 @@
+# Run by the user from Terminal.app with Full Disk Access, 2026-10-08.
+
+=== S4 Put Back
+~/.Trash readable: yes
+trashed to: /Users/<user>/.Trash/rf-putback-spike-2AC18AA8.txt
+xattrs on trashed item: ["com.apple.macl", "com.apple.provenance"]
+.DS_Store mtime before: 2026-10-05 14:15:47 +0000  after: 2026-10-08 11:49:17 +0000
+filename found in .DS_Store, followed by record code 'ptbL'
+cleaned up trashed test file
+
+=== S6 Comments
+xattr comment: bplist00_written by xattr
+Finder sees:   ''
+written by Finder
+after Finder write, xattr: bplist00_written by Finder
+
+=== S7 Cloud thumbnails
+<a small .txt file in iCloud Drive; name redacted>
+  dataless before=true after=true  type=2  (1994 ms)
