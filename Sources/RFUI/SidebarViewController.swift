@@ -116,11 +116,7 @@ final class SidebarViewController: NSViewController {
     @objc private func eject(_ sender: Any) {
         let row = (sender as? NSView).map(outline.row(for:)) ?? outline.clickedRow
         guard let node = outline.item(atRow: row) as? Node, let url = node.ejectURL else { return }
-        do {
-            try Volumes.eject(url)
-        } catch {
-            presentError(error)
-        }
+        EjectUI.eject([url], window: view.window)
     }
 
     @objc private func removeClicked(_ sender: Any) {

@@ -10,6 +10,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             WindowManager.shared.openWindow()
         }
         WindowManager.shared.prefillMostRecentSearch()
+        EjectUI.startWatchingUnmounts()
+        DispatchQueue.main.async { Onboarding.showIfNeeded() }
         NSApp.activate()
     }
 
@@ -47,6 +49,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc func showGuide(_ sender: Any?) { GuideWindowController.shared.show() }
 
+    @objc func showSettings(_ sender: Any?) { SettingsWindowController.shared.show() }
+
     @objc func showGuideSection(_ sender: NSMenuItem) {
         let section = (sender.representedObject as? String).flatMap(GuideWindowController.Section.init(rawValue:)) ?? .top
         GuideWindowController.shared.show(section)
@@ -63,7 +67,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 enum MainMenu {
     static func build(target: AppDelegate) -> NSMenu {
         let main = NSMenu()
-        main.addItem(submenu(appMenu()))
+        main.addItem(submenu(appMenu(target)))
         main.addItem(submenu(fileMenu(target)))
         main.addItem(submenu(editMenu()))
         main.addItem(submenu(viewMenu()))
@@ -95,9 +99,13 @@ enum MainMenu {
     private static let up = String(UnicodeScalar(NSUpArrowFunctionKey)!)
     private static let down = String(UnicodeScalar(NSDownArrowFunctionKey)!)
 
-    private static func appMenu() -> NSMenu {
+    private static func appMenu(_ target: AppDelegate) -> NSMenu {
         let menu = NSMenu(title: "RealFinder")
         menu.addItem(item("About RealFinder", #selector(NSApplication.orderFrontStandardAboutPanel(_:))))
+        menu.addItem(.separator())
+        let settings = item("Settings…", #selector(AppDelegate.showSettings(_:)), ",")
+        settings.target = target
+        menu.addItem(settings)
         menu.addItem(.separator())
         let services = NSMenu(title: "Services")
         NSApp.servicesMenu = services
@@ -136,6 +144,7 @@ enum MainMenu {
         menu.addItem(.separator())
         menu.addItem(item("Quick Look", Commands.toggleQuickLook, "y"))
         menu.addItem(item("Show in Enclosing Folder", Commands.showInEnclosingFolder, "r"))
+        menu.addItem(item("Eject", Commands.eject, "e"))
         menu.addItem(.separator())
         menu.addItem(item("Find", Commands.focusSearch, "f"))
         menu.addItem(item("Copy Path", Commands.copyPath, "c", [.command, .option]))

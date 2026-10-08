@@ -43,9 +43,6 @@ public enum Volumes {
             }
     }
 
-    public static func eject(_ volume: URL) throws {
-        try NSWorkspace.shared.unmountAndEjectDevice(at: volume)
-    }
 }
 
 /// Names and identities that need filesystem access (kept out of RFModel).

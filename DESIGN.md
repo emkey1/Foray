@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | Draft v0.5: M0 results folded in (`Spikes/RESULTS.md`); M1 and M2 complete; M3 search in place |
+| Status | Draft v0.6: M0 results folded in (`Spikes/RESULTS.md`); M1, M2 and M4 built (M4 awaits its week of daily use); M3 search in place except Recents |
 | Date | 2026-10-08 |
 | Toolchain baseline | Xcode 27, Swift 6.4, developed on macOS 26.6 |
 | Working name | RealFinder (see Q9) |
@@ -538,9 +538,11 @@ All four views implement one protocol. A `BrowserViewController` hosts the activ
 - **Column view: custom.**
   - A horizontally scrolling row of NSTableViews, one per folder in the path, followed by a preview column.
   - NSBrowser was considered and rejected because it gives too little control over async loading, sorting, inline rename, drag and drop, and cell layout.
+  - *As built (M4):* columns are laid out by hand (fixed widths, full visible height) in a flipped document view. Constraining them to the clip view made the window shrink to fit. The tab's location is the last full ("current") column; earlier columns are its ancestors back to where column browsing started. A single selected folder is shown in a "peek" column; a single selected file gets the preview column. Each column loads and watches its own folder while on screen and uses the tab's one `Arrangement`. The `QLPreviewView` gets its item only once it is in a window (it asserts otherwise).
 - **Gallery view.**
   - A large preview (`QLPreviewView`) above a horizontal NSCollectionView strip of thumbnails.
   - An optional sidebar shows metadata and Quick Actions.
+  - *As built (M4):* the strip is a custom horizontal view in the shared order, and the info panel shows the Get Info basics. The first item is selected on entry. Quick Actions are P2.
 - **Mode switch.** The controller swaps in the new child view controller, then calls `apply(snapshot)`, sets `selection`, and calls `reveal(anchor)`. Nothing is reloaded or re-sorted.
 
 **Icons and thumbnails**
@@ -688,6 +690,7 @@ protocol SearchBackend: Sendable {
 ### 5.8 Metadata
 
 - **Tags.**
+  - *As built (M4):* tags load off the main thread for visible items and are cached by `FileID` until the item's status-change time (`ATTR_CMN_CHGTIME`) moves, which tag edits do. List and icon cells show up to three dots. Assigning goes through the operations engine (`.changeTags`, `.setTags`), so it shows progress and can be undone. The sidebar's Tags section comes from Finder's `FavoriteTagNames`; each entry is a This Mac search for `tag:"Name"`.
   - Read through `tagNamesKey`. Colors come from the `com.apple.metadata:_kMDItemUserTags` xattr, whose entries look like `Name\n<colorIndex>`.
   - Write **only** through `NSURL.setResourceValue(_:forKey: .tagNamesKey)`. The API also updates the FinderInfo label color. Writing the raw xattr leaves that label stale (S5).
   - Finder's sidebar tag list is `FavoriteTagNames` in the `com.apple.finder` preferences, which RealFinder can read. The full catalog syncs through iCloud and isn't readable. RealFinder builds its tag list from those favorites plus tags discovered on files (through Spotlight and xattrs), and never writes Finder's catalog.
@@ -721,6 +724,7 @@ protocol SearchBackend: Sendable {
   - Uses DiskArbitration to unmount and eject.
   - If something blocks the eject, RealFinder shows the reason. It also tries to name the blocking process by running `lsof` on the mount point in the background.
   - Force Eject is offered.
+  - *As built (M4):* `diskutil eject` / `unmountDisk force` on the whole device (from `statfs`), run off the main thread. `diskutil` already handles APFS containers and disk images and names the dissenting process; `lsof +f` adds every process of ours with files open. Network mounts use `diskutil unmount`. Ejecting a disk ejects all of its volumes (Finder asks first; we don't yet). Tabs on a volume that unmounts go to Computer. Eject All is still to do.
 - **Connect to Server.**
   - Uses `NetFSMountURLAsync`.
   - The system's own authentication dialog handles credentials and the Keychain, so RealFinder never sees or stores passwords.
@@ -758,6 +762,7 @@ protocol SearchBackend: Sendable {
 - **Privacy permissions (TCC).** macOS asks for permission the first time an app opens Desktop, Documents, Downloads, removable volumes or network volumes. Other areas require Full Disk Access, including Mail, Messages, Safari data and other users' Library folders.
   - First-run onboarding explains this and links directly to System Settings › Privacy & Security › Full Disk Access.
   - RealFinder detects Full Disk Access by probing a protected path.
+  - *As built (M4):* the probe lists `~/Library/Safari`, `~/.Trash` or `~/Library/Mail`. Onboarding is a single alert on first launch, skipped when Full Disk Access is already granted. Settings › Privacy shows the state and opens the right System Settings page, and a folder that fails with a permission error says Full Disk Access may help.
   - Without it the app still works. Protected folders show an explanation instead of an error or an empty list.
 - **Admin operations (P3).** A launchd daemon is registered through `SMAppService.daemon` and talks to the app over XPC.
   - The helper verifies the caller's code signature using its audit token.
@@ -957,7 +962,7 @@ These are in order with exit criteria; there are no dates.
 | **M1 Browsing core** ✅ | App shell, windows and tabs, sidebar (with editable favorites), list view with inline folder expansion, icon view, `Arrangement` model (§3.3), navigation, path and status bars, Quick Look, FSEvents updates, state restoration, in-app user guide | Done: usable as a read-only daily browser; open, mode-switch and re-sort budgets met (§5.13); sort-preservation tests pass |
 | **M2 File operations** ✅ | Engine; copy, move, rename, trash, new folder and duplicate; drag and drop; clipboard and cut; conflicts; progress; undo; journal | Done: fuzz suite passes on every filesystem image; no data loss on `kill -9` mid-copy |
 | **M3 Search** (done early, except Recents) | Scope bar, query parser, kinds, Spotlight and Crawl backends, results view, Recents | Acceptance tests for headline requirements 1 and 2 pass |
-| **M4 P1 complete** | Column and gallery views, tags, read-only Get Info, View Options, Open With, eject, preferences, onboarding and TCC | The developer uses RealFinder instead of Finder for a full week |
+| **M4 P1 complete** (built) | Column and gallery views, tags, read-only Get Info, View Options, Open With, eject, preferences, onboarding and TCC | The developer uses RealFinder instead of Finder for a full week. *Built:* everything in scope. Settings (⌘,): new-window folder, tabs or windows, Return renames or opens, search scope and match defaults, per-folder or same-everywhere views, Full Disk Access. Open With has Other… and ⌥ Always Open With (sets the LaunchServices default for the type). Get Info shows comments and permissions read-only. Not yet: Eject All, a confirmation before ejecting a multi-volume disk. Waiting on the week of daily use |
 | **M5 Parity (P2)** | All remaining P2 rows in §4 | Parity checklist complete, except ✗ and P3 items |
 | **M6 Advanced (P3)** | Privileged helper, scripting, Shortcuts and CLI, dual-pane mode, extras | — |
 

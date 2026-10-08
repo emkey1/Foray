@@ -33,6 +33,12 @@ public final class AppModel {
         settingsChanged()
     }
 
+    /// Settings › Views: same settings everywhere, or remembered per folder.
+    func setSettingsModel(_ m: SettingsModel) {
+        settings.model = m
+        settingsChanged()
+    }
+
     /// View Options › Use as Defaults.
     func setClassDefault(_ s: ViewSettings, cls: LocationClass) {
         settings.classDefaults[cls] = s

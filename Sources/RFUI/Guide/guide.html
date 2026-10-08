@@ -47,6 +47,7 @@
   <a href="#views">Views</a>
   <a href="#sorting">Sorting and grouping</a>
   <a href="#settings">Which settings apply where</a>
+  <a href="#prefs">Preferences</a>
   <a href="#search">Searching</a>
   <a href="#syntax">Search filters</a>
   <a href="#kinds">File kinds</a>
@@ -66,6 +67,7 @@
 <ul>
   <li><b>Windows and tabs.</b> <kbd>⌘N</kbd> opens a new window, <kbd>⌘T</kbd> a new tab. Drag a tab out to make it a window. Your windows and tabs come back when you relaunch.</li>
   <li><b>Sidebar.</b> Favorites and Locations (your disks, with eject buttons). Click to go there. Drag folders onto the sidebar to add them; drag a favorite out, or right-click it, to remove it.</li>
+  <li><b>Ejecting.</b> Click a disk's eject button, or select it (in Computer, <kbd>⇧⌘C</kbd>) and press <kbd>⌘E</kbd>. If something has files open on it, RealFinder says which apps, so you can quit them, or you can <b>Force Eject</b> (unsaved changes in those apps may be lost). Ejecting a disk ejects all of its volumes. Tabs that were showing it go to Computer.</li>
   <li><b>Back and Forward.</b> <kbd>⌘[</kbd> and <kbd>⌘]</kbd>. Going back selects the item you had selected.</li>
   <li><b>Enclosing folder.</b> <kbd>⌘↑</kbd> goes up one level and selects the folder you came from. <kbd>⌘↓</kbd> opens the selection.</li>
   <li><b>Path bar.</b> Click any folder in the path bar at the bottom to go there.</li>
@@ -104,6 +106,16 @@
   <li>To give a folder its own settings, choose <b>View › Remember Settings for This Folder</b>. Choose it again to forget them. These survive renaming or moving the folder.</li>
   <li>Search results have their own settings (list view, with a Where column), separate from folders.</li>
 </ul>
+
+<h2 id="prefs">Preferences</h2>
+<p><b>RealFinder › Settings…</b> (<kbd>⌘,</kbd>):</p>
+<ul>
+  <li><b>General:</b> the folder new windows open on (Home unless you choose another); whether folders you open with <kbd>⌘</kbd>-double-click open in tabs or windows; and whether <kbd>Return</kbd> renames (like Finder) or opens the selection.</li>
+  <li><b>Views:</b> view settings the same everywhere, or remembered for each folder (see <a href="#settings">above</a>).</li>
+  <li><b>Search:</b> where searches start (the current folder, This Mac, or whatever you used last), whether they match names or names and contents, and whether a search follows you to other folders.</li>
+  <li><b>Privacy:</b> whether RealFinder has Full Disk Access, with a button to the right page of System Settings.</li>
+</ul>
+<p>View options for the front window (icon size, columns, grouping and so on) are in <b>View › Show View Options</b> (<kbd>⌘J</kbd>).</p>
 
 <h2 id="search">Searching</h2>
 <p>Press <kbd>⌘F</kbd> or click the search field. <b>Searches start in the current folder and its subfolders</b>; the field says where (“Search “Projects””). From Computer, searches cover the whole Mac.</p>
@@ -175,6 +187,7 @@
   <li><b>Open</b> with a double-click, <kbd>⌘O</kbd> or <kbd>⌘↓</kbd>. <kbd>⌘</kbd>-double-click a folder to open it in a new tab.</li>
   <li><b>Quick Look:</b> <kbd>Space</kbd> or <kbd>⌘Y</kbd>. Arrow keys move through the selection while it's open.</li>
   <li><b>Right-click</b> for Open With, Show Package Contents (for apps and bundles), Copy Path, and Quick Look.</li>
+  <li><b>Open With</b> lists the apps that can open the item, the default first. <b>Other…</b> lets you pick any app, and can make it the default for that kind of file. Hold <kbd>⌥</kbd> in the menu for <b>Always Open With</b>, which opens the item and makes that app the default for all files of its kind.</li>
   <li><b>Copy Path:</b> <kbd>⌥⌘C</kbd> copies the selected items' paths.</li>
   <li><b>Get Info:</b> <kbd>⌘I</kbd> opens a window per selected item (or the current folder): kind, size (folders are totaled), dates, details such as dimensions or duration, tags, comments, the app it opens with, and permissions. You can rename the item there.</li>
   <li><b>Type to select:</b> start typing a name to jump to it.</li>
@@ -185,7 +198,7 @@
   <li><b>Copy and paste:</b> <kbd>⌘C</kbd>, then <kbd>⌘V</kbd> in another folder. Pasting into the same folder makes a copy (“report copy.pdf”).</li>
   <li><b>Cut and paste moves:</b> <kbd>⌘X</kbd> dims the items; <kbd>⌘V</kbd> moves them. (<kbd>⌥⌘V</kbd> moves copied items, as in Finder.)</li>
   <li><b>Drag and drop:</b> onto a folder, empty space, or a sidebar location. Within one disk a drag moves; to another disk it copies. Hold <kbd>⌥</kbd> to copy, <kbd>⌘</kbd> to move. Drag to the Trash in the Dock to delete.</li>
-  <li><b>Rename:</b> select an item and press <kbd>Return</kbd>. Type the new name, <kbd>Return</kbd> to keep it, <kbd>Esc</kbd> to cancel. You're asked before an extension changes.</li>
+  <li><b>Rename:</b> select an item and press <kbd>Return</kbd> (unless you've set Return to open things in <a href="#prefs">Settings</a>). Type the new name, <kbd>Return</kbd> to keep it, <kbd>Esc</kbd> to cancel. You're asked before an extension changes.</li>
   <li><b>New Folder</b> <kbd>⇧⌘N</kbd> (then name it), <b>New Folder with Selection</b> <kbd>⌃⌘N</kbd>, <b>Duplicate</b> <kbd>⌘D</kbd>.</li>
   <li><b>Move to Trash</b> <kbd>⌘⌫</kbd>. <b>Delete Immediately</b> <kbd>⌥⌘⌫</kbd> asks first and can't be undone.</li>
   <li><b>Undo</b> <kbd>⌘Z</kbd> and <b>Redo</b> <kbd>⇧⌘Z</kbd> work for everything except Delete Immediately, across all windows.</li>
@@ -217,6 +230,8 @@
   <tr><td><kbd>⇧⌘.</kbd></td><td>Show or hide hidden files</td></tr>
   <tr><td><kbd>⌥⌘C</kbd></td><td>Copy path</td></tr>
   <tr><td><kbd>⌘I</kbd></td><td>Get Info</td></tr>
+  <tr><td><kbd>⌘E</kbd></td><td>Eject the selected disk</td></tr>
+  <tr><td><kbd>⌘,</kbd></td><td>Settings</td></tr>
   <tr><td><kbd>⌘C</kbd> <kbd>⌘X</kbd> <kbd>⌘V</kbd> <kbd>⌥⌘V</kbd></td><td>Copy, cut, paste, move items here</td></tr>
   <tr><td><kbd>Return</kbd></td><td>Rename</td></tr>
   <tr><td><kbd>⌘D</kbd> <kbd>⇧⌘N</kbd> <kbd>⌃⌘N</kbd></td><td>Duplicate, new folder, new folder with selection</td></tr>
@@ -227,7 +242,7 @@
 </table>
 
 <h2 id="access">Privacy and access</h2>
-<p>macOS asks before any app reads Desktop, Documents, Downloads, external drives and network volumes; allow RealFinder when asked. Some places (Mail, Messages and Safari data, other users' folders, the Trash) need <b>Full Disk Access</b>: System Settings › Privacy &amp; Security › Full Disk Access, then add RealFinder.</p>
+<p>macOS asks before any app reads Desktop, Documents, Downloads, external drives and network volumes; allow RealFinder when asked. Some places (Mail, Messages and Safari data, other users' folders, the Trash) need <b>Full Disk Access</b>: System Settings › Privacy &amp; Security › Full Disk Access, then add RealFinder. <b>Settings › Privacy</b> shows whether it's on and opens that page for you. If a folder won't open because of permissions, the message says so.</p>
 
 <h2 id="coming">Not yet available</h2>
 <p>RealFinder is under construction. Use Finder for these for now:</p>

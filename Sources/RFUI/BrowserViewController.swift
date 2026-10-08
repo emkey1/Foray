@@ -307,8 +307,10 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
 
     private func updateMessage() {
         switch state.loadState {
-        case .failed(let message, _):
-            messageLabel.stringValue = message
+        case .failed(let message, let permission):
+            messageLabel.stringValue = permission && !FullDiskAccess.isGranted
+                ? message + "\n\nIf this is a protected location, RealFinder may need Full Disk Access (Settings › Privacy)."
+                : message
             messageLabel.isHidden = false
         case .complete where state.snapshot.items.isEmpty && state.location.searchQuery != nil:
             let q = state.location.searchQuery!
@@ -356,6 +358,9 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
         if state.location.searchQuery != nil && items.count == 1 {
             menu.addItem(withTitle: "Show in Enclosing Folder", action: #selector(showInEnclosingFolder(_:)), keyEquivalent: "")
         }
+        if !selectedEjectableVolumes.isEmpty {
+            menu.addItem(withTitle: "Eject", action: #selector(ejectSelection(_:)), keyEquivalent: "")
+        }
         menu.addItem(.separator())
         menu.addItem(withTitle: "Move to Trash", action: #selector(moveToTrash(_:)), keyEquivalent: "")
         menu.addItem(.separator())
@@ -394,7 +399,10 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
         state.updatePresentation(change)
     }
 
-    func contentRename() { renameSelection(nil) }
+    /// Return: rename (Finder), or open if Settings › General says so.
+    func contentRename() {
+        if AppSettings.returnOpens { openSelection(nil) } else { renameSelection(nil) }
+    }
 
     // MARK: Rename in place
 
@@ -476,21 +484,35 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
         state.navigate(to: .folder(item.url))
     }
 
-    private func openWithMenuItem(for items: [FileItem]) -> NSMenuItem? {
+    /// Open With: the apps that can open the first selected item, default first, then Other….
+    /// Holding Option turns it into Always Open With, which also makes the app the default for
+    /// that kind of file (DESIGN.md §4.3).
+    func openWithMenuItem(for items: [FileItem]) -> NSMenuItem? {
         guard let first = items.first, !first.isNavigableFolder else { return nil }
         let apps = NSWorkspace.shared.urlsForApplications(toOpen: first.url)
-        guard !apps.isEmpty else { return nil }
         let defaultApp = NSWorkspace.shared.urlForApplication(toOpen: first.url)
         let submenu = NSMenu()
+        var seen = Set<String>()
         for app in apps.prefix(20) {
             let name = FileManager.default.displayName(atPath: app.path)
-            let mi = NSMenuItem(title: app == defaultApp ? "\(name) (default)" : name, action: #selector(openWithApp(_:)), keyEquivalent: "")
+            // Several copies of one app (e.g. in Xcode's DerivedData) all read the same.
+            let title = seen.insert(name).inserted ? name : "\(name) — \(app.deletingLastPathComponent().path)"
+            let icon = NSWorkspace.shared.icon(forFile: app.path)
+            icon.size = NSSize(width: 16, height: 16)
+            let mi = NSMenuItem(title: app == defaultApp ? "\(title) (default)" : title, action: #selector(openWithApp(_:)), keyEquivalent: "")
             mi.representedObject = app
-            mi.image = NSWorkspace.shared.icon(forFile: app.path)
-            mi.image?.size = NSSize(width: 16, height: 16)
+            mi.image = icon
             submenu.addItem(mi)
+            let always = NSMenuItem(title: "Always Open With \(title)", action: #selector(alwaysOpenWithApp(_:)), keyEquivalent: "")
+            always.representedObject = app
+            always.image = icon
+            always.isAlternate = true
+            always.keyEquivalentModifierMask = .option
+            submenu.addItem(always)
             if app == defaultApp && apps.count > 1 { submenu.addItem(.separator()) }
         }
+        if !apps.isEmpty { submenu.addItem(.separator()) }
+        submenu.addItem(withTitle: "Other…", action: #selector(openWithOther(_:)), keyEquivalent: "")
         let item = NSMenuItem(title: "Open With", action: nil, keyEquivalent: "")
         item.submenu = submenu
         return item
@@ -499,6 +521,42 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
     @objc private func openWithApp(_ sender: NSMenuItem) {
         guard let app = sender.representedObject as? URL else { return }
         NSWorkspace.shared.open(state.selectedItems.map(\.url), withApplicationAt: app, configuration: NSWorkspace.OpenConfiguration())
+    }
+
+    @objc private func alwaysOpenWithApp(_ sender: NSMenuItem) {
+        guard let app = sender.representedObject as? URL else { return }
+        setDefaultApp(app, for: state.selectedItems)
+        openWithApp(sender)
+    }
+
+    /// Choose any app; optionally make it the default for files of this kind.
+    @objc private func openWithOther(_ sender: Any?) {
+        let items = state.selectedItems
+        guard !items.isEmpty, let window = view.window else { return }
+        let panel = NSOpenPanel()
+        panel.directoryURL = URL(fileURLWithPath: "/Applications")
+        panel.allowedContentTypes = [.application]
+        panel.prompt = "Open"
+        panel.message = items.count == 1 ? "Choose an app to open “\(items[0].displayName)”." : "Choose an app to open \(items.count) items."
+        let always = NSButton(checkboxWithTitle: "Always open \(items[0].contentType.localizedDescription ?? "files like this") with this app", target: nil, action: nil)
+        panel.accessoryView = always
+        panel.isAccessoryViewDisclosed = true
+        panel.beginSheetModal(for: window) { [weak self] response in
+            guard let self, response == .OK, let app = panel.url else { return }
+            if always.state == .on { self.setDefaultApp(app, for: items) }
+            NSWorkspace.shared.open(items.map(\.url), withApplicationAt: app, configuration: NSWorkspace.OpenConfiguration())
+        }
+    }
+
+    /// Makes `app` the default for each distinct type among `items` (a LaunchServices setting, as
+    /// Get Info › Change All does in Finder).
+    private func setDefaultApp(_ app: URL, for items: [FileItem]) {
+        for type in Set(items.map(\.contentType)) {
+            NSWorkspace.shared.setDefaultApplication(at: app, toOpen: type) { error in
+                guard let error else { return }
+                DispatchQueue.main.async { NSApp.presentError(error) }
+            }
+        }
     }
 
     /// ⌃⌘T: the selected folders, or the current folder when nothing is selected.
@@ -631,6 +689,7 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
         case #selector(openSelection(_:)), #selector(copyPath(_:)), #selector(openSelectionInNewTab(_:)):
             return !state.selectedItems.isEmpty
         case #selector(toggleQuickLook(_:)): return !state.selectedItems.isEmpty || previewPanel != nil
+        case #selector(ejectSelection(_:)): return !selectedEjectableVolumes.isEmpty
         case #selector(setViewMode(_:)):
             item.state = item.tag == ViewMode.allCases.firstIndex(of: state.settings.presentation.mode) ? .on : .off
             return true

@@ -299,7 +299,7 @@ public final class WindowManager {
 
     public func openWindow(_ location: Location? = nil) {
         FileOperationsUI.shared.install()
-        let controller = make(location ?? .folder(FileManager.default.homeDirectoryForCurrentUser))
+        let controller = make(location ?? AppSettings.newWindowLocation)
         controller.window?.center()
         showAsSeparateWindow(controller)
     }
@@ -332,7 +332,9 @@ public final class WindowManager {
             AppModel.shared.recordSearch(q)   // and keep it in Recent Searches
         }
         let controller = BrowserWindowController(location: start, pendingSearch: pending)
-        controller.browser.openInNewTab = { [weak self, weak controller] location in self?.openTab(location, nextTo: controller) }
+        controller.browser.openInNewTab = { [weak self, weak controller] location in
+            if AppSettings.openFoldersInTabs { self?.openTab(location, nextTo: controller) } else { self?.openWindow(location) }
+        }
         controllers.append(controller)
         return controller
     }

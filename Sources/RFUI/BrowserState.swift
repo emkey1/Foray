@@ -288,7 +288,12 @@ final class BrowserState {
     /// from Computer, and the same scope when refining a search.
     var defaultSearchScope: SearchScope {
         switch location {
-        case .folder(let url): .folder(url, recursive: true)
+        case .folder(let url):
+            switch AppSettings.searchScopeDefault {
+            case .currentFolder: .folder(url, recursive: true)
+            case .thisMac: .thisMac
+            case .previous: AppSettings.lastSearchWasThisMac ? .thisMac : .folder(url, recursive: true)
+            }
         case .computer: .thisMac
         case .search(let q): q.scope
         }
@@ -306,7 +311,8 @@ final class BrowserState {
             q.text = text
             replaceSearch(q)
         } else {
-            navigate(to: .search(SearchQuery(text: text, scope: defaultSearchScope)))
+            let origin = location.folderURL
+            navigate(to: .search(SearchQuery(text: text, scope: defaultSearchScope, match: AppSettings.defaultMatch, origin: origin)))
         }
     }
 
@@ -318,6 +324,7 @@ final class BrowserState {
     }
 
     private func replaceSearch(_ q: SearchQuery) {
+        AppSettings.lastSearchWasThisMac = q.scope == .thisMac
         history.replaceCurrent(.search(q))
         switchTo(.search(q))
     }
