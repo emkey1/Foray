@@ -33,6 +33,12 @@ public final class AppModel {
         settingsChanged()
     }
 
+    /// View Options › Use as Defaults.
+    func setClassDefault(_ s: ViewSettings, cls: LocationClass) {
+        settings.classDefaults[cls] = s
+        settingsChanged()
+    }
+
     func pin(_ s: ViewSettings, folder: FolderKey) {
         settings.pin(s, folder: folder)
         settingsChanged()

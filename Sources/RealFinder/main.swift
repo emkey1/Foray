@@ -171,6 +171,7 @@ enum MainMenu {
         menu.addItem(item("Show Hidden Files", Commands.toggleHiddenFiles, ".", [.command, .shift]))
         menu.addItem(item("Use Relative Dates", Commands.toggleRelativeDates))
         menu.addItem(item("Remember Settings for This Folder", Commands.toggleRememberSettings))
+        menu.addItem(item("Show View Options", Commands.showViewOptions, "j"))
         menu.addItem(.separator())
         menu.addItem(item("Reload", Commands.reloadFolder))
         menu.addItem(item("Show Sidebar", #selector(NSSplitViewController.toggleSidebar(_:)), "s", [.command, .control]))
