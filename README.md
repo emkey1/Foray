@@ -36,7 +36,7 @@ Privacy permissions such as Full Disk Access are tied to how the app is signed. 
 RF_SIGN_IDENTITY="Apple Development" scripts/bundle.sh release
 ```
 
-Releases are signed with a Developer ID and notarized; see the comments in `scripts/make-dmg.sh`.
+Releases are built from `Xcode/Foray.xcodeproj` (scheme "Foray App"): Product › Archive, then Distribute App › Direct Distribution signs with Developer ID and notarizes. `scripts/make-dmg.sh <exported Foray.app>` turns the result into the DMG.
 
 `DESIGN.md` describes the architecture, and the in-app guide (`Sources/RFUI/Guide/guide.html`) describes every feature.
 

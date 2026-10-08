@@ -7,6 +7,8 @@ let package = Package(
     platforms: [.macOS(.v26)],
     products: [
         .executable(name: "Foray", targets: ["Foray"]),
+        // What the Xcode project (Xcode/Foray.xcodeproj, used for signed, notarized releases) links.
+        .library(name: "ForayKit", targets: ["RFUI", "RFModel"]),
     ],
     targets: [
         // getattrlistbulk(2) parsing and copyfile(3) helpers. Only RFFileSystem and RFOperations

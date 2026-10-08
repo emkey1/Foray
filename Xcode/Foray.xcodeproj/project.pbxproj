@@ -1,0 +1,239 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 60;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		F0A000000000000000000101 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0A000000000000000000201 /* main.swift */; };
+		F0A000000000000000000102 /* Foray.icns in Resources */ = {isa = PBXBuildFile; fileRef = F0A000000000000000000202 /* Foray.icns */; };
+		F0A000000000000000000103 /* ForayKit in Frameworks */ = {isa = PBXBuildFile; productRef = F0A000000000000000000901 /* ForayKit */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		F0A000000000000000000201 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = main.swift; path = ../Sources/Foray/main.swift; sourceTree = SOURCE_ROOT; };
+		F0A000000000000000000202 /* Foray.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = Foray.icns; path = ../Resources/Foray.icns; sourceTree = SOURCE_ROOT; };
+		F0A000000000000000000203 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = ../Resources/Info.plist; sourceTree = SOURCE_ROOT; };
+		F0A000000000000000000204 /* Foray.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = Foray.entitlements; path = ../Resources/Foray.entitlements; sourceTree = SOURCE_ROOT; };
+		F0A000000000000000000205 /* Foray.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Foray.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		F0A000000000000000000301 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F0A000000000000000000103 /* ForayKit in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		F0A000000000000000000401 = {
+			isa = PBXGroup;
+			children = (
+				F0A000000000000000000201 /* main.swift */,
+				F0A000000000000000000203 /* Info.plist */,
+				F0A000000000000000000204 /* Foray.entitlements */,
+				F0A000000000000000000202 /* Foray.icns */,
+				F0A000000000000000000402 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		F0A000000000000000000402 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				F0A000000000000000000205 /* Foray.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		F0A000000000000000000501 /* ForayApp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F0A000000000000000000802 /* Build configuration list for PBXNativeTarget "ForayApp" */;
+			buildPhases = (
+				F0A000000000000000000601 /* Sources */,
+				F0A000000000000000000301 /* Frameworks */,
+				F0A000000000000000000602 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ForayApp;
+			packageProductDependencies = (
+				F0A000000000000000000901 /* ForayKit */,
+			);
+			productName = Foray;
+			productReference = F0A000000000000000000205 /* Foray.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		F0A000000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2700;
+				LastUpgradeCheck = 2700;
+				TargetAttributes = {
+					F0A000000000000000000501 = {
+						CreatedOnToolsVersion = 27.0;
+					};
+				};
+			};
+			buildConfigurationList = F0A000000000000000000801 /* Build configuration list for PBXProject "Foray" */;
+			compatibilityVersion = "Xcode 15.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = F0A000000000000000000401;
+			packageReferences = (
+				F0A000000000000000000A01 /* XCLocalSwiftPackageReference ".." */,
+			);
+			productRefGroup = F0A000000000000000000402 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				F0A000000000000000000501 /* ForayApp */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		F0A000000000000000000602 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F0A000000000000000000102 /* Foray.icns in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		F0A000000000000000000601 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F0A000000000000000000101 /* main.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		F0A000000000000000000701 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_TESTABILITY = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		F0A000000000000000000702 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		F0A000000000000000000703 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = "$(SRCROOT)/../Resources/Foray.entitlements";
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = UYU5FM4LQ4;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "$(SRCROOT)/../Resources/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.emkey1.Foray;
+				PRODUCT_NAME = Foray;
+			};
+			name = Debug;
+		};
+		F0A000000000000000000704 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = "$(SRCROOT)/../Resources/Foray.entitlements";
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = UYU5FM4LQ4;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "$(SRCROOT)/../Resources/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.emkey1.Foray;
+				PRODUCT_NAME = Foray;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		F0A000000000000000000801 /* Build configuration list for PBXProject "Foray" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F0A000000000000000000701 /* Debug */,
+				F0A000000000000000000702 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F0A000000000000000000802 /* Build configuration list for PBXNativeTarget "ForayApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F0A000000000000000000703 /* Debug */,
+				F0A000000000000000000704 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		F0A000000000000000000A01 /* XCLocalSwiftPackageReference ".." */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ..;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		F0A000000000000000000901 /* ForayKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F0A000000000000000000A01 /* XCLocalSwiftPackageReference ".." */;
+			productName = ForayKit;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = F0A000000000000000000001 /* Project object */;
+}

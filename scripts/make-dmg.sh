@@ -1,6 +1,13 @@
 #!/bin/zsh
-# Builds Foray for distribution and packs it into dist/Foray-<version>.dmg (drag to Applications).
+# Packs Foray into dist/Foray-<version>.dmg (drag to Applications).
 #
+# Releases (notarized through Xcode, no passwords):
+#   1. open Xcode/Foray.xcodeproj, choose the "Foray App" scheme, Product › Archive
+#   2. Organizer › Distribute App › Direct Distribution: Xcode signs with Developer ID, notarizes
+#      with your Xcode account and exports Foray.app
+#   3. scripts/make-dmg.sh /path/to/exported/Foray.app
+#
+# Without an app argument it builds and signs one itself:
 #   scripts/make-dmg.sh
 #       Signs with your "Developer ID Application" certificate if you have one (needed for other
 #       people's Macs), otherwise "Apple Development" (fine for testing on your own Macs only).
@@ -13,6 +20,33 @@
 #      (asks for an app-specific password from appleid.apple.com)
 set -euo pipefail
 cd "${0:A:h}/.."
+
+# An app exported by Xcode (already signed and notarized): check it and pack it as is.
+if [[ $# -ge 1 ]]; then
+  app=${1%/}
+  [[ -d $app/Contents ]] || { print -u2 "error: $app isn't an app bundle"; exit 1; }
+  codesign --verify --strict --verbose=1 "$app"
+  if xcrun stapler validate "$app" >/dev/null 2>&1; then
+    spctl --assess --type execute --verbose "$app"
+  else
+    print -u2 "warning: $app has no notarization ticket stapled; other Macs will block it."
+  fi
+  version=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" "$app/Contents/Info.plist")
+  stage=$(mktemp -d)
+  trap 'rm -rf "$stage"' EXIT
+  cp -R "$app" "$stage/"
+  ln -s /Applications "$stage/Applications"
+  mkdir -p dist
+  dmg=dist/Foray-$version.dmg
+  rm -f "$dmg"
+  hdiutil create -volname "Foray $version" -srcfolder "$stage" -fs HFS+ -format UDZO -ov "$dmg" >/dev/null
+  # The app inside carries the notarization; sign the disk image too if a Developer ID key is here.
+  if security find-identity -v -p codesigning | grep -q "Developer ID Application"; then
+    codesign --force --timestamp --sign "Developer ID Application" "$dmg"
+  fi
+  echo "$dmg"
+  exit 0
+fi
 
 identity=${FORAY_SIGN_IDENTITY:-}
 if [[ -z $identity ]]; then
