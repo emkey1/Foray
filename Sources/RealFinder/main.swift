@@ -149,6 +149,7 @@ enum MainMenu {
         menu.addItem(item("Close Window", #selector(NSWindow.performClose(_:)), "w"))
         menu.addItem(.separator())
         menu.addItem(item("Get Info", Commands.getInfo, "i"))
+        menu.addItem(item("Show Inspector", Commands.showInspector, "i", [.command, .option]))
         menu.addItem(.separator())
         menu.addItem(item("Rename", Commands.rename))
         menu.addItem(item("Duplicate", Commands.duplicate, "d"))

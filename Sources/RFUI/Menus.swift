@@ -102,4 +102,5 @@ public enum Commands {
     public static let expand = #selector(BrowserViewController.expandSelection(_:))
     public static let share = #selector(BrowserViewController.shareSelection(_:))
     public static let saveSearch = #selector(BrowserViewController.saveSearch(_:))
+    public static let showInspector = #selector(BrowserViewController.showInspector(_:))
 }

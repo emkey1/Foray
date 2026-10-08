@@ -134,3 +134,41 @@ extension UISerial {
         }
     }
 }
+
+extension UISerial {
+    @MainActor
+    @Suite(.serialized) final class InspectorTests {
+        let base = TestDirs.make("inspector")
+        isolated deinit { try? FileManager.default.removeItem(at: base) }
+
+        @Test func summarizesSeveralItems() {
+            func item(_ name: String, _ inode: UInt64, size: Int64?, folder: Bool = false) -> FileItem {
+                FileItem(id: FileID(device: 1, inode: inode), url: URL(fileURLWithPath: "/x/\(name)"), name: name,
+                         contentType: folder ? .folder : .plainText, flags: folder ? [.directory] : [], size: size)
+            }
+            let items = [item("a.txt", 1, size: 100), item("b.txt", 2, size: 50), item("F", 3, size: nil, folder: true)]
+            let s = SelectionSummary(items)
+            #expect(s.count == 3 && s.folders == 1 && s.bytes == 150)
+            #expect(s.kinds.first?.count == 2)
+            #expect(SelectionSummary(items, folderSizes: [FileID(device: 1, inode: 3): 1000]).bytes == 1150)
+        }
+
+        @Test func followsTheSelection() async throws {
+            AppModel.shared = AppModel(store: AppSupportStore(directory: base.appendingPathComponent("store")))
+            let w = base.appendingPathComponent("W", isDirectory: true)
+            try FileManager.default.createDirectory(at: w, withIntermediateDirectories: true)
+            for n in ["one.txt", "two.txt"] { FileManager.default.createFile(atPath: w.appendingPathComponent(n).path, contents: Data("x".utf8)) }
+            let state = BrowserState(location: .folder(w))
+            defer { state.invalidate() }
+            let deadline = Date().addingTimeInterval(15)
+            while state.snapshot.items.count < 2 && Date() < deadline { try await Task.sleep(for: .milliseconds(20)) }
+            let panel = InspectorPanel.shared
+            panel.attach(state)
+            state.select(names: ["one.txt"])
+            #expect(panel.contentView is NSHostingView<InfoView>)
+            state.select(names: ["one.txt", "two.txt"])
+            #expect(panel.contentView is NSHostingView<SummaryView>)
+            panel.orderOut(nil)
+        }
+    }
+}

@@ -314,7 +314,7 @@ Each of these is additive or controlled by a setting, so Finder habits keep work
 | Feature | Approach | Phase |
 |---|---|---|
 | Get Info window: General, More Info, Name & Extension, Comments, Open With, Preview, Sharing & Permissions | SwiftUI | P1 read-only · P2 editable ✅ (name, Locked, Hide extension, comment, owner/group/everyone access; undoable) |
-| Inspector (Cmd-Opt-I): follows the selection and summarizes multiple items | | P2 |
+| Inspector (Cmd-Opt-I): follows the selection and summarizes multiple items | | P2 ✅ |
 | Tags: assign, remove, colors, sidebar tags, tag catalog, filter and search by tag | §5.8 | P1 |
 | Comments | §5.8 | P2 ✅ |
 | Locked, Stationery Pad, Hide Extension, custom icons (paste or remove) | | P2 (Locked and Hide Extension ✅) |
