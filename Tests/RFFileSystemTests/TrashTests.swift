@@ -144,3 +144,20 @@ struct CloudLocationTests {
         #expect(CloudLocations.displayName(providerFolder: "Box-Box") == "Box")
     }
 }
+
+struct NetworkMountTests {
+    @Test func normalizesAddresses() {
+        #expect(NetworkMounts.normalize("server")?.absoluteString == "smb://server")
+        #expect(NetworkMounts.normalize("  nas.local/Media ")?.absoluteString == "smb://nas.local/Media")
+        #expect(NetworkMounts.normalize("afp://old-mac/Share")?.scheme == "afp")
+        #expect(NetworkMounts.normalize("https://dav.example.com/files")?.host == "dav.example.com")
+        #expect(NetworkMounts.normalize("") == nil)
+        #expect(NetworkMounts.normalize("gopher://x") == nil)
+        #expect(NetworkMounts.normalize("smb://") == nil)
+    }
+
+    @Test func bonjourNamesBecomeServiceURLs() {
+        #expect(NetworkMounts.url(forSMBService: "My Mac")?.absoluteString == "smb://My%20Mac._smb._tcp.local")
+        #expect(NetworkMounts.Failure(status: EAUTH).errorDescription?.contains("password") == true)
+    }
+}

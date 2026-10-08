@@ -98,3 +98,45 @@ extension UISerial {
         }
     }
 }
+
+extension UISerial {
+    @MainActor
+    @Suite(.serialized) final class ConnectToServerTests {
+        let suite = "rf-test-servers-\(UUID().uuidString)"
+
+        isolated deinit {
+            UserDefaults().removePersistentDomain(forName: suite)
+            ServerHistory.defaults = .standard
+        }
+
+        @Test func historyKeepsTheLatestTenWithoutDuplicates() throws {
+            ServerHistory.defaults = try #require(UserDefaults(suiteName: suite))
+            for i in 1...12 { ServerHistory.noteConnected("smb://s\(i)") }
+            ServerHistory.noteConnected("smb://s5")
+            #expect(ServerHistory.recents.count == 10)
+            #expect(ServerHistory.recents.first == "smb://s5")
+            #expect(ServerHistory.recents.filter { $0 == "smb://s5" }.count == 1)
+
+            let model = ConnectModel()
+            model.address = "nas/Media"
+            #expect(model.isValid)
+            model.addFavorite()
+            model.addFavorite()
+            #expect(ServerHistory.favorites == ["nas/Media"])
+            model.removeFavorite("nas/Media")
+            #expect(ServerHistory.favorites.isEmpty)
+            model.address = "  "
+            #expect(!model.isValid)
+        }
+
+        @Test func discoveredServersAppearInTheSidebar() {
+            let sidebar = SidebarViewController()
+            _ = sidebar.view
+            NetworkBrowser.shared.setServicesForTesting(["Office NAS"])
+            defer { NetworkBrowser.shared.setServicesForTesting([]) }
+            let network = sidebar.sectionsForTesting.first { $0.title == "Network" }
+            #expect(network?.children.map(\.title) == ["Office NAS"])
+            #expect(network?.children.first?.action != nil && network?.children.first?.isSection == false)
+        }
+    }
+}

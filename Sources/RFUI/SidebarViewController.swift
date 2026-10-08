@@ -16,19 +16,22 @@ final class SidebarViewController: NSViewController {
         let ejectURL: URL?
         /// Index in AppModel.favorites, for favorites.
         let favoriteIndex: Int?
+        /// Instead of a location: something to do when clicked (connect to a network server).
+        let action: (@MainActor () -> Void)?
         var children: [Node]
 
         init(title: String, location: Location? = nil, icon: NSImage? = nil, ejectURL: URL? = nil,
-             favoriteIndex: Int? = nil, children: [Node] = []) {
+             favoriteIndex: Int? = nil, action: (@MainActor () -> Void)? = nil, children: [Node] = []) {
             self.title = title
             self.location = location
+            self.action = action
             self.icon = icon
             self.ejectURL = ejectURL
             self.favoriteIndex = favoriteIndex
             self.children = children
         }
 
-        var isSection: Bool { location == nil }
+        var isSection: Bool { location == nil && action == nil }
     }
 
     static let favoriteDragType = NSPasteboard.PasteboardType("local.realfinder.sidebar-favorite")
@@ -65,6 +68,7 @@ final class SidebarViewController: NSViewController {
         reload()
         observers = Volumes.observeChanges { [weak self] in self?.reload() }
         favoritesObserver = AppModel.shared.observeFavorites { [weak self] in self?.reload() }
+        _ = NetworkBrowser.shared.observe { [weak self] in self?.reload() }
     }
 
     private static let symbols: [String: String] = {
@@ -99,6 +103,10 @@ final class SidebarViewController: NSViewController {
                          ejectURL: v.isEjectable ? v.url : nil)
                 }
                 + [Node(title: "Trash", location: .trash, icon: TrashUI.icon)]),
+            Node(title: "Network", children: NetworkBrowser.shared.services.map { name in
+                Node(title: name, icon: NSImage(systemSymbolName: "server.rack", accessibilityDescription: nil),
+                     action: { [weak self] in self?.connect(toService: name) })
+            }),
             // Clicking a tag shows every file with it (a This Mac search for tag:"Name").
             Node(title: "Tags", children: Tags.finderFavorites().map { tag in
                 Node(title: tag.name,
@@ -223,9 +231,26 @@ extension SidebarViewController: NSOutlineViewDataSource, NSOutlineViewDelegate 
     }
 
     func outlineViewSelectionDidChange(_ notification: Notification) {
-        guard let node = outline.item(atRow: outline.selectedRow) as? Node, let location = node.location,
-              location != highlighted else { return }
+        guard let node = outline.item(atRow: outline.selectedRow) as? Node else { return }
+        if let action = node.action {
+            action()
+            highlight(highlighted)   // the row isn't a place; keep showing where the tab is
+            return
+        }
+        guard let location = node.location, location != highlighted else { return }
         onNavigate?(location)
+    }
+
+    /// Connects to a Bonjour SMB server and shows it in this window.
+    private func connect(toService name: String) {
+        guard let url = NetworkMounts.url(forSMBService: name) else { return }
+        Task { [weak self] in
+            let failure = await ServerConnector.connect(url, then: { mount in self?.onNavigate?(.folder(mount)) })
+            // Cancelling the system's sign-in dialog isn't an error.
+            if let failure, ![ECANCELED, -128].contains((failure as? NetworkMounts.Failure)?.status ?? 0) {
+                self?.presentError(failure)
+            }
+        }
     }
 
     // MARK: Drag and drop

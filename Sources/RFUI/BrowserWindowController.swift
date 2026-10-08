@@ -304,6 +304,17 @@ public final class WindowManager {
         showAsSeparateWindow(controller)
     }
 
+    /// Shows `location` in the front browser window, or a new window if there's none.
+    public func show(_ location: Location) {
+        let front = (NSApp.mainWindow?.windowController as? BrowserWindowController) ?? controllers.last
+        if let front, front.window?.isVisible == true {
+            front.browser.state.jump(to: location)
+            front.window?.makeKeyAndOrderFront(nil)
+        } else {
+            openWindow(location)
+        }
+    }
+
     /// New Window means a window, even when the system setting prefers tabs.
     private func showAsSeparateWindow(_ controller: BrowserWindowController) {
         guard let window = controller.window else { return }

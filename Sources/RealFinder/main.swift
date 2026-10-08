@@ -11,6 +11,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         WindowManager.shared.prefillMostRecentSearch()
         EjectUI.startWatchingUnmounts()
+        NetworkBrowser.shared.start()
         DispatchQueue.main.async { Onboarding.showIfNeeded() }
         NSApp.activate()
     }
@@ -51,6 +52,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc func showSettings(_ sender: Any?) { SettingsWindowController.shared.show() }
 
+    @objc func connectToServer(_ sender: Any?) { ConnectToServerWindowController.shared.show() }
+
     /// Works with no window open, like Finder.
     @objc func emptyTrash(_ sender: Any?) { TrashUI.emptyTrash(window: NSApp.keyWindow) }
 
@@ -74,7 +77,7 @@ enum MainMenu {
         main.addItem(submenu(fileMenu(target)))
         main.addItem(submenu(editMenu()))
         main.addItem(submenu(viewMenu()))
-        main.addItem(submenu(goMenu()))
+        main.addItem(submenu(goMenu(target)))
         let window = windowMenu()
         main.addItem(submenu(window))
         NSApp.windowsMenu = window
@@ -200,7 +203,7 @@ enum MainMenu {
         return menu
     }
 
-    private static func goMenu() -> NSMenu {
+    private static func goMenu(_ target: AppDelegate) -> NSMenu {
         let menu = NSMenu(title: "Go")
         menu.addItem(item("Back", Commands.goBack, "["))
         menu.addItem(item("Forward", Commands.goForward, "]"))
@@ -219,6 +222,9 @@ enum MainMenu {
         }
         menu.addItem(.separator())
         menu.addItem(item("Go to Folder…", Commands.goToFolder, "g", [.command, .shift]))
+        let connect = item("Connect to Server…", #selector(AppDelegate.connectToServer(_:)), "k")
+        connect.target = target
+        menu.addItem(connect)
         return menu
     }
 

@@ -27,6 +27,12 @@
 	<true/>
 	<key>NSAppleEventsUsageDescription</key>
 	<string>RealFinder asks Finder to save the comments you write in Get Info, so Finder shows them too.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>RealFinder lists file servers on your network in the sidebar, like Finder.</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_smb._tcp</string>
+	</array>
 	<key>NSSupportsAutomaticTermination</key>
 	<false/>
 	<!-- Lets `open -a RealFinder <folder>` and Dock drops deliver folders. Rank Alternate: never

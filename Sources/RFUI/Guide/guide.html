@@ -69,6 +69,7 @@
   <li><b>Sidebar.</b> Favorites and Locations (your disks, with eject buttons). Click to go there. Drag folders onto the sidebar to add them; drag a favorite out, or right-click it, to remove it.</li>
   <li><b>Recents</b> (top of the sidebar, or <kbd>⇧⌘F</kbd>) lists files you've opened in the last 30 days, newest first, with when you last opened each and where it is. Folders, apps and files in your Library are left out, like Finder. It updates as you open things.</li>
   <li><b>Cloud.</b> iCloud Drive and services such as Dropbox, Google Drive and OneDrive appear in the sidebar's Cloud section. A small cloud next to an item means it isn't downloaded yet; opening it downloads it. Right-click for <b>Download Now</b> (whole folders too) or <b>Remove Download</b>, which frees the space but keeps the item in the cloud. Previews never download anything.</li>
+  <li><b>Servers.</b> <b>Go › Connect to Server…</b> <kbd>⌘K</kbd>: type an address (just “server/share” means SMB; afp://, nfs:// and https:// for WebDAV work too). macOS asks for the name and password itself and can keep them in your Keychain; RealFinder never sees them. Keep favorite servers with <b>+</b>; recent ones are listed too. File servers on your network appear in the sidebar's <b>Network</b> section (macOS asks once whether RealFinder may look on your local network); click one to connect.</li>
   <li><b>Ejecting.</b> Click a disk's eject button, or select it (in Computer, <kbd>⇧⌘C</kbd>) and press <kbd>⌘E</kbd>. If something has files open on it, RealFinder says which apps, so you can quit them, or you can <b>Force Eject</b> (unsaved changes in those apps may be lost). Ejecting a disk ejects all of its volumes. Tabs that were showing it go to Computer.</li>
   <li><b>Back and Forward.</b> <kbd>⌘[</kbd> and <kbd>⌘]</kbd>. Going back selects the item you had selected.</li>
   <li><b>Enclosing folder.</b> <kbd>⌘↑</kbd> goes up one level and selects the folder you came from. <kbd>⌘↓</kbd> opens the selection.</li>
@@ -240,6 +241,7 @@
   <tr><td><kbd>⌘I</kbd></td><td>Get Info</td></tr>
   <tr><td><kbd>⌃⌘A</kbd> <kbd>⌘R</kbd></td><td>Make Alias, Show Original (in search results: Show in Enclosing Folder)</td></tr>
   <tr><td><kbd>⌘E</kbd></td><td>Eject the selected disk</td></tr>
+  <tr><td><kbd>⌘K</kbd></td><td>Connect to Server</td></tr>
   <tr><td><kbd>⌘,</kbd></td><td>Settings</td></tr>
   <tr><td><kbd>⌘C</kbd> <kbd>⌘X</kbd> <kbd>⌘V</kbd> <kbd>⌥⌘V</kbd></td><td>Copy, cut, paste, move items here</td></tr>
   <tr><td><kbd>Return</kbd></td><td>Rename</td></tr>
@@ -257,7 +259,6 @@
 <h2 id="coming">Not yet available</h2>
 <p>RealFinder is under construction. Use Finder for these for now:</p>
 <ul>
-  <li>Network browsing and Connect to Server.</li>
   <li>Saved searches (smart folders).</li>
 </ul>
 
