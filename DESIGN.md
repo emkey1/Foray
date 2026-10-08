@@ -256,7 +256,7 @@ Each of these is additive or controlled by a setting, so Finder habits keep work
 |---|---|---|
 | Multiple windows; native tabs (merge, drag out, Show All Tabs) | NSWindow tabbing; one window controller per tab | P1 |
 | Sidebar: Favorites, iCloud, Locations, Tags; add, remove and reorder items; eject buttons | NSOutlineView source list; items stored as bookmarks | P1 |
-| Toolbar; toolbar customization | NSToolbar | P1 / P2 |
+| Toolbar; toolbar customization | NSToolbar | P1 / P2 ✅ |
 | Show and hide the path bar, status bar, preview pane, tab bar and sidebar | | P1 |
 | Back and forward per tab; Enclosing Folder; Go menu locations; Recent Folders | | P1 |
 | Go to Folder | Inline address field (I2) | P1 |

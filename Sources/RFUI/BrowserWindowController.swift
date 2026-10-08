@@ -10,6 +10,7 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate, NSToo
     private let splitController = NSSplitViewController()
     private var navigationGroup: NSToolbarItemGroup?
     private var modeGroup: NSToolbarItemGroup?
+    private var tagsItem: NSMenuToolbarItem?
     private var searchItem: NSSearchToolbarItem?
     private var recentsObserver: UUID?
     /// A search shown in the field but not running (restored at launch, or the most recent one).
@@ -25,6 +26,29 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate, NSToo
         static let search = NSToolbarItem.Identifier("search")
         static let guide = NSToolbarItem.Identifier("guide")
         static let jobs = NSToolbarItem.Identifier("jobs")
+        // Optional (View › Customize Toolbar…).
+        static let getInfo = NSToolbarItem.Identifier("getInfo")
+        static let share = NSToolbarItem.Identifier("share")
+        static let trash = NSToolbarItem.Identifier("trash")
+        static let newFolder = NSToolbarItem.Identifier("newFolder")
+        static let quickLook = NSToolbarItem.Identifier("quickLook")
+        static let tags = NSToolbarItem.Identifier("tags")
+        static let eject = NSToolbarItem.Identifier("eject")
+        static let connect = NSToolbarItem.Identifier("connect")
+        static let inspector = NSToolbarItem.Identifier("inspector")
+        static let path = NSToolbarItem.Identifier("copyPath")
+
+        /// Simple buttons: (identifier, label, symbol, action).
+        @MainActor static let buttons: [(NSToolbarItem.Identifier, String, String, Selector)] = [
+            (getInfo, "Get Info", "info.circle", Commands.getInfo),
+            (inspector, "Inspector", "sidebar.right", Commands.showInspector),
+            (share, "Share", "square.and.arrow.up", Commands.share),
+            (trash, "Move to Trash", "trash", Commands.moveToTrash),
+            (newFolder, "New Folder", "folder.badge.plus", Commands.newFolder),
+            (quickLook, "Quick Look", "eye", Commands.toggleQuickLook),
+            (eject, "Eject", "eject", Commands.eject),
+            (path, "Copy Path", "doc.on.clipboard", Commands.copyPath),
+        ]
     }
 
     init(location: Location, pendingSearch: SearchQuery? = nil) {
@@ -53,7 +77,8 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate, NSToo
         let toolbar = NSToolbar(identifier: "RealFinder.browser")
         toolbar.delegate = self
         toolbar.displayMode = .iconOnly
-        toolbar.allowsUserCustomization = false
+        toolbar.allowsUserCustomization = true
+        toolbar.autosavesConfiguration = true
         window.toolbar = toolbar
         window.toolbarStyle = .unified
 
@@ -109,7 +134,7 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate, NSToo
     }
 
     func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
-        toolbarDefaultItemIdentifiers(toolbar) + [.space]
+        toolbarDefaultItemIdentifiers(toolbar) + ToolbarID.buttons.map(\.0) + [ToolbarID.tags, ToolbarID.connect, .space, .flexibleSpace]
     }
 
     func toolbar(_ toolbar: NSToolbar, itemForItemIdentifier id: NSToolbarItem.Identifier, willBeInsertedIntoToolbar flag: Bool) -> NSToolbarItem? {
@@ -160,6 +185,32 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate, NSToo
             item.target = self
             item.action = #selector(openGuide(_:))
             return item
+        case let id where ToolbarID.buttons.contains { $0.0 == id }:
+            let spec = ToolbarID.buttons.first { $0.0 == id }!
+            let item = NSToolbarItem(itemIdentifier: id)
+            item.image = NSImage(systemSymbolName: spec.2, accessibilityDescription: spec.1)
+            item.label = spec.1
+            item.toolTip = spec.1
+            item.action = spec.3   // nil target: the front browser handles it (and validates it)
+            return item
+        case ToolbarID.connect:
+            let item = NSToolbarItem(itemIdentifier: id)
+            item.image = NSImage(systemSymbolName: "server.rack", accessibilityDescription: "Connect to Server")
+            item.label = "Connect"
+            item.toolTip = "Connect to Server (⌘K)"
+            item.target = self
+            item.action = #selector(connectToServer(_:))
+            return item
+        case ToolbarID.tags:
+            let item = NSMenuToolbarItem(itemIdentifier: id)
+            item.image = NSImage(systemSymbolName: "tag", accessibilityDescription: "Tags")
+            item.label = "Tags"
+            item.toolTip = "Tag the selection"
+            item.menu = NSMenu()
+            item.menu.delegate = self
+            item.showsIndicator = true
+            tagsItem = item
+            return item
         case ToolbarID.arrange:
             let item = NSMenuToolbarItem(itemIdentifier: id)
             item.image = NSImage(systemSymbolName: "arrow.up.arrow.down", accessibilityDescription: "Sort and Group")
@@ -172,6 +223,8 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate, NSToo
             return nil
         }
     }
+
+    @objc private func connectToServer(_ sender: Any?) { ConnectToServerWindowController.shared.show() }
 
     @objc private func openGuide(_ sender: Any?) {
         GuideWindowController.shared.show(browser.state.location.searchQuery != nil ? .search : .top)
@@ -421,5 +474,21 @@ public final class WindowManager {
               let recent = AppModel.shared.recentSearches.first else { return }
         let key = controllers.first { $0.window?.isKeyWindow == true } ?? controllers.first
         key?.pendingSearch = recent
+    }
+}
+
+/// The Tags toolbar menu is rebuilt for the current selection each time it opens.
+extension BrowserWindowController: NSMenuDelegate {
+    func menuNeedsUpdate(_ menu: NSMenu) {
+        menu.removeAllItems()
+        guard !browser.state.selectedItems.isEmpty, let tags = browser.tagsMenuItem().submenu else {
+            menu.addItem(NSMenuItem(title: "Select items to tag them", action: nil, keyEquivalent: ""))
+            return
+        }
+        for item in tags.items {
+            tags.removeItem(item)
+            if item.action != nil && item.target == nil { item.target = browser }
+            menu.addItem(item)
+        }
     }
 }

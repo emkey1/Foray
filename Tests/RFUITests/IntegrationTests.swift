@@ -172,3 +172,32 @@ extension UISerial {
         }
     }
 }
+
+extension UISerial {
+    @MainActor
+    @Suite(.serialized) final class ToolbarTests {
+        let base = TestDirs.make("toolbar")
+        isolated deinit { try? FileManager.default.removeItem(at: base) }
+
+        @Test func everyOptionalItemCanBeAdded() throws {
+            AppModel.shared = AppModel(store: AppSupportStore(directory: base.appendingPathComponent("store")))
+            try FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
+            let wc = BrowserWindowController(location: .folder(base), pendingSearch: nil)
+            defer { wc.browser.state.invalidate(); wc.window?.close() }
+            let toolbar = try #require(wc.window?.toolbar)
+            #expect(toolbar.allowsUserCustomization)
+            let allowed = wc.toolbarAllowedItemIdentifiers(toolbar)
+            let builtIn: Set<NSToolbarItem.Identifier> = [.toggleSidebar, .sidebarTrackingSeparator, .flexibleSpace, .space]
+            for id in allowed where !builtIn.contains(id) {
+                let item = wc.toolbar(toolbar, itemForItemIdentifier: id, willBeInsertedIntoToolbar: false)
+                #expect(item != nil, "\(id.rawValue)")
+                #expect(item?.label.isEmpty == false, "\(id.rawValue)")
+            }
+            #expect(allowed.contains(.init("getInfo")) && allowed.contains(.init("tags")))
+            // The Tags menu reflects the selection.
+            let menu = NSMenu()
+            wc.menuNeedsUpdate(menu)
+            #expect(menu.items.first?.title == "Select items to tag them")
+        }
+    }
+}
