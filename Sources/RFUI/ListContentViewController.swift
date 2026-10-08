@@ -58,6 +58,10 @@ final class ListContentViewController: NSViewController, ContentView {
         outline.doubleAction = #selector(doubleClicked)
         outline.owner = self
         outline.headerView?.menu = headerMenu()
+        outline.registerForDraggedTypes([.fileURL])
+        outline.setDraggingSourceOperationMask([.copy, .move, .generic, .link, .delete], forLocal: false)
+        outline.setDraggingSourceOperationMask([.copy, .move, .generic, .link], forLocal: true)
+        outline.draggingDestinationFeedbackStyle = .regular
 
         scrollView.documentView = outline
         scrollView.hasVerticalScroller = true
@@ -392,6 +396,36 @@ extension ListContentViewController: NSOutlineViewDataSource, NSOutlineViewDeleg
     func outlineView(_ outlineView: NSOutlineView, typeSelectStringFor tableColumn: NSTableColumn?, item: Any) -> String? {
         guard tableColumn?.identifier.rawValue == ListColumn.name.rawValue else { return nil }
         return (item as? Node)?.item?.displayName
+    }
+
+    // MARK: Drag and drop
+
+    func outlineView(_ outlineView: NSOutlineView, pasteboardWriterForItem item: Any) -> (any NSPasteboardWriting)? {
+        (item as? Node)?.item.map { $0.url as NSURL }
+    }
+
+    /// Drops onto a folder row go into that folder; anywhere else, into the folder being shown.
+    func outlineView(_ outlineView: NSOutlineView, validateDrop info: any NSDraggingInfo, proposedItem item: Any?,
+                     proposedChildIndex index: Int) -> NSDragOperation {
+        if let folder = (item as? Node)?.item, folder.isNavigableFolder {
+            outlineView.setDropItem(item, dropChildIndex: NSOutlineViewDropOnItemIndex)
+            return DragAndDrop.operation(info, to: folder.url)
+        }
+        guard let here = host?.state.location.folderURL else { return [] }
+        outlineView.setDropItem(nil, dropChildIndex: NSOutlineViewDropOnItemIndex)
+        return DragAndDrop.operation(info, to: here)
+    }
+
+    func outlineView(_ outlineView: NSOutlineView, acceptDrop info: any NSDraggingInfo, item: Any?, childIndex index: Int) -> Bool {
+        let target = (item as? Node)?.item.flatMap { $0.isNavigableFolder ? $0.url : nil } ?? host?.state.location.folderURL
+        guard let target else { return false }
+        return DragAndDrop.perform(info, to: target, from: host?.state)
+    }
+
+    func outlineView(_ outlineView: NSOutlineView, draggingSession session: NSDraggingSession, endedAt screenPoint: NSPoint,
+                     operation: NSDragOperation) {
+        let urls = session.draggingPasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL] ?? []
+        DragAndDrop.draggingEnded(operation, items: urls, state: host?.state)
     }
 
     func menuNeedsUpdate(_ menu: NSMenu) {

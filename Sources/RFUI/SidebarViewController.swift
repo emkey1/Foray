@@ -236,7 +236,13 @@ extension SidebarViewController: NSOutlineViewDataSource, NSOutlineViewDelegate 
     func outlineView(_ outlineView: NSOutlineView, validateDrop info: any NSDraggingInfo, proposedItem item: Any?,
                      proposedChildIndex index: Int) -> NSDragOperation {
         guard let favorites = favoritesSection else { return [] }
-        // Anything dropped in or on the Favorites list lands between favorites.
+        // Files dropped onto a favorite or a disk go into it (move/copy), like Finder.
+        if let node = item as? Node, !node.isSection, index == NSOutlineViewDropOnItemIndex,
+           info.draggingPasteboard.availableType(from: [Self.favoriteDragType]) == nil,
+           case .folder(let url) = node.location {
+            return DragAndDrop.operation(info, to: url)
+        }
+        // Otherwise (between rows) folders are added as favorites.
         var target = index
         if let node = item as? Node, node !== favorites {
             guard let i = node.favoriteIndex else { return [] }
@@ -254,6 +260,9 @@ extension SidebarViewController: NSOutlineViewDataSource, NSOutlineViewDelegate 
     }
 
     func outlineView(_ outlineView: NSOutlineView, acceptDrop info: any NSDraggingInfo, item: Any?, childIndex index: Int) -> Bool {
+        if let node = item as? Node, !node.isSection, index == NSOutlineViewDropOnItemIndex, case .folder(let url) = node.location {
+            return DragAndDrop.perform(info, to: url, from: nil)
+        }
         if let s = info.draggingPasteboard.string(forType: Self.favoriteDragType), let from = Int(s) {
             AppModel.shared.moveFavorite(from: from, to: index)
             return true

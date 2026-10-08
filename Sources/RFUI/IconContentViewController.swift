@@ -25,6 +25,9 @@ final class IconContentViewController: NSViewController, ContentView {
         collectionView.delegate = self
         collectionView.owner = self
         collectionView.register(IconItem.self, forItemWithIdentifier: IconItem.identifier)
+        collectionView.registerForDraggedTypes([.fileURL])
+        collectionView.setDraggingSourceOperationMask([.copy, .move, .generic, .link, .delete], forLocal: false)
+        collectionView.setDraggingSourceOperationMask([.copy, .move, .generic, .link], forLocal: true)
         collectionView.register(GroupHeader.self, forSupplementaryViewOfKind: NSCollectionView.elementKindSectionHeader,
                                 withIdentifier: GroupHeader.identifier)
         scrollView.documentView = collectionView
@@ -137,6 +140,47 @@ extension IconContentViewController: NSCollectionViewDataSource, NSCollectionVie
     }
 
     func collectionView(_ collectionView: NSCollectionView, didSelectItemsAt indexPaths: Set<IndexPath>) { reportSelection() }
+
+    // MARK: Drag and drop
+
+    func collectionView(_ collectionView: NSCollectionView, canDragItemsAt indexPaths: Set<IndexPath>, with event: NSEvent) -> Bool { true }
+
+    func collectionView(_ collectionView: NSCollectionView, pasteboardWriterForItemAt indexPath: IndexPath) -> (any NSPasteboardWriting)? {
+        snapshot.items[index(of: indexPath)].url as NSURL
+    }
+
+    /// Drops onto a folder go into it; anywhere else, into the folder being shown.
+    func collectionView(_ collectionView: NSCollectionView, validateDrop info: any NSDraggingInfo,
+                        proposedIndexPath path: AutoreleasingUnsafeMutablePointer<NSIndexPath>,
+                        dropOperation: UnsafeMutablePointer<NSCollectionView.DropOperation>) -> NSDragOperation {
+        let proposed = path.pointee as IndexPath
+        if dropOperation.pointee == .on, proposed.section < numberOfSections(in: collectionView),
+           proposed.item < self.collectionView(collectionView, numberOfItemsInSection: proposed.section) {
+            let item = snapshot.items[index(of: proposed)]
+            if item.isNavigableFolder { return DragAndDrop.operation(info, to: item.url) }
+        }
+        guard let here = host?.state.location.folderURL else { return [] }
+        dropOperation.pointee = .before
+        return DragAndDrop.operation(info, to: here)
+    }
+
+    func collectionView(_ collectionView: NSCollectionView, acceptDrop info: any NSDraggingInfo, indexPath: IndexPath,
+                        dropOperation: NSCollectionView.DropOperation) -> Bool {
+        var target = host?.state.location.folderURL
+        if dropOperation == .on, indexPath.section < numberOfSections(in: collectionView),
+           indexPath.item < self.collectionView(collectionView, numberOfItemsInSection: indexPath.section) {
+            let item = snapshot.items[index(of: indexPath)]
+            if item.isNavigableFolder { target = item.url }
+        }
+        guard let target else { return false }
+        return DragAndDrop.perform(info, to: target, from: host?.state)
+    }
+
+    func collectionView(_ collectionView: NSCollectionView, draggingSession session: NSDraggingSession, endedAt screenPoint: NSPoint,
+                        dragOperation operation: NSDragOperation) {
+        let urls = session.draggingPasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL] ?? []
+        DragAndDrop.draggingEnded(operation, items: urls, state: host?.state)
+    }
     func collectionView(_ collectionView: NSCollectionView, didDeselectItemsAt indexPaths: Set<IndexPath>) { reportSelection() }
 }
 
