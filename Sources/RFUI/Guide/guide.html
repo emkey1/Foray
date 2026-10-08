@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RealFinder Guide</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --text: #1d1d1f; --muted: #6e6e73; --bg: #ffffff; --panel: #f5f5f7; --rule: #d2d2d7;
+    --accent: #0a66d8; --code-bg: #eef0f4;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --text: #f5f5f7; --muted: #a1a1a6; --bg: #1e1e20; --panel: #2a2a2d; --rule: #3a3a3d;
+            --accent: #4ea1ff; --code-bg: #333338; }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; font: 14px/1.55 -apple-system, BlinkMacSystemFont, sans-serif; color: var(--text); background: var(--bg); }
+  nav { position: fixed; top: 0; bottom: 0; left: 0; width: 210px; overflow-y: auto; padding: 20px 14px;
+        background: var(--panel); border-right: 1px solid var(--rule); }
+  nav a { display: block; padding: 4px 8px; border-radius: 6px; color: var(--text); text-decoration: none; }
+  nav a:hover { background: var(--rule); }
+  nav .title { font-weight: 600; padding: 0 8px 10px; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+  main { margin-left: 210px; padding: 28px 40px 80px; max-width: 900px; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  h2 { font-size: 19px; margin: 38px 0 8px; padding-top: 8px; border-top: 1px solid var(--rule); }
+  h3 { font-size: 15px; margin: 22px 0 6px; }
+  p, li { max-width: 72ch; }
+  .lede { color: var(--muted); margin-top: 0; }
+  a { color: var(--accent); }
+  kbd { font: 12px ui-monospace, SFMono-Regular, monospace; background: var(--code-bg); border: 1px solid var(--rule);
+        border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; white-space: nowrap; }
+  code { font: 12.5px ui-monospace, SFMono-Regular, monospace; background: var(--code-bg); padding: 1px 4px; border-radius: 4px; }
+  table { border-collapse: collapse; margin: 10px 0 16px; width: 100%; max-width: 760px; }
+  th, td { text-align: left; vertical-align: top; padding: 6px 10px; border-bottom: 1px solid var(--rule); }
+  th { font-weight: 600; color: var(--muted); font-size: 12px; }
+  td:first-child { white-space: nowrap; }
+  .note { background: var(--panel); border-left: 3px solid var(--accent); padding: 8px 14px; border-radius: 4px; max-width: 72ch; }
+  @media (max-width: 700px) { nav { display: none; } main { margin-left: 0; padding: 20px; } }
+</style>
+</head>
+<body>
+<nav>
+  <div class="title">RealFinder Guide</div>
+  <a href="#start">Getting around</a>
+  <a href="#views">Views</a>
+  <a href="#sorting">Sorting and grouping</a>
+  <a href="#settings">Which settings apply where</a>
+  <a href="#search">Searching</a>
+  <a href="#syntax">Search filters</a>
+  <a href="#kinds">File kinds</a>
+  <a href="#files">Opening and previewing</a>
+  <a href="#keys">Keyboard shortcuts</a>
+  <a href="#access">Privacy and access</a>
+  <a href="#coming">Not yet available</a>
+</nav>
+<main>
+
+<h1>RealFinder Guide</h1>
+<p class="lede">A file browser for macOS that keeps Finder's habits and fixes its annoyances.</p>
+
+<h2 id="start">Getting around</h2>
+<ul>
+  <li><b>Windows and tabs.</b> <kbd>⌘N</kbd> opens a new window, <kbd>⌘T</kbd> a new tab. Drag a tab out to make it a window. Your windows and tabs come back when you relaunch.</li>
+  <li><b>Sidebar.</b> Favorites and Locations (your disks, with eject buttons). Click to go there. Drag folders onto the sidebar to add them; drag a favorite out, or right-click it, to remove it.</li>
+  <li><b>Back and Forward.</b> <kbd>⌘[</kbd> and <kbd>⌘]</kbd>. Going back selects the item you had selected.</li>
+  <li><b>Enclosing folder.</b> <kbd>⌘↑</kbd> goes up one level and selects the folder you came from. <kbd>⌘↓</kbd> opens the selection.</li>
+  <li><b>Path bar.</b> Click any folder in the path bar at the bottom to go there.</li>
+  <li><b>Type a path.</b> <kbd>⇧⌘G</kbd>, or double-click the path bar, turns it into a field. Type a path (<code>~</code> works), press <kbd>Tab</kbd> to complete folder names, <kbd>Return</kbd> to go, <kbd>Esc</kbd> to cancel. A file path opens its folder with the file selected.</li>
+  <li><b>Status bar.</b> Shows the item count, how many are selected and their total size, how many items are hidden, and free space.</li>
+</ul>
+
+<h2 id="views">Views</h2>
+<p><b>Icons</b> (<kbd>⌘1</kbd>) and <b>List</b> (<kbd>⌘2</kbd>), from the View menu or the toolbar. The slider in the status bar sets the icon size.</p>
+<ul>
+  <li><b>Switching views never changes the order.</b> Both views show the same sorted list, and your selection stays put.</li>
+  <li><b>List view.</b> Click a folder's disclosure triangle (or press <kbd>→</kbd> / <kbd>←</kbd>) to expand it in place; <kbd>⌥</kbd>-click expands everything inside. Right-click the column headers to choose columns. Drag headers to reorder them, drag their edges to resize.</li>
+  <li><b>Thumbnails.</b> Icon view shows previews of images, PDFs and other documents. Files in iCloud that aren't downloaded get a preview without being downloaded.</li>
+</ul>
+
+<h2 id="sorting">Sorting and grouping</h2>
+<p>Use the <b>Sort</b> button in the toolbar, the View menu, or (in list view) the column headers.</p>
+<ul>
+  <li><b>Click a column header</b> to sort by it; click again to reverse. Dates and sizes start newest and largest first.</li>
+  <li><b>Shift-click a header</b> to add a second sort key, e.g. sort by Kind, then by Date Modified.</li>
+  <li><b>Sorted by a hidden column?</b> List view shows “Sorted by Date Added ↓” above the list instead of quietly switching to another column. <b>Show Column</b> adds it.</li>
+  <li><b>Names sort naturally</b>, like Finder: “file 2” comes before “file 10”.</li>
+  <li><b>Empty values go last</b> in both directions, e.g. folders when sorting by size.</li>
+  <li><b>Group By</b> Kind, Date Modified, Date Created, Date Added or Size. Sorting applies within each group.</li>
+  <li><b>Keep Folders on Top</b> works in every view.</li>
+  <li><b>Filter by Kind</b> shows only certain kinds of files in the current folder, e.g. only images. Choose <b>All Kinds</b> to show everything again.</li>
+  <li><b>Hidden files.</b> <kbd>⇧⌘.</kbd> shows or hides them.</li>
+</ul>
+
+<h2 id="settings">Which settings apply where</h2>
+<p>Finder remembers view settings per folder in a way that's hard to predict. RealFinder keeps it simple:</p>
+<ul>
+  <li>By default, your view, sort order, grouping and filters are <b>the same in every folder</b>. Change them anywhere and they apply everywhere.</li>
+  <li>To give a folder its own settings, choose <b>View › Remember Settings for This Folder</b>. Choose it again to forget them. These survive renaming or moving the folder.</li>
+  <li>Search results have their own settings (list view, with a Where column), separate from folders.</li>
+</ul>
+
+<h2 id="search">Searching</h2>
+<p>Press <kbd>⌘F</kbd> or click the search field. <b>Searches start in the current folder and its subfolders</b>; the field says where (“Search “Projects””). From Computer, searches cover the whole Mac.</p>
+<p>While searching, a bar below the toolbar lets you change:</p>
+<ul>
+  <li><b>Where:</b> the folder you started in, or <b>This Mac</b>.</li>
+  <li><b>Subfolders:</b> turn off to only filter the items directly in the folder.</li>
+  <li><b>Names</b> or <b>Names &amp; Contents</b>. Names is the default; matching contents tends to bury what you're looking for.</li>
+  <li><b>Kind chips:</b> Folders, Documents, Images, Video, Audio, Programs, Archives, Code, PDFs, Fonts. Select several to match any of them. The chips add <code>kind:</code> filters to the search text, so you can always see the whole search.</li>
+  <li><b>Keep searching in new folders:</b> when on (the default), going to another folder with the sidebar, path bar, Go menu or <kbd>⌘↑</kbd> searches there instead of ending the search.</li>
+</ul>
+<ul>
+  <li><b>Results</b> show a <b>Where</b> column with each item's folder relative to where you searched. Sorting works as everywhere else.</li>
+  <li><b>Show in Enclosing Folder</b> (<kbd>⌘R</kbd> or right-click) goes to a result's folder with it selected; Back returns to the results.</li>
+  <li><b>Opening a folder</b> from the results shows its contents; Back returns to the results.</li>
+  <li><b>Ending a search:</b> <kbd>Esc</kbd>, or clear the field. You're back in the folder with your previous selection.</li>
+  <li><b>Finds what Spotlight misses.</b> Folder searches use Spotlight for quick first results and also scan the folder directly, so unindexed drives, network shares and (with <code>hidden:yes</code>) hidden files are found too.</li>
+</ul>
+<p class="note">Big folders take a while to scan completely (for example ~20 seconds for a home folder with 200,000 folders). Results appear as they're found, and the status bar shows progress.</p>
+
+<h2 id="syntax">Search filters</h2>
+<p>Words you type match file names: case and accents don't matter, and every word must appear. Add filters anywhere in the field; separate them with spaces or commas.</p>
+<table>
+  <tr><th>Filter</th><th>Examples</th><th>Finds</th></tr>
+  <tr><td><code>kind:</code></td><td><code>kind:images</code> <code>kind:pdf,video</code></td><td>Files of these <a href="#kinds">kinds</a></td></tr>
+  <tr><td><code>ext:</code></td><td><code>ext:heic</code> <code>ext:jpg,png</code></td><td>Files with these extensions</td></tr>
+  <tr><td><code>size:</code></td><td><code>size:&gt;100MB</code> <code>size:&lt;10KB</code> <code>size:1MB..5MB</code></td><td>Files by size (KB, MB, GB)</td></tr>
+  <tr><td><code>modified:</code></td><td><code>modified:&lt;7d</code> <code>modified:&gt;1y</code> <code>modified:today</code></td><td>Changed within (<code>&lt;</code>) or before (<code>&gt;</code>) h, d, w, m, y ago</td></tr>
+  <tr><td><code>created:</code> <code>added:</code></td><td><code>created:2026</code> <code>added:2026-10</code> <code>added:yesterday</code></td><td>A year, month or day, or relative as above</td></tr>
+  <tr><td><code>opened:</code></td><td><code>opened:&lt;30d</code></td><td>Last opened (Spotlight-indexed files only)</td></tr>
+  <tr><td><code>tag:</code></td><td><code>tag:red</code> <code>tag:"Tax 2025"</code></td><td>Files with a Finder tag</td></tr>
+  <tr><td><code>content:</code></td><td><code>content:"invoice 2291"</code></td><td>Files containing these words (Spotlight)</td></tr>
+  <tr><td><code>hidden:yes</code></td><td></td><td>Include hidden files and folders</td></tr>
+  <tr><td><code>"…"</code></td><td><code>"tax return"</code></td><td>The exact phrase in the name</td></tr>
+  <tr><td><code>-</code></td><td><code>report -draft</code> <code>-kind:folders</code></td><td>Exclude a word or filter</td></tr>
+  <tr><td><code>OR</code></td><td><code>kind:images OR kind:video</code></td><td>Either one</td></tr>
+  <tr><td><code>*</code> <code>?</code></td><td><code>IMG_????.jpg</code> <code>*.log</code></td><td>Wildcards over the whole name</td></tr>
+  <tr><td><code>/…/</code></td><td><code>/^v\d+\.\d+$/</code></td><td>A regular expression on the name</td></tr>
+</table>
+<p>If a filter can't be read (say <code>size:&gt;1XB</code>), the search bar says so in orange instead of silently finding nothing.</p>
+<h3>Examples</h3>
+<ul>
+  <li><code>size:&gt;1MB, modified:&lt;7d, created:2026</code>: big files from this year, changed this week.</li>
+  <li><code>invoice kind:pdf -draft</code>: PDFs with “invoice” in the name, but not drafts.</li>
+  <li><code>kind:images added:&lt;1d</code>: images added today, e.g. new downloads.</li>
+  <li><code>*.log hidden:yes size:&gt;100MB</code>: large log files, including in hidden folders.</li>
+</ul>
+
+<h2 id="kinds">File kinds</h2>
+<table>
+  <tr><th>Kind</th><th>Includes</th></tr>
+  <tr><td>Folders</td><td>Folders (not app or package bundles)</td></tr>
+  <tr><td>Documents</td><td>PDF, text, Markdown, RTF, Word, Excel, PowerPoint, Pages, Numbers, Keynote, EPUB, HTML. Not source code</td></tr>
+  <tr><td>Images</td><td>All image formats, including RAW and SVG</td></tr>
+  <tr><td>Video</td><td>Movies, including MKV and WebM</td></tr>
+  <tr><td>Audio</td><td>All audio formats</td></tr>
+  <tr><td>Programs</td><td>Apps, command-line programs, and scripts marked as executable</td></tr>
+  <tr><td>Archives</td><td>Zip, tar, gzip, 7z, RAR, xz, disk images</td></tr>
+  <tr><td>Code</td><td>Source code, scripts, JSON, YAML, XML, property lists</td></tr>
+  <tr><td>PDFs</td><td>PDF files</td></tr>
+  <tr><td>Fonts</td><td>Font files, including web fonts</td></tr>
+</table>
+<p>Names like <code>kind:image</code>, <code>kind:photos</code>, <code>kind:apps</code> and <code>kind:pdf</code> work too. <code>.ts</code> files count as both Code and Video, because macOS treats <code>.ts</code> as a video format.</p>
+
+<h2 id="files">Opening and previewing</h2>
+<ul>
+  <li><b>Open</b> with a double-click, <kbd>⌘O</kbd> or <kbd>⌘↓</kbd>. <kbd>⌘</kbd>-double-click a folder to open it in a new tab.</li>
+  <li><b>Quick Look:</b> <kbd>Space</kbd> or <kbd>⌘Y</kbd>. Arrow keys move through the selection while it's open.</li>
+  <li><b>Right-click</b> for Open With, Show Package Contents (for apps and bundles), Copy Path, and Quick Look.</li>
+  <li><b>Copy Path:</b> <kbd>⌥⌘C</kbd> copies the selected items' paths.</li>
+  <li><b>Type to select:</b> start typing a name to jump to it.</li>
+</ul>
+
+<h2 id="keys">Keyboard shortcuts</h2>
+<p>RealFinder uses Finder's shortcuts. Every command is in the menu bar, so you can change any shortcut in System Settings › Keyboard › Keyboard Shortcuts › App Shortcuts.</p>
+<table>
+  <tr><th>Shortcut</th><th>Action</th></tr>
+  <tr><td><kbd>⌘N</kbd> / <kbd>⌘T</kbd></td><td>New window / new tab</td></tr>
+  <tr><td><kbd>⌘F</kbd></td><td>Search the current folder</td></tr>
+  <tr><td><kbd>⌘1</kbd> <kbd>⌘2</kbd></td><td>Icons / List</td></tr>
+  <tr><td><kbd>⌘[</kbd> <kbd>⌘]</kbd></td><td>Back / Forward</td></tr>
+  <tr><td><kbd>⌘↑</kbd> <kbd>⌘↓</kbd></td><td>Enclosing folder / Open</td></tr>
+  <tr><td><kbd>⇧⌘G</kbd></td><td>Go to Folder (type a path)</td></tr>
+  <tr><td><kbd>⇧⌘H</kbd> <kbd>⇧⌘D</kbd> <kbd>⇧⌘O</kbd> <kbd>⌥⌘L</kbd> <kbd>⇧⌘A</kbd> <kbd>⇧⌘U</kbd> <kbd>⇧⌘C</kbd></td><td>Home, Desktop, Documents, Downloads, Applications, Utilities, Computer</td></tr>
+  <tr><td><kbd>Space</kbd> / <kbd>⌘Y</kbd></td><td>Quick Look</td></tr>
+  <tr><td><kbd>⌘R</kbd></td><td>Show in Enclosing Folder (search results)</td></tr>
+  <tr><td><kbd>⇧⌘.</kbd></td><td>Show or hide hidden files</td></tr>
+  <tr><td><kbd>⌥⌘C</kbd></td><td>Copy path</td></tr>
+  <tr><td><kbd>⌃⌘S</kbd></td><td>Show or hide the sidebar</td></tr>
+  <tr><td><kbd>⌘?</kbd></td><td>This guide</td></tr>
+</table>
+
+<h2 id="access">Privacy and access</h2>
+<p>macOS asks before any app reads Desktop, Documents, Downloads, external drives and network volumes; allow RealFinder when asked. Some places (Mail, Messages and Safari data, other users' folders, the Trash) need <b>Full Disk Access</b>: System Settings › Privacy &amp; Security › Full Disk Access, then add RealFinder.</p>
+
+<h2 id="coming">Not yet available</h2>
+<p>RealFinder is under construction. Use Finder for these for now:</p>
+<ul>
+  <li>Copying, moving, renaming, duplicating and deleting files; drag and drop; undo.</li>
+  <li>Column and Gallery views.</li>
+  <li>Get Info, tags editing, comments, aliases, compressing.</li>
+  <li>Recents, Trash, network browsing and Connect to Server, iCloud download controls.</li>
+  <li>Saved searches (smart folders).</li>
+</ul>
+
+</main>
+</body>
+</html>

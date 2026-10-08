@@ -18,7 +18,7 @@ let package = Package(
         // Search planner and backends (Spotlight, crawl).
         .target(name: "RFSearch", dependencies: ["RFModel", "RFFileSystem"]),
         // AppKit views and controllers. Never touches the filesystem directly.
-        .target(name: "RFUI", dependencies: ["RFModel", "RFFileSystem", "RFSearch"]),
+        .target(name: "RFUI", dependencies: ["RFModel", "RFFileSystem", "RFSearch"], resources: [.copy("Guide")]),
         // App entry point: menus, app delegate.
         .executableTarget(name: "RealFinder", dependencies: ["RFUI"]),
 

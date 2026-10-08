@@ -16,6 +16,8 @@ final class BrowserState {
 
     enum Change {
         case location, snapshot, settings, loadState, details, selection
+        /// An expanded folder's contents (list view disclosure) were loaded or changed.
+        case children(FileID)
     }
 
     private(set) var location: Location
@@ -58,13 +60,100 @@ final class BrowserState {
     func invalidate() {
         loadTask?.cancel()
         detailsTask?.cancel()
+        childTasks.values.forEach { $0.cancel() }
         if let settingsObserver { AppModel.shared.removeObserver(settingsObserver) }
     }
 
     func observe(_ handler: @escaping (Change) -> Void) { observers.append(handler) }
     private func notify(_ change: Change) { for o in observers { o(change) } }
 
-    var selectedItems: [FileItem] { snapshot.items.filter { selection.contains($0.id) } }
+    /// Selected items in display order, including items inside expanded folders.
+    var selectedItems: [FileItem] {
+        guard !selection.isEmpty else { return [] }
+        var result = snapshot.items.filter { selection.contains($0.id) }
+        if result.count < selection.count {
+            for child in children.values { result += child.items.filter { selection.contains($0.id) } }
+        }
+        return result
+    }
+
+    /// Any item currently shown: top level or inside an expanded folder.
+    func item(_ id: FileID) -> FileItem? {
+        if let hit = snapshot.item(id) { return hit }
+        for child in children.values { if let hit = child.item(id) { return hit } }
+        return nil
+    }
+
+    // MARK: Expanded folders (list view disclosure triangles)
+
+    /// Folders expanded in list view. Kept per tab, so they survive view-mode switches.
+    private(set) var expanded: Set<FileID> = []
+    /// Arranged contents of expanded folders (same sort and filters as the main list, no groups).
+    private(set) var children: [FileID: ItemSnapshot] = [:]
+    private var childRaw: [FileID: [FileItem]] = [:]
+    private var childTasks: [FileID: Task<Void, Never>] = [:]
+    private var recursiveBudget = 0
+
+    /// Expands a folder in place. `recursive` (Option-click) also expands its subfolders as they
+    /// load, up to a few hundred folders.
+    func expand(_ folder: FileItem, recursive: Bool = false) {
+        guard folder.isNavigableFolder else { return }
+        if recursive { recursiveBudget = max(recursiveBudget, 300) }
+        let alreadyExpanded = expanded.contains(folder.id)
+        expanded.insert(folder.id)
+        if recursive, let loaded = children[folder.id] {
+            for sub in loaded.items where sub.isNavigableFolder && !expanded.contains(sub.id) && recursiveBudget > 0 {
+                recursiveBudget -= 1
+                expand(sub, recursive: true)
+            }
+        }
+        guard !alreadyExpanded || childTasks[folder.id] == nil else { return }
+        let id = folder.id
+        let expandSubfolders = recursive
+        childTasks[id] = Task { [weak self] in
+            for await event in FolderContents.observe(folder.url) {
+                guard let self, !Task.isCancelled else { break }
+                switch event {
+                case .partial: continue
+                case .complete(let items): self.childRaw[id] = items
+                case .failed: self.childRaw[id] = []
+                }
+                self.arrangeChildren(id)
+                if expandSubfolders {
+                    for sub in self.children[id]?.items ?? [] where sub.isNavigableFolder && self.recursiveBudget > 0 {
+                        self.recursiveBudget -= 1
+                        self.expand(sub, recursive: true)
+                    }
+                }
+            }
+        }
+    }
+
+    /// Collapses a folder and everything expanded inside it.
+    func collapse(_ id: FileID) {
+        guard expanded.remove(id) != nil else { return }
+        childTasks.removeValue(forKey: id)?.cancel()
+        let inside = children.removeValue(forKey: id)?.items.map(\.id) ?? []
+        childRaw[id] = nil
+        for child in inside where expanded.contains(child) { collapse(child) }
+        selection.subtract(inside)
+    }
+
+    private func arrangeChildren(_ id: FileID) {
+        guard let raw = childRaw[id] else { return }
+        var arrangement = settings.arrangement
+        arrangement.groupBy = nil
+        children[id] = ArrangementEngine.arrange(raw, with: arrangement)
+        notify(.children(id))
+    }
+
+    private func collapseAll() {
+        childTasks.values.forEach { $0.cancel() }
+        childTasks = [:]
+        children = [:]
+        childRaw = [:]
+        expanded = []
+    }
 
     // MARK: Navigation
 
@@ -192,9 +281,12 @@ final class BrowserState {
     private func switchTo(_ newLocation: Location) {
         location = newLocation
         details = .fallback(newLocation)
+        collapseAll()
         selection = []
         focusAnchor = nil
         snapshot = .empty
+        // Sorts requested for the previous location may still be running; never show their results.
+        appliedGeneration = requestedGeneration
         searchStatus = nil
         settings = AppModel.shared.resolve(newLocation.settingsClass, folder: nil).0
         notify(.location)
@@ -308,8 +400,9 @@ final class BrowserState {
                 pendingSelection = []
             }
         } else {
-            selection = selection.filter { snap.index(of: $0) != nil }
-            if let a = focusAnchor, snap.index(of: a) == nil { focusAnchor = selection.first }
+            // Keep selections inside expanded folders too.
+            selection = selection.filter { item($0) != nil }
+            if let a = focusAnchor, item(a) == nil { focusAnchor = selection.first }
         }
         notify(.snapshot)
     }
@@ -368,6 +461,9 @@ final class BrowserState {
         let rearrangeNeeded = new.arrangement != settings.arrangement
         settings = new
         notify(.settings)
-        if rearrangeNeeded { rearrange("settings") }
+        if rearrangeNeeded {
+            rearrange("settings")
+            for id in children.keys { arrangeChildren(id) }
+        }
     }
 }

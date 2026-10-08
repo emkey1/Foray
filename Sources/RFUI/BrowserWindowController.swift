@@ -16,6 +16,7 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate, NSToo
         static let mode = NSToolbarItem.Identifier("viewMode")
         static let arrange = NSToolbarItem.Identifier("arrange")
         static let search = NSToolbarItem.Identifier("search")
+        static let guide = NSToolbarItem.Identifier("guide")
     }
 
     init(location: Location) {
@@ -48,6 +49,7 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate, NSToo
         window.toolbarStyle = .unified
 
         sidebar.onNavigate = { [weak self] location in self?.browser.state.jump(to: location) }
+        sidebar.onOpenInNewTab = { [weak self] location in WindowManager.shared.openTab(location, nextTo: self) }
         browser.state.observe { [weak self] change in
             switch change {
             case .location, .details, .settings: self?.syncChrome()
@@ -91,7 +93,7 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate, NSToo
 
     func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
         [.toggleSidebar, .sidebarTrackingSeparator, ToolbarID.navigation, .flexibleSpace, ToolbarID.mode, ToolbarID.arrange,
-         ToolbarID.search]
+         ToolbarID.search, ToolbarID.guide]
     }
 
     func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
@@ -133,6 +135,14 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate, NSToo
             searchItem = item
             syncSearchField()
             return item
+        case ToolbarID.guide:
+            let item = NSToolbarItem(itemIdentifier: id)
+            item.image = NSImage(systemSymbolName: "questionmark.circle", accessibilityDescription: "Guide")
+            item.label = "Guide"
+            item.toolTip = "Open the RealFinder Guide (⌘?)"
+            item.target = self
+            item.action = #selector(openGuide(_:))
+            return item
         case ToolbarID.arrange:
             let item = NSMenuToolbarItem(itemIdentifier: id)
             item.image = NSImage(systemSymbolName: "arrow.up.arrow.down", accessibilityDescription: "Sort and Group")
@@ -144,6 +154,10 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate, NSToo
         default:
             return nil
         }
+    }
+
+    @objc private func openGuide(_ sender: Any?) {
+        GuideWindowController.shared.show(browser.state.location.searchQuery != nil ? .search : .top)
     }
 
     // MARK: Search (DESIGN.md §3.1)

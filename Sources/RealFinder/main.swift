@@ -44,6 +44,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc func newBrowserWindow(_ sender: Any?) { WindowManager.shared.openWindow() }
 
+    @objc func showGuide(_ sender: Any?) { GuideWindowController.shared.show() }
+
+    @objc func showGuideSection(_ sender: NSMenuItem) {
+        let section = (sender.representedObject as? String).flatMap(GuideWindowController.Section.init(rawValue:)) ?? .top
+        GuideWindowController.shared.show(section)
+    }
+
     @objc func newBrowserTab(_ sender: Any?) {
         guard let key = NSApp.keyWindow else { return WindowManager.shared.openWindow() }
         key.windowController?.newWindowForTab(sender)
@@ -63,9 +70,10 @@ enum MainMenu {
         let window = windowMenu()
         main.addItem(submenu(window))
         NSApp.windowsMenu = window
-        let help = NSMenu(title: "Help")
-        main.addItem(submenu(help))
-        NSApp.helpMenu = help
+        main.addItem(submenu(helpMenu(target)))
+        // The system adds its Help search (which mixes in unrelated results) to `NSApp.helpMenu`.
+        // Point that at a menu that's never shown so our Help menu only offers the guide.
+        NSApp.helpMenu = NSMenu(title: "Unused")
         return main
     }
 
@@ -119,6 +127,7 @@ enum MainMenu {
         menu.addItem(.separator())
         menu.addItem(item("Find", Commands.focusSearch, "f"))
         menu.addItem(item("Copy Path", Commands.copyPath, "c", [.command, .option]))
+        menu.addItem(item("Add to Sidebar", Commands.addToSidebar, "t", [.command, .control]))
         return menu
     }
 
@@ -172,6 +181,21 @@ enum MainMenu {
         }
         menu.addItem(.separator())
         menu.addItem(item("Go to Folder…", Commands.goToFolder, "g", [.command, .shift]))
+        return menu
+    }
+
+    private static func helpMenu(_ target: AppDelegate) -> NSMenu {
+        // Not titled "Help": AppKit also looks for a menu by that title to add its search field to.
+        let menu = NSMenu(title: "Help\u{200B}")
+        let guide = item("RealFinder Guide", #selector(AppDelegate.showGuide(_:)), "?")
+        guide.target = target
+        menu.addItem(guide)
+        for (title, section) in [("Searching", "search"), ("Search Filters", "syntax"), ("Keyboard Shortcuts", "keys")] {
+            let i = item(title, #selector(AppDelegate.showGuideSection(_:)))
+            i.target = target
+            i.representedObject = section
+            menu.addItem(i)
+        }
         return menu
     }
 

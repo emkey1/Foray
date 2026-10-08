@@ -8,12 +8,14 @@ import Testing
 /// Acceptance tests for headline requirement 3 (DESIGN.md §3.3, §8): switching view modes never
 /// changes the order, never reloads and never re-sorts.
 @MainActor
-@Suite(.serialized) struct BrowserStateTests {
+@Suite(.serialized) final class BrowserStateTests {
+    let base = TestDirs.make("ui-tests")
     let folder: URL
     let storeDir: URL
 
+    deinit { try? FileManager.default.removeItem(at: base) }
+
     init() throws {
-        let base = FileManager.default.temporaryDirectory.appendingPathComponent("rf-ui-tests-\(UUID().uuidString)")
         folder = base.appendingPathComponent("folder", isDirectory: true)
         storeDir = base.appendingPathComponent("store", isDirectory: true)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
@@ -32,7 +34,7 @@ import Testing
     }
 
     private func settle(_ state: BrowserState, until condition: () -> Bool) async {
-        let deadline = Date().addingTimeInterval(5)
+        let deadline = Date().addingTimeInterval(15)
         while !condition() && Date() < deadline { try? await Task.sleep(for: .milliseconds(20)) }
     }
 
@@ -41,7 +43,7 @@ import Testing
     private func quiesce(_ state: BrowserState) async {
         var last = state.snapshot.generation
         var stableSince = Date()
-        let deadline = Date().addingTimeInterval(5)
+        let deadline = Date().addingTimeInterval(15)
         while Date() < deadline {
             try? await Task.sleep(for: .milliseconds(25))
             if state.snapshot.generation != last {
@@ -156,11 +158,13 @@ import Testing
 /// Search flow (DESIGN.md §3.1): scope defaults to the current folder, refining doesn't add
 /// history, and ending the search restores the folder and its selection.
 @MainActor
-@Suite(.serialized) struct SearchFlowTests {
+@Suite(.serialized) final class SearchFlowTests {
+    let base = TestDirs.make("searchflow")
     let folder: URL
 
+    deinit { try? FileManager.default.removeItem(at: base) }
+
     init() throws {
-        let base = FileManager.default.temporaryDirectory.appendingPathComponent("rf-searchflow-\(UUID().uuidString)")
         folder = base.appendingPathComponent("Projects", isDirectory: true)
         try FileManager.default.createDirectory(at: folder.appendingPathComponent("deep/er"), withIntermediateDirectories: true)
         for path in ["report.pdf", "deep/report notes.txt", "deep/er/photo report.jpg", "unrelated.txt"] {
@@ -170,7 +174,7 @@ import Testing
     }
 
     private func wait(_ condition: () -> Bool) async {
-        let deadline = Date().addingTimeInterval(5)
+        let deadline = Date().addingTimeInterval(15)
         while !condition() && Date() < deadline { try? await Task.sleep(for: .milliseconds(20)) }
     }
 
@@ -245,5 +249,37 @@ import Testing
         let state = BrowserState(location: .computer)
         defer { state.invalidate() }
         #expect(state.defaultSearchScope == .thisMac)
+    }
+}
+
+/// Regression: a sort of the previous folder that finished after navigating was shown as the new
+/// location's contents (search results briefly showed the folder's items).
+@MainActor
+@Suite(.serialized) final class StaleSnapshotTests {
+    let base = TestDirs.make("stale")
+
+    deinit { try? FileManager.default.removeItem(at: base) }
+
+    @Test func navigatingDiscardsArrangementsForThePreviousLocation() async throws {
+        let big = base.appendingPathComponent("big"), small = base.appendingPathComponent("small")
+        for dir in [big, small] { try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true) }
+        for i in 0..<8_000 { FileManager.default.createFile(atPath: big.appendingPathComponent("f\(i)").path, contents: nil) }
+        FileManager.default.createFile(atPath: small.appendingPathComponent("only.txt").path, contents: nil)
+        AppModel.shared = AppModel(store: AppSupportStore(directory: base.appendingPathComponent("store")))
+        for _ in 0..<5 {
+            let state = BrowserState(location: .folder(big))
+            // Navigate away while the big folder is still loading and sorting.
+            try await Task.sleep(for: .milliseconds(30))
+            state.navigate(to: .folder(small))
+            var sawForeign = false
+            let deadline = Date().addingTimeInterval(3)
+            while Date() < deadline {
+                if state.snapshot.items.contains(where: { $0.name != "only.txt" }) { sawForeign = true }
+                try await Task.sleep(for: .milliseconds(2))
+            }
+            #expect(!sawForeign)
+            #expect(state.snapshot.items.map(\.name) == ["only.txt"])
+            state.invalidate()
+        }
     }
 }

@@ -161,8 +161,14 @@ private func matches(_ text: String, _ item: FileItem, mode: MatchMode = .names)
 }
 
 /// End-to-end searches over a temporary tree (not indexed by Spotlight, so these exercise the crawl).
-@Suite struct SearchEngineTests {
+@Suite final class SearchEngineTests {
     let root: URL
+
+    deinit {
+        // A test locks a folder (chmod 000); unlock before removing.
+        try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: root.appendingPathComponent("locked").path)
+        try? FileManager.default.removeItem(at: root)
+    }
 
     init() throws {
         root = FileManager.default.temporaryDirectory.appendingPathComponent("rf-search-\(UUID().uuidString)")

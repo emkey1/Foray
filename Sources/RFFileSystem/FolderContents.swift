@@ -1,5 +1,6 @@
 import Foundation
 import RFModel
+import Synchronization
 
 public enum FolderEvent: Sendable {
     /// Loading is in progress; items so far (cumulative).
@@ -18,9 +19,14 @@ public enum FolderContents {
     ) -> AsyncStream<FolderEvent> {
         AsyncStream { continuation in
             let changes = AsyncStream<Void>.makeStream(bufferingPolicy: .bufferingNewest(1))
-            let token = watcher.subscribe(directory) { changes.continuation.yield() }
+            // Subscribing creates and starts an FSEvents stream, which talks to fseventsd and can
+            // stall when it's busy. Do it in the background task, never on the caller's (main) thread.
+            let token = Mutex<DirectoryWatcher.Token?>(nil)
 
-            let task = Task {
+            let task = Task.detached(priority: .userInitiated) {
+                let t = watcher.subscribe(directory) { changes.continuation.yield() }
+                token.withLock { $0 = t }
+                if Task.isCancelled { return watcher.unsubscribe(t) }
                 func list(streaming: Bool) async {
                     var items: [FileItem] = []
                     do {
@@ -45,7 +51,7 @@ public enum FolderContents {
             continuation.onTermination = { _ in
                 task.cancel()
                 changes.continuation.finish()
-                watcher.unsubscribe(token)
+                if let t = token.withLock({ $0.take() }) { watcher.unsubscribe(t) }
             }
         }
     }

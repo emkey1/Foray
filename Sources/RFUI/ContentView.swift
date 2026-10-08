@@ -25,6 +25,12 @@ protocol ContentView: NSViewController {
     func showSelection(_ ids: Set<FileID>, reveal: FileID?)
     func screenFrame(for id: FileID) -> NSRect?
     var firstResponderView: NSView { get }
+    /// An expanded folder's contents changed (only list view shows them).
+    func childrenChanged(_ id: FileID)
+}
+
+extension ContentView {
+    func childrenChanged(_ id: FileID) {}
 }
 
 /// Type-to-select: accumulates keystrokes for a second and returns the item to jump to.

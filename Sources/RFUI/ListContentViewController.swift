@@ -1,18 +1,26 @@
 import AppKit
 import RFModel
 
-/// List view (DESIGN.md §5.5). Column headers edit the shared Arrangement; the sort chip shows a
-/// sort key that has no visible column (rule 5, §3.3). Disclosure triangles come later in M1.
+/// List view (DESIGN.md §5.5): an outline whose folders expand in place. Column headers edit the
+/// shared Arrangement; the sort chip shows a sort key that has no visible column (rule 5, §3.3).
+/// Expanded folders live in BrowserState (loaded, watched and arranged there).
 @MainActor
 final class ListContentViewController: NSViewController, ContentView {
     weak var host: ContentHost?
 
-    private enum Row {
-        case group(String)
-        case item(Int)
+    /// Outline rows need stable object identity across reloads, so nodes are cached by FileID.
+    final class Node {
+        enum Kind {
+            case group(String)
+            case item(FileItem)
+        }
+        var kind: Kind
+        init(_ kind: Kind) { self.kind = kind }
+
+        var item: FileItem? { if case .item(let i) = kind { i } else { nil } }
     }
 
-    private let tableView = BrowserTableView()
+    private let outline = BrowserOutlineView()
     private let scrollView = NSScrollView()
     private let chip = NSTextField(labelWithString: "")
     private let chipButton = NSButton(title: "Show Column", target: nil, action: nil)
@@ -20,29 +28,38 @@ final class ListContentViewController: NSViewController, ContentView {
     private var chipBarHeight: NSLayoutConstraint?
     private var snapshot = ItemSnapshot.empty
     private var settings = ViewSettings()
-    private var rows: [Row] = []
-    private var rowForIndex: [Int] = []
+    /// Top-level rows. Item nodes are created on demand (outline views ask only for rows they
+    /// need), so a 100k-item list doesn't allocate 100k objects up front.
+    private enum Entry {
+        case group(Node)
+        case item(Int)   // index into snapshot.items
+    }
+    private var topLevel: [Entry] = []
+    private var nodes: [FileID: Node] = [:]
+    private var groupNodes: [String: Node] = [:]
     private var isApplying = false
 
-    var firstResponderView: NSView { tableView }
+    var firstResponderView: NSView { outline }
 
     override func loadView() {
-        tableView.style = .fullWidth
-        tableView.usesAlternatingRowBackgroundColors = true
-        tableView.allowsMultipleSelection = true
-        tableView.allowsColumnReordering = true
-        tableView.allowsColumnResizing = true
-        tableView.columnAutoresizingStyle = .noColumnAutoresizing
-        tableView.rowHeight = 22
-        tableView.intercellSpacing = NSSize(width: 6, height: 2)
-        tableView.dataSource = self
-        tableView.delegate = self
-        tableView.target = self
-        tableView.doubleAction = #selector(doubleClicked)
-        tableView.owner = self
-        tableView.headerView?.menu = headerMenu()
+        outline.style = .fullWidth
+        outline.usesAlternatingRowBackgroundColors = true
+        outline.allowsMultipleSelection = true
+        outline.allowsColumnReordering = true
+        outline.allowsColumnResizing = true
+        outline.columnAutoresizingStyle = .noColumnAutoresizing
+        outline.rowHeight = 22
+        outline.intercellSpacing = NSSize(width: 6, height: 2)
+        outline.indentationPerLevel = 16
+        outline.autoresizesOutlineColumn = false
+        outline.dataSource = self
+        outline.delegate = self
+        outline.target = self
+        outline.doubleAction = #selector(doubleClicked)
+        outline.owner = self
+        outline.headerView?.menu = headerMenu()
 
-        scrollView.documentView = tableView
+        scrollView.documentView = outline
         scrollView.hasVerticalScroller = true
         scrollView.hasHorizontalScroller = true
         scrollView.autohidesScrollers = true
@@ -80,8 +97,8 @@ final class ListContentViewController: NSViewController, ContentView {
         ])
         view = root
 
-        NotificationCenter.default.addObserver(self, selector: #selector(columnsChanged), name: NSTableView.columnDidResizeNotification, object: tableView)
-        NotificationCenter.default.addObserver(self, selector: #selector(columnsChanged), name: NSTableView.columnDidMoveNotification, object: tableView)
+        NotificationCenter.default.addObserver(self, selector: #selector(columnsChanged), name: NSTableView.columnDidResizeNotification, object: outline)
+        NotificationCenter.default.addObserver(self, selector: #selector(columnsChanged), name: NSTableView.columnDidMoveNotification, object: outline)
     }
 
     // MARK: ContentView
@@ -89,79 +106,135 @@ final class ListContentViewController: NSViewController, ContentView {
     func apply(_ snapshot: ItemSnapshot, settings: ViewSettings) {
         isApplying = true
         defer { isApplying = false }
-        let columnsChanged = settings.presentation.list.columns != self.settings.presentation.list.columns || tableView.tableColumns.isEmpty
+        let columnsChanged = settings.presentation.list.columns != self.settings.presentation.list.columns || outline.tableColumns.isEmpty
         self.snapshot = snapshot
         self.settings = settings
         if columnsChanged { rebuildColumns() }
-        rebuildRows()
-        tableView.reloadData()
+        rebuildTopLevel()
+        outline.reloadData()
+        restoreExpansion(in: (host?.state.expanded ?? []).compactMap { id in
+            snapshot.index(of: id).map { node(for: snapshot.items[$0]) }
+        })
         updateSortIndicators()
         updateChip()
+    }
+
+    /// An expanded folder's contents arrived or changed.
+    func childrenChanged(_ id: FileID) {
+        guard let parent = nodes[id] else { return }
+        isApplying = true
+        defer { isApplying = false }
+        for child in host?.state.children[id]?.items ?? [] { _ = node(for: child) }
+        outline.reloadItem(parent, reloadChildren: true)
+        if host?.state.expanded.contains(id) == true && !outline.isItemExpanded(parent) { outline.expandItem(parent) }
+        let kids = (host?.state.children[id]?.items ?? []).compactMap { nodes[$0.id] }
+        restoreExpansion(in: kids)
+        if let state = host?.state { showSelection(state.selection, reveal: nil) }
     }
 
     func showSelection(_ ids: Set<FileID>, reveal: FileID?) {
         isApplying = true
         defer { isApplying = false }
-        var rowSet = IndexSet()
-        for id in ids { if let i = snapshot.index(of: id) { rowSet.insert(rowForIndex[i]) } }
-        tableView.selectRowIndexes(rowSet, byExtendingSelection: false)
-        if let reveal, let i = snapshot.index(of: reveal) { tableView.scrollRowToVisible(rowForIndex[i]) }
+        var rows = IndexSet()
+        for id in ids {
+            if let node = existingOrTopLevelNode(id) {
+                let row = outline.row(forItem: node)
+                if row >= 0 { rows.insert(row) }
+            }
+        }
+        outline.selectRowIndexes(rows, byExtendingSelection: false)
+        if let reveal, let node = existingOrTopLevelNode(reveal) {
+            let row = outline.row(forItem: node)
+            if row >= 0 { outline.scrollRowToVisible(row) }
+        }
     }
 
     func screenFrame(for id: FileID) -> NSRect? {
-        guard let i = snapshot.index(of: id), let window = view.window,
-              let column = tableView.tableColumns.firstIndex(where: { $0.identifier.rawValue == ListColumn.name.rawValue })
+        guard let node = existingOrTopLevelNode(id), let window = view.window,
+              let column = outline.tableColumns.firstIndex(where: { $0.identifier.rawValue == ListColumn.name.rawValue })
         else { return nil }
-        let rect = tableView.frameOfCell(atColumn: column, row: rowForIndex[i])
+        let row = outline.row(forItem: node)
+        guard row >= 0 else { return nil }
+        let rect = outline.frameOfCell(atColumn: column, row: row)
         let iconRect = NSRect(x: rect.minX + 2, y: rect.minY, width: rect.height, height: rect.height)
-        return window.convertToScreen(tableView.convert(iconRect, to: nil))
+        return window.convertToScreen(outline.convert(iconRect, to: nil))
     }
 
     // MARK: Building
 
+    /// The node for an item that's shown: cached, or created for a top-level item.
+    private func existingOrTopLevelNode(_ id: FileID) -> Node? {
+        if let n = nodes[id] { return n }
+        return snapshot.index(of: id).map { node(for: snapshot.items[$0]) }
+    }
+
+    private func node(for item: FileItem) -> Node {
+        if let existing = nodes[item.id] {
+            existing.kind = .item(item)
+            return existing
+        }
+        let new = Node(.item(item))
+        nodes[item.id] = new
+        return new
+    }
+
+    private func rebuildTopLevel() {
+        topLevel = []
+        topLevel.reserveCapacity(snapshot.items.count + snapshot.groups.count)
+        for node in nodes.values {
+            // Keep cached nodes' items current (renames, size changes) without allocating new ones.
+            if let id = node.item?.id, let i = snapshot.index(of: id) { node.kind = .item(snapshot.items[i]) }
+        }
+        if snapshot.groups.isEmpty {
+            for i in snapshot.items.indices { topLevel.append(.item(i)) }
+        } else {
+            for group in snapshot.groups {
+                let g = groupNodes[group.title] ?? Node(.group(group.title))
+                groupNodes[group.title] = g
+                topLevel.append(.group(g))
+                for i in group.range { topLevel.append(.item(i)) }
+            }
+        }
+        // Drop nodes for items no longer shown anywhere (keeps the cache bounded).
+        if nodes.count > snapshot.items.count * 2 + 1_000, let state = host?.state {
+            nodes = nodes.filter { state.item($0.key) != nil }
+        }
+    }
+
+    /// Re-expands rows the tab has expanded (reloadData collapses everything).
+    private func restoreExpansion(in candidates: [Node]) {
+        guard let state = host?.state, !state.expanded.isEmpty else { return }
+        for node in candidates {
+            guard let item = node.item, state.expanded.contains(item.id) else { continue }
+            for child in state.children[item.id]?.items ?? [] { _ = self.node(for: child) }
+            outline.expandItem(node)
+        }
+    }
+
     private func rebuildColumns() {
-        for c in tableView.tableColumns { tableView.removeTableColumn(c) }
+        for c in outline.tableColumns { outline.removeTableColumn(c) }
         for spec in settings.presentation.list.columns {
             let column = NSTableColumn(identifier: NSUserInterfaceItemIdentifier(spec.column.rawValue))
             column.title = spec.column.title
             column.width = spec.width
             column.minWidth = spec.column == .name ? 120 : 50
             if spec.column == .size { column.headerCell.alignment = .right }
-            tableView.addTableColumn(column)
-        }
-    }
-
-    private func rebuildRows() {
-        rows = []
-        rowForIndex = Array(repeating: 0, count: snapshot.items.count)
-        if snapshot.groups.isEmpty {
-            rows.reserveCapacity(snapshot.items.count)
-            for i in snapshot.items.indices {
-                rowForIndex[i] = rows.count
-                rows.append(.item(i))
-            }
-        } else {
-            for group in snapshot.groups {
-                rows.append(.group(group.title))
-                for i in group.range {
-                    rowForIndex[i] = rows.count
-                    rows.append(.item(i))
-                }
-            }
+            outline.addTableColumn(column)
+            if spec.column == .name { outline.outlineTableColumn = column }
         }
     }
 
     private func updateSortIndicators() {
         let primary = settings.arrangement.primary
-        for column in tableView.tableColumns {
+        for column in outline.tableColumns {
             let key = ListColumn(rawValue: column.identifier.rawValue)?.sortKey
             let image = key == primary.key
                 ? NSImage(named: primary.ascending ? "NSAscendingSortIndicator" : "NSDescendingSortIndicator") : nil
-            tableView.setIndicatorImage(image, in: column)
-            if key == primary.key { tableView.highlightedTableColumn = column }
+            outline.setIndicatorImage(image, in: column)
+            if key == primary.key { outline.highlightedTableColumn = column }
         }
         let secondary = settings.arrangement.sort.dropFirst().map { "\($0.key.title) \($0.ascending ? "↑" : "↓")" }
-        tableView.headerView?.toolTip = secondary.isEmpty ? nil : "Then by " + secondary.joined(separator: ", ")
+        outline.headerView?.toolTip = secondary.isEmpty ? nil : "Then by " + secondary.joined(separator: ", ")
     }
 
     /// Rule 5: never silently switch to another column when the sort key isn't visible.
@@ -177,8 +250,8 @@ final class ListContentViewController: NSViewController, ContentView {
     // MARK: Actions
 
     @objc private func doubleClicked() {
-        guard tableView.clickedRow >= 0, case .item(let i) = rows[tableView.clickedRow] else { return }
-        host?.contentOpen([snapshot.items[i].id], inNewTab: NSEvent.modifierFlags.contains(.command))
+        guard outline.clickedRow >= 0, let item = (outline.item(atRow: outline.clickedRow) as? Node)?.item else { return }
+        host?.contentOpen([item.id], inNewTab: NSEvent.modifierFlags.contains(.command))
     }
 
     @objc private func showSortColumn() {
@@ -188,7 +261,7 @@ final class ListContentViewController: NSViewController, ContentView {
 
     @objc private func columnsChanged() {
         guard !isApplying else { return }
-        let specs = tableView.tableColumns.compactMap { c -> ListColumnSpec? in
+        let specs = outline.tableColumns.compactMap { c -> ListColumnSpec? in
             guard let column = ListColumn(rawValue: c.identifier.rawValue) else { return nil }
             return ListColumnSpec(column, width: c.width)
         }
@@ -214,75 +287,99 @@ final class ListContentViewController: NSViewController, ContentView {
         }
     }
 
-    fileprivate func items(atRows rowIndexes: IndexSet) -> [FileID] {
-        rowIndexes.compactMap { r in
-            guard r < rows.count, case .item(let i) = rows[r] else { return nil }
-            return snapshot.items[i].id
-        }
+    fileprivate func ids(atRows rows: IndexSet) -> [FileID] {
+        rows.compactMap { (outline.item(atRow: $0) as? Node)?.item?.id }
     }
 
     fileprivate func menu(forRow row: Int) -> NSMenu? {
-        if row >= 0, !tableView.selectedRowIndexes.contains(row) {
-            tableView.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
+        if row >= 0, !outline.selectedRowIndexes.contains(row) {
+            outline.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
         }
-        let clicked = row >= 0 ? items(atRows: IndexSet(integer: row)).first : nil
+        let clicked = row >= 0 ? ids(atRows: IndexSet(integer: row)).first : nil
         return host?.contentMenu(clicked: clicked)
     }
 }
 
-extension ListContentViewController: NSTableViewDataSource, NSTableViewDelegate, NSMenuDelegate {
-    func numberOfRows(in tableView: NSTableView) -> Int { rows.count }
+extension ListContentViewController: NSOutlineViewDataSource, NSOutlineViewDelegate, NSMenuDelegate {
+    func outlineView(_ outlineView: NSOutlineView, numberOfChildrenOfItem item: Any?) -> Int {
+        guard let node = item as? Node else { return topLevel.count }
+        guard let id = node.item?.id else { return 0 }
+        return host?.state.children[id]?.items.count ?? 0
+    }
 
-    func tableView(_ tableView: NSTableView, isGroupRow row: Int) -> Bool {
-        if case .group = rows[row] { return true }
+    func outlineView(_ outlineView: NSOutlineView, child index: Int, ofItem item: Any?) -> Any {
+        guard let node = item as? Node, let id = node.item?.id, let kids = host?.state.children[id] else {
+            switch topLevel[index] {
+            case .group(let g): return g
+            case .item(let i): return self.node(for: snapshot.items[i])
+            }
+        }
+        return self.node(for: kids.items[index])
+    }
+
+    func outlineView(_ outlineView: NSOutlineView, isItemExpandable item: Any) -> Bool {
+        (item as? Node)?.item?.isNavigableFolder == true
+    }
+
+    func outlineView(_ outlineView: NSOutlineView, isGroupItem item: Any) -> Bool {
+        if case .group = (item as? Node)?.kind { return true }
         return false
     }
 
-    func tableView(_ tableView: NSTableView, shouldSelectRow row: Int) -> Bool {
-        if case .group = rows[row] { return false }
-        return true
+    func outlineView(_ outlineView: NSOutlineView, shouldSelectItem item: Any) -> Bool {
+        (item as? Node)?.item != nil
     }
 
-    func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
-        switch rows[row] {
+    func outlineViewItemWillExpand(_ notification: Notification) {
+        guard let item = (notification.userInfo?["NSObject"] as? Node)?.item else { return }
+        host?.state.expand(item, recursive: !isApplying && NSEvent.modifierFlags.contains(.option))
+    }
+
+    func outlineViewItemDidCollapse(_ notification: Notification) {
+        guard !isApplying, let item = (notification.userInfo?["NSObject"] as? Node)?.item else { return }
+        host?.state.collapse(item.id)
+    }
+
+    func outlineView(_ outlineView: NSOutlineView, viewFor tableColumn: NSTableColumn?, item: Any) -> NSView? {
+        guard let node = item as? Node else { return nil }
+        switch node.kind {
         case .group(let title):
-            let cell = tableView.makeView(withIdentifier: .init("group"), owner: self) as? NSTableCellView ?? GroupCell()
+            let cell = outlineView.makeView(withIdentifier: .init("group"), owner: self) as? NSTableCellView ?? GroupCell()
             cell.textField?.stringValue = title
             return cell
-        case .item(let i):
-            let item = snapshot.items[i]
+        case .item(let item):
             guard let tableColumn, let column = ListColumn(rawValue: tableColumn.identifier.rawValue) else { return nil }
             if column == .name {
-                let cell = tableView.makeView(withIdentifier: .init("name"), owner: self) as? NameCell ?? NameCell()
+                let cell = outlineView.makeView(withIdentifier: .init("name"), owner: self) as? NameCell ?? NameCell()
                 cell.configure(item)
                 return cell
             }
-            let cell = tableView.makeView(withIdentifier: .init("text"), owner: self) as? TextCell ?? TextCell()
+            let cell = outlineView.makeView(withIdentifier: .init("text"), owner: self) as? TextCell ?? TextCell()
             cell.textField?.stringValue = Formatting.text(
                 for: item, column: column, relativeDates: settings.presentation.list.relativeDates,
                 whereBase: host?.state.location.searchQuery?.scope.folderURL)
-            cell.textField?.lineBreakMode = column == .folder ? .byTruncatingHead : .byTruncatingTail
             cell.textField?.alignment = column == .size ? .right : .left
+            cell.textField?.lineBreakMode = column == .folder ? .byTruncatingHead : .byTruncatingTail
             return cell
         }
     }
 
-    func tableViewSelectionDidChange(_ notification: Notification) {
+    func outlineViewSelectionDidChange(_ notification: Notification) {
         guard !isApplying else { return }
-        let ids = items(atRows: tableView.selectedRowIndexes)
-        let anchorRow = tableView.selectedRow
-        let anchor = anchorRow >= 0 ? items(atRows: IndexSet(integer: anchorRow)).first : nil
-        host?.contentSelectionChanged(Set(ids), anchor: anchor)
+        let selected = ids(atRows: outline.selectedRowIndexes)
+        let anchorRow = outline.selectedRow
+        let anchor = anchorRow >= 0 ? ids(atRows: IndexSet(integer: anchorRow)).first : nil
+        host?.contentSelectionChanged(Set(selected), anchor: anchor)
     }
 
-    func tableView(_ tableView: NSTableView, didClick tableColumn: NSTableColumn) {
+    func outlineView(_ outlineView: NSOutlineView, didClick tableColumn: NSTableColumn) {
         guard let column = ListColumn(rawValue: tableColumn.identifier.rawValue) else { return }
         host?.contentHeaderClicked(column.sortKey, shift: NSEvent.modifierFlags.contains(.shift))
     }
 
-    func tableView(_ tableView: NSTableView, typeSelectStringFor tableColumn: NSTableColumn?, row: Int) -> String? {
-        guard case .item(let i) = rows[row], tableColumn?.identifier.rawValue == ListColumn.name.rawValue else { return nil }
-        return snapshot.items[i].displayName
+    func outlineView(_ outlineView: NSOutlineView, typeSelectStringFor tableColumn: NSTableColumn?, item: Any) -> String? {
+        guard tableColumn?.identifier.rawValue == ListColumn.name.rawValue else { return nil }
+        return (item as? Node)?.item?.displayName
     }
 
     func menuNeedsUpdate(_ menu: NSMenu) {
@@ -297,8 +394,8 @@ extension ListContentViewController: NSTableViewDataSource, NSTableViewDelegate,
     }
 }
 
-/// Table subclass: Space for Quick Look, context menus via the host.
-final class BrowserTableView: NSTableView {
+/// Outline subclass: Space for Quick Look, context menus via the host.
+final class BrowserOutlineView: NSOutlineView {
     weak var owner: ListContentViewController?
 
     override func keyDown(with event: NSEvent) {
@@ -315,6 +412,8 @@ final class BrowserTableView: NSTableView {
     }
 }
 
+/// List cells lay out by hand: a constraint solve per cell made the first draw of a list
+/// noticeably slower (DESIGN.md §5.13 view-switch budget).
 private final class NameCell: NSTableCellView {
     private var itemID: FileID?
 
@@ -325,24 +424,21 @@ private final class NameCell: NSTableCellView {
         image.imageScaling = .scaleProportionallyUpOrDown
         let text = NSTextField(labelWithString: "")
         text.lineBreakMode = .byTruncatingMiddle
-        for v in [image, text] {
-            v.translatesAutoresizingMaskIntoConstraints = false
-            addSubview(v)
-        }
-        NSLayoutConstraint.activate([
-            image.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 2),
-            image.centerYAnchor.constraint(equalTo: centerYAnchor),
-            image.widthAnchor.constraint(equalToConstant: 16),
-            image.heightAnchor.constraint(equalToConstant: 16),
-            text.leadingAnchor.constraint(equalTo: image.trailingAnchor, constant: 6),
-            text.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -2),
-            text.centerYAnchor.constraint(equalTo: centerYAnchor),
-        ])
+        addSubview(image)
+        addSubview(text)
         imageView = image
         textField = text
     }
 
     required init?(coder: NSCoder) { fatalError() }
+
+    override func layout() {
+        super.layout()
+        let h = bounds.height
+        imageView?.frame = NSRect(x: 2, y: (h - 16) / 2, width: 16, height: 16)
+        let textHeight = textField?.intrinsicContentSize.height ?? 16
+        textField?.frame = NSRect(x: 24, y: (h - textHeight) / 2, width: max(0, bounds.width - 26), height: textHeight)
+    }
 
     func configure(_ item: FileItem) {
         itemID = item.id
@@ -363,17 +459,17 @@ private final class TextCell: NSTableCellView {
         let text = NSTextField(labelWithString: "")
         text.textColor = .secondaryLabelColor
         text.lineBreakMode = .byTruncatingTail
-        text.translatesAutoresizingMaskIntoConstraints = false
         addSubview(text)
-        NSLayoutConstraint.activate([
-            text.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 2),
-            text.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -2),
-            text.centerYAnchor.constraint(equalTo: centerYAnchor),
-        ])
         textField = text
     }
 
     required init?(coder: NSCoder) { fatalError() }
+
+    override func layout() {
+        super.layout()
+        let textHeight = textField?.intrinsicContentSize.height ?? 16
+        textField?.frame = NSRect(x: 2, y: (bounds.height - textHeight) / 2, width: max(0, bounds.width - 4), height: textHeight)
+    }
 }
 
 private final class GroupCell: NSTableCellView {

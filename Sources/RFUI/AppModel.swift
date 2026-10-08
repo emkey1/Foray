@@ -68,6 +68,68 @@ public final class AppModel {
 
     public func flush() { store.save(settings, to: Self.settingsFile) }
 
+    // MARK: Sidebar favorites
+
+    /// Saved as bookmarks so favorites survive renames and moves.
+    private struct SavedFavorite: Codable {
+        var path: String
+        var bookmark: Data?
+    }
+
+    private static let sidebarFile = "sidebar.json"
+    private var favoriteObservers: [UUID: @MainActor () -> Void] = [:]
+
+    public private(set) lazy var favorites: [URL] = loadFavorites()
+
+    private func loadFavorites() -> [URL] {
+        guard let saved = store.load([SavedFavorite].self, from: Self.sidebarFile) else { return Self.defaultFavorites }
+        return saved.map { fav in
+            var stale = false
+            if let data = fav.bookmark,
+               let url = try? URL(resolvingBookmarkData: data, options: [.withoutUI, .withoutMounting], bookmarkDataIsStale: &stale) {
+                return url
+            }
+            return URL(fileURLWithPath: fav.path)
+        }
+    }
+
+    static var defaultFavorites: [URL] {
+        [StandardLocation.applications, .desktop, .documents, .downloads, .home].compactMap(\.url)
+    }
+
+    /// Adds folders (skipping ones already there) at `index`, or at the end.
+    func addFavorites(_ urls: [URL], at index: Int? = nil) {
+        let new = urls.map(\.standardizedFileURL).filter { url in !favorites.contains { $0.standardizedFileURL == url } }
+        guard !new.isEmpty else { return }
+        favorites.insert(contentsOf: new, at: min(index ?? favorites.count, favorites.count))
+        favoritesChanged()
+    }
+
+    func removeFavorite(at index: Int) {
+        guard favorites.indices.contains(index) else { return }
+        favorites.remove(at: index)
+        favoritesChanged()
+    }
+
+    func moveFavorite(from: Int, to: Int) {
+        guard favorites.indices.contains(from) else { return }
+        let url = favorites.remove(at: from)
+        favorites.insert(url, at: min(to > from ? to - 1 : to, favorites.count))
+        favoritesChanged()
+    }
+
+    func observeFavorites(_ handler: @escaping @MainActor () -> Void) -> UUID {
+        let id = UUID()
+        favoriteObservers[id] = handler
+        return id
+    }
+
+    private func favoritesChanged() {
+        let saved = favorites.map { SavedFavorite(path: $0.path, bookmark: try? $0.bookmarkData()) }
+        store.save(saved, to: Self.sidebarFile)
+        for handler in favoriteObservers.values { handler() }
+    }
+
     // MARK: Session
 
     public struct Session: Codable {

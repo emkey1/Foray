@@ -57,25 +57,99 @@ public enum ArrangementEngine {
             (arrangement.showHidden || !item.flags.contains(.hidden))
                 && kinds.matches(item, anyOf: arrangement.kindFilter)
         }
-        let less = comparator(for: arrangement)
+        let plan = SortPlan(visible, arrangement)
 
         guard let groupKey = arrangement.groupBy else {
-            return ItemSnapshot(items: visible.sorted(by: less), generation: generation, totalCount: source.count)
+            let order = plan.sortedIndices(Array(0..<Int32(visible.count)))
+            return ItemSnapshot(items: order.map { visible[Int($0)] }, generation: generation, totalCount: source.count)
         }
 
-        var buckets: [GroupBucket: [FileItem]] = [:]
-        for item in visible {
-            buckets[GroupBucket.of(item, by: groupKey, now: now, calendar: calendar), default: []].append(item)
+        var buckets: [GroupBucket: [Int32]] = [:]
+        for (i, item) in visible.enumerated() {
+            buckets[GroupBucket.of(item, by: groupKey, now: now, calendar: calendar), default: []].append(Int32(i))
         }
         var items: [FileItem] = []
         items.reserveCapacity(visible.count)
         var groups: [ItemGroup] = []
         for bucket in buckets.keys.sorted() {
             let start = items.count
-            items.append(contentsOf: buckets[bucket]!.sorted(by: less))
+            items.append(contentsOf: plan.sortedIndices(buckets[bucket]!).map { visible[Int($0)] })
             groups.append(ItemGroup(title: bucket.title, range: start..<items.count))
         }
         return ItemSnapshot(items: items, groups: groups, generation: generation, totalCount: source.count)
+    }
+
+    /// Precomputed sort columns (decorate-sort-undecorate): each item's values for the active keys
+    /// are computed once, string-valued keys (kind, extension, folder) become ranks, and indices
+    /// are sorted instead of FileItem structs. Re-sorting 100k items went from 0.65–1.8 s to well
+    /// under the 300 ms budget (DESIGN.md §5.13). Same order as `comparator(for:)`.
+    struct SortPlan {
+        enum Column {
+            case numeric([Double], ascending: Bool)   // NaN = missing (sorts last either way)
+            case name(ascending: Bool)
+        }
+
+        let items: [FileItem]
+        let foldersFirst: [Bool]?
+        let columns: [Column]
+
+        init(_ items: [FileItem], _ arrangement: Arrangement) {
+            self.items = items
+            foldersFirst = arrangement.foldersFirst ? items.map(\.isNavigableFolder) : nil
+            columns = arrangement.sort.compactMap { d in
+                switch d.key {
+                case .name: return .name(ascending: d.ascending)
+                case .size:
+                    return .numeric(items.map { $0.isNavigableFolder ? .nan : $0.size.map(Double.init) ?? .nan }, ascending: d.ascending)
+                case .dateModified: return .numeric(items.map { $0.modified?.timeIntervalSince1970 ?? .nan }, ascending: d.ascending)
+                case .dateCreated: return .numeric(items.map { $0.created?.timeIntervalSince1970 ?? .nan }, ascending: d.ascending)
+                case .dateAdded: return .numeric(items.map { $0.added?.timeIntervalSince1970 ?? .nan }, ascending: d.ascending)
+                case .kind:
+                    return .numeric(Self.ranks(items.map(KindNames.name(for:))) { $0.localizedStandardCompare($1) == .orderedAscending },
+                                    ascending: d.ascending)
+                case .fileExtension:
+                    return .numeric(Self.ranks(items.map(\.pathExtension)) { $0.compare($1) == .orderedAscending }, ascending: d.ascending)
+                case .folder:
+                    return .numeric(Self.ranks(items.map { $0.url.deletingLastPathComponent().path }) {
+                        $0.localizedStandardCompare($1) == .orderedAscending
+                    }, ascending: d.ascending)
+                case .dateLastOpened, .tags, .manual:
+                    return nil  // lazy attributes arrive later
+                }
+            }
+        }
+
+        /// Each value's position among the distinct values (few distinct values, so sorting them is cheap).
+        static func ranks(_ values: [String], by less: (String, String) -> Bool) -> [Double] {
+            let order = Array(Set(values)).sorted(by: less)
+            var rank: [String: Double] = [:]
+            for (i, v) in order.enumerated() { rank[v] = Double(i) }
+            return values.map { rank[$0]! }
+        }
+
+        func less(_ i: Int, _ j: Int) -> Bool {
+            if let f = foldersFirst, f[i] != f[j] { return f[i] }
+            for column in columns {
+                switch column {
+                case .name(let ascending):
+                    let c = items[i].sortKey.compare(items[j].sortKey)
+                    if c != 0 { return ascending ? c < 0 : c > 0 }
+                case .numeric(let values, let ascending):
+                    let x = values[i], y = values[j]
+                    let xMissing = x.isNaN, yMissing = y.isNaN
+                    if xMissing != yMissing { return yMissing }
+                    if !xMissing && x != y { return ascending ? x < y : x > y }
+                }
+            }
+            let c = items[i].sortKey.compare(items[j].sortKey)
+            if c != 0 { return c < 0 }
+            let a = items[i].id, b = items[j].id
+            return a.device != b.device ? a.device < b.device : a.inode < b.inode
+        }
+
+        func sortedIndices(_ indices: [Int32]) -> [Int32] {
+            indices.sorted { less(Int($0), Int($1)) }
+        }
     }
 
     /// Comparator for the arrangement: folders first (optional), then each sort descriptor, then

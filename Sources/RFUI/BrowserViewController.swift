@@ -21,6 +21,10 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
     private let sizeSlider = NSSlider(value: 64, minValue: 16, maxValue: 256, target: nil, action: nil)
     private var content: ContentView?
     private var contentMode: ViewMode?
+    /// Content views are kept per mode once created, so switching back reuses their rows and cells.
+    private var contentCache: [ViewMode: ContentView] = [:]
+    /// What each content view last rendered; a view that's already current isn't re-applied.
+    private var rendered: [ViewMode: (generation: Int, settings: ViewSettings)] = [:]
     private var typeSelect = TypeSelectBuffer()
     private var previewPanel: QLPreviewPanel?
 
@@ -122,11 +126,12 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
         switch change {
         case .settings:
             installContent()
-            content?.apply(state.snapshot, settings: state.settings)
+            applyContentIfNeeded()
             restoreSelection()
             updateStatus()
         case .snapshot:
-            content?.apply(state.snapshot, settings: state.settings)
+            applyContentIfNeeded()
+            prewarmOtherMode()
             restoreSelection()
             updateStatus()
             updateMessage()
@@ -134,6 +139,7 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
         case .loadState:
             updateMessage()
             updateStatus()
+            prewarmOtherMode()
         case .details, .location:
             updatePathBar()
             updateStatus()
@@ -141,6 +147,9 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
         case .selection:
             updateStatus()
             previewPanel?.reloadData()
+        case .children(let id):
+            content?.childrenChanged(id)
+            if contentMode != .list { rendered[.list] = nil }  // the hidden list must rebuild
         }
     }
 
@@ -155,9 +164,17 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
         }
     }
 
+    private func applyContentIfNeeded() {
+        guard let content, let mode = contentMode else { return }
+        // Generations only increase per tab, so a match means this view already shows this snapshot.
+        if let last = rendered[mode], last.generation == state.snapshot.generation, last.settings == state.settings { return }
+        content.apply(state.snapshot, settings: state.settings)
+        rendered[mode] = (state.snapshot.generation, state.settings)
+    }
+
     private func refreshAll() {
         updateScopeBar()
-        content?.apply(state.snapshot, settings: state.settings)
+        applyContentIfNeeded()
         restoreSelection()
         updatePathBar()
         updateStatus()
@@ -170,13 +187,25 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
         if mode == .column || mode == .gallery { mode = .list }  // M4
         guard mode != contentMode else { return }
         let hadFocus = view.window?.firstResponder === content?.firstResponderView
-        content?.view.removeFromSuperview()
-        content?.removeFromParent()
+        content?.view.isHidden = true
 
+        let new = contentView(for: mode)
+        new.view.isHidden = false
+        content = new
+        contentMode = mode
+        sizeSlider.isHidden = mode != .icon
+        sizeSlider.doubleValue = state.settings.presentation.icon.iconSize
+        if hadFocus || view.window != nil { view.window?.makeFirstResponder(new.firstResponderView) }
+    }
+
+    /// The cached content view for a mode, created (hidden) if needed.
+    private func contentView(for mode: ViewMode) -> ContentView {
+        if let cached = contentCache[mode] { return cached }
         let new: ContentView = mode == .icon ? IconContentViewController() : ListContentViewController()
         new.host = self
         addChild(new)
         new.view.translatesAutoresizingMaskIntoConstraints = false
+        new.view.isHidden = true
         contentContainer.addSubview(new.view)
         NSLayoutConstraint.activate([
             new.view.topAnchor.constraint(equalTo: contentContainer.topAnchor),
@@ -184,11 +213,39 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
             new.view.leadingAnchor.constraint(equalTo: contentContainer.leadingAnchor),
             new.view.trailingAnchor.constraint(equalTo: contentContainer.trailingAnchor),
         ])
-        content = new
-        contentMode = mode
-        sizeSlider.isHidden = mode != .icon
-        sizeSlider.doubleValue = state.settings.presentation.icon.iconSize
-        if hadFocus || view.window != nil { view.window?.makeFirstResponder(new.firstResponderView) }
+        contentCache[mode] = new
+        return new
+    }
+
+    private var prewarmWork: DispatchWorkItem?
+
+    /// Once a folder's listing has been quiet for 300 ms, quietly builds (or refreshes) and lays out
+    /// the other view (icon or list), so switching to it is a swap rather than a rebuild plus a
+    /// ~110 ms first layout (DESIGN.md §5.13).
+    private func prewarmOtherMode() {
+        prewarmWork?.cancel()
+        guard let current = contentMode, state.loadState == .complete else { return }
+        let other: ViewMode = current == .icon ? .list : .icon
+        let work = DispatchWorkItem { [weak self] in
+            MainActor.assumeIsolated {
+                guard let self, self.contentMode == current, self.state.loadState == .complete else { return }
+                if let last = self.rendered[other], last.generation == self.state.snapshot.generation,
+                   last.settings == self.state.settings { return }
+                let view = self.contentView(for: other)
+                view.apply(self.state.snapshot, settings: self.state.settings)
+                self.rendered[other] = (self.state.snapshot.generation, self.state.settings)
+                // Tables only create row views while visible, so lay it out fully transparent
+                // (never seen), then hide it again.
+                view.view.alphaValue = 0
+                view.view.isHidden = false
+                view.view.layoutSubtreeIfNeeded()
+                view.view.displayIfNeeded()
+                view.view.isHidden = true
+                view.view.alphaValue = 1
+            }
+        }
+        prewarmWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3, execute: work)
     }
 
     private func restoreSelection() {
@@ -259,7 +316,7 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
     }
 
     func contentOpen(_ ids: [FileID], inNewTab: Bool) {
-        open(ids.compactMap(state.snapshot.item), inNewTab: inNewTab)
+        open(ids.compactMap(state.item), inNewTab: inNewTab)
     }
 
     func contentMenu(clicked: FileID?) -> NSMenu? {
@@ -285,13 +342,16 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
         menu.addItem(.separator())
         menu.addItem(withTitle: "Quick Look", action: #selector(toggleQuickLook(_:)), keyEquivalent: "")
         menu.addItem(withTitle: "Copy Path", action: #selector(copyPath(_:)), keyEquivalent: "")
+        if items.allSatisfy(\.isNavigableFolder) {
+            menu.addItem(withTitle: "Add to Sidebar", action: #selector(addToSidebar(_:)), keyEquivalent: "")
+        }
         return menu
     }
 
     func contentToggleQuickLook() { toggleQuickLook(nil) }
 
     func contentTypeSelect(_ characters: String) {
-        guard let id = typeSelect.add(characters, in: state.snapshot) else { return }
+        guard let id = typeSelect.add(characters, in: state.snapshot) else { return }  // icon view: top level only
         state.setSelection([id], anchor: id)
         content?.showSelection([id], reveal: id)
     }
@@ -354,6 +414,16 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
     @objc private func openWithApp(_ sender: NSMenuItem) {
         guard let app = sender.representedObject as? URL else { return }
         NSWorkspace.shared.open(state.selectedItems.map(\.url), withApplicationAt: app, configuration: NSWorkspace.OpenConfiguration())
+    }
+
+    /// ⌃⌘T: the selected folders, or the current folder when nothing is selected.
+    @objc func addToSidebar(_ sender: Any?) {
+        let folders = state.selectedItems.filter(\.isNavigableFolder).map(\.url)
+        if !folders.isEmpty {
+            AppModel.shared.addFavorites(folders)
+        } else if let url = state.location.folderURL {
+            AppModel.shared.addFavorites([url])
+        }
     }
 
     @objc func copyPath(_ sender: Any?) {

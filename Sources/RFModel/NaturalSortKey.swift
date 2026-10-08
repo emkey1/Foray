@@ -57,11 +57,32 @@ public struct NaturalSortKey: Hashable, Sendable, Comparable {
         self.exact = exact
     }
 
-    public static func < (a: NaturalSortKey, b: NaturalSortKey) -> Bool {
-        if a.exact && b.exact && a.bytes != b.bytes {
-            return a.bytes.lexicographicallyPrecedes(b.bytes)
+    public static func < (a: NaturalSortKey, b: NaturalSortKey) -> Bool { a.compare(b) < 0 }
+
+    /// Three-way comparison: negative, zero or positive. One memcmp for exact keys.
+    public func compare(_ other: NaturalSortKey) -> Int {
+        if exact && other.exact {
+            let c = Self.compareBytes(bytes, other.bytes)
+            if c != 0 { return c }
         }
-        return a.original.localizedStandardCompare(b.original) == .orderedAscending
+        switch original.localizedStandardCompare(other.original) {
+        case .orderedAscending: return -1
+        case .orderedDescending: return 1
+        case .orderedSame: return 0
+        }
+    }
+
+    private static func compareBytes(_ a: [UInt8], _ b: [UInt8]) -> Int {
+        a.withUnsafeBufferPointer { pa in
+            b.withUnsafeBufferPointer { pb in
+                let n = min(pa.count, pb.count)
+                if n > 0, let x = pa.baseAddress, let y = pb.baseAddress {
+                    let r = memcmp(x, y, n)
+                    if r != 0 { return Int(r) }
+                }
+                return pa.count - pb.count
+            }
+        }
     }
 
     /// ICU root collation order for ASCII whitespace and punctuation (all 32 printable ASCII

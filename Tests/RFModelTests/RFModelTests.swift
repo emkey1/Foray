@@ -252,3 +252,35 @@ private let finderOrder: @Sendable (String, String) -> Bool = { $0.localizedStan
         #expect(back.resolve(.folder, folder: folder).0.arrangement.groupBy == .kind)
     }
 }
+
+@Suite struct SortPlanEquivalenceTests {
+    /// The precomputed-column sort must give exactly the comparator's order.
+    typealias SD = RFModel.SortDescriptor
+    static let cases: [[SD]] = [
+        [SD(.name)], [SD(.size)], [SD(.size, ascending: true)], [SD(.kind), SD(.dateModified)],
+        [SD(.dateModified, ascending: true)], [SD(.fileExtension), SD(.name, ascending: false)], [SD(.folder)],
+        [SD(.dateCreated), SD(.size), SD(.kind)],
+    ]
+
+    @Test(arguments: cases)
+    func matchesComparator(sort: [SD]) {
+        let names = ["report", "Report", "résumé", "file 2", "file 10", "IMG_0001", "notes", "日本", "• x", "a b", "a_b"]
+        let exts = ["txt", "jpg", "pdf", "", "swift", "md"]
+        var items: [FileItem] = []
+        for i in 0..<600 {
+            let dir = i % 9 == 0
+            let name = names[i % names.count] + " \(i % 37)" + (dir ? "" : "." + exts[i % exts.count])
+            let date = i % 13 == 0 ? nil : Date(timeIntervalSince1970: Double((i * 7919) % 1000) * 3600)
+            items.append(FileItem(
+                id: FileID(device: 1, inode: UInt64(10_000 + i)), url: URL(fileURLWithPath: "/d\(i % 4)/\(name)"),
+                name: name, contentType: dir ? .folder : (UTType(filenameExtension: exts[i % exts.count]) ?? .data),
+                flags: dir ? .directory : [], size: dir ? nil : Int64((i * 31) % 50), created: date, modified: date))
+        }
+        for foldersFirst in [false, true] {
+            let a = Arrangement(sort: sort, foldersFirst: foldersFirst)
+            let expected = items.sorted(by: ArrangementEngine.comparator(for: a)).map(\.id)
+            let actual = ArrangementEngine.arrange(items.shuffled(), with: a).items.map(\.id)
+            #expect(actual == expected)
+        }
+    }
+}
