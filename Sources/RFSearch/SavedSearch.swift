@@ -2,7 +2,7 @@ import Foundation
 import RFModel
 
 /// Smart folders: Finder's `.savedSearch` files (a property list around a Spotlight query).
-/// RealFinder opens Finder's, and saves its own searches in the same format so Finder can open
+/// Foray opens Finder's, and saves its own searches in the same format so Finder can open
 /// them too, adding its search text so they reopen as editable searches (DESIGN.md §4.6).
 public enum SavedSearch {
     public static let fileExtension = "savedSearch"
@@ -22,7 +22,8 @@ public enum SavedSearch {
               let plist = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any] else { return nil }
         let name = url.deletingPathExtension().lastPathComponent
         // Ours: the original search, editable.
-        if let mine = plist["RealFinderSearch"] as? [String: Any], let text = mine["Text"] as? String {
+        // (Smart folders saved while the app was called RealFinder use the old key.)
+        if let mine = (plist["ForaySearch"] ?? plist["RealFinderSearch"]) as? [String: Any], let text = mine["Text"] as? String {
             let scope: SearchScope = (mine["Folder"] as? String).map { .folder(URL(fileURLWithPath: $0, isDirectory: true), recursive: true) } ?? .thisMac
             let match = (mine["Match"] as? String).flatMap(MatchMode.init) ?? .names
             return SearchQuery(text: text, scope: scope, match: match)
@@ -59,7 +60,7 @@ public enum SavedSearch {
         if query.rawSpotlight == nil {
             var mine: [String: Any] = ["Text": query.text, "Match": query.match.rawValue]
             if let folder = query.scope.folderURL { mine["Folder"] = folder.path }
-            plist["RealFinderSearch"] = mine
+            plist["ForaySearch"] = mine
         }
         let data = try PropertyListSerialization.data(fromPropertyList: plist, format: .xml, options: 0)
         try data.write(to: url, options: .atomic)

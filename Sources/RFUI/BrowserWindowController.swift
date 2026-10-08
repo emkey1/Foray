@@ -57,7 +57,7 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate, NSToo
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1000, height: 620),
                               styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
                               backing: .buffered, defer: false)
-        window.tabbingIdentifier = "RealFinder.browser"
+        window.tabbingIdentifier = "Foray.browser"
         // .automatic: tabs only when asked (⌘T, the tab bar's +) or when the user's system
         // setting prefers tabs. (.preferred merged every new window into a tab.)
         window.tabbingMode = .automatic
@@ -74,7 +74,7 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate, NSToo
         window.setContentSize(NSSize(width: 1000, height: 620))
         window.delegate = self
 
-        let toolbar = NSToolbar(identifier: "RealFinder.browser")
+        let toolbar = NSToolbar(identifier: "Foray.browser")
         toolbar.delegate = self
         toolbar.displayMode = .iconOnly
         toolbar.allowsUserCustomization = true
@@ -181,7 +181,7 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate, NSToo
             let item = NSToolbarItem(itemIdentifier: id)
             item.image = NSImage(systemSymbolName: "questionmark.circle", accessibilityDescription: "Guide")
             item.label = "Guide"
-            item.toolTip = "Open the RealFinder Guide (⌘?)"
+            item.toolTip = "Open the Foray Guide (⌘?)"
             item.target = self
             item.action = #selector(openGuide(_:))
             return item

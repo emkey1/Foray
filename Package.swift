@@ -1,12 +1,12 @@
 // swift-tools-version: 6.2
-// RealFinder. See DESIGN.md §5.2 for the module layout and dependency rules.
+// Foray. See DESIGN.md §5.2 for the module layout and dependency rules.
 import PackageDescription
 
 let package = Package(
-    name: "RealFinder",
+    name: "Foray",
     platforms: [.macOS(.v26)],
     products: [
-        .executable(name: "RealFinder", targets: ["RealFinder"]),
+        .executable(name: "Foray", targets: ["Foray"]),
     ],
     targets: [
         // getattrlistbulk(2) parsing and copyfile(3) helpers. Only RFFileSystem and RFOperations
@@ -23,7 +23,7 @@ let package = Package(
         // AppKit views and controllers. Never touches the filesystem directly.
         .target(name: "RFUI", dependencies: ["RFModel", "RFFileSystem", "RFSearch", "RFOperations"], resources: [.copy("Guide")]),
         // App entry point: menus, app delegate.
-        .executableTarget(name: "RealFinder", dependencies: ["RFUI"]),
+        .executableTarget(name: "Foray", dependencies: ["RFUI"]),
         // Test helper: runs one copy so a test can kill it mid-way (DESIGN.md §9, M2 exit criteria).
         .executableTarget(name: "rf-crash-probe", dependencies: ["RFOperations", "RFFileSystem"]),
 

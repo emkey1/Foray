@@ -3,18 +3,22 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleName</key>
-	<string>RealFinder</string>
+	<string>Foray</string>
 	<key>CFBundleDisplayName</key>
-	<string>RealFinder</string>
+	<string>Foray</string>
 	<key>CFBundleExecutable</key>
-	<string>RealFinder</string>
-	<!-- Placeholder identifier; set the real one before distribution (DESIGN.md Q2, Q9). -->
+	<string>Foray</string>
+	<!-- Never change once shipped: privacy grants, settings and Keychain items are tied to it. -->
 	<key>CFBundleIdentifier</key>
-	<string>local.realfinder.RealFinder</string>
+	<string>io.github.emkey1.Foray</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.1</string>
+	<string>0.9.0</string>
+	<key>CFBundleIconFile</key>
+	<string>Foray</string>
+	<key>NSHumanReadableCopyright</key>
+	<string>Copyright © 2026 Michael Miller. MIT License.</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
 	<key>LSMinimumSystemVersion</key>
@@ -26,9 +30,9 @@
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSAppleEventsUsageDescription</key>
-	<string>RealFinder asks Finder to save the comments you write in Get Info, so Finder shows them too.</string>
+	<string>Foray asks Finder to save the comments you write in Get Info, so Finder shows them too.</string>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>RealFinder lists file servers on your network in the sidebar, like Finder.</string>
+	<string>Foray lists file servers on your network in the sidebar, like Finder.</string>
 	<key>NSBonjourServices</key>
 	<array>
 		<string>_smb._tcp</string>
@@ -37,16 +41,16 @@
 	<array>
 		<dict>
 			<key>CFBundleURLName</key>
-			<string>RealFinder link</string>
+			<string>Foray link</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>realfinder</string>
+				<string>foray</string>
 			</array>
 		</dict>
 	</array>
 	<key>NSSupportsAutomaticTermination</key>
 	<false/>
-	<!-- Lets `open -a RealFinder <folder>` and Dock drops deliver folders. Rank Alternate: never
+	<!-- Lets `open -a Foray <folder>` and Dock drops deliver folders. Rank Alternate: never
 	     takes over folders from Finder unless the user opts in (DESIGN.md §5.12). -->
 	<key>CFBundleDocumentTypes</key>
 	<array>

@@ -2,7 +2,7 @@ import Foundation
 import NetFS
 
 /// Connect to Server (DESIGN.md §5.9). NetFS mounts the share; the system's own dialog asks for a
-/// name and password (and offers the Keychain), so RealFinder never sees credentials.
+/// name and password (and offers the Keychain), so Foray never sees credentials.
 public enum NetworkMounts {
     public struct Failure: Error, LocalizedError, Sendable {
         public let status: Int32

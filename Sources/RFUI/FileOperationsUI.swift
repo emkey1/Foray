@@ -6,7 +6,7 @@ import RFOperations
 /// then moves instead of copying. Finder ignores the marker, so pasting there copies.
 @MainActor
 enum FileClipboard {
-    static let cutMarker = NSPasteboard.PasteboardType("local.realfinder.cut")
+    static let cutMarker = NSPasteboard.PasteboardType("io.github.emkey1.foray.cut")
     private static var cutChangeCount: Int?
     private static var cutPaths: Set<String> = []
 
@@ -27,7 +27,7 @@ enum FileClipboard {
         }
     }
 
-    /// File URLs on the pasteboard (from RealFinder, Finder or any app), and whether they were cut here.
+    /// File URLs on the pasteboard (from Foray, Finder or any app), and whether they were cut here.
     static func read() -> (urls: [URL], isCut: Bool)? {
         let pb = NSPasteboard.general
         guard let urls = pb.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL],

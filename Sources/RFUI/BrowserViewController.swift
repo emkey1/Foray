@@ -323,7 +323,7 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
         switch state.loadState {
         case .failed(let message, let permission):
             messageLabel.stringValue = permission && !FullDiskAccess.isGranted
-                ? message + "\n\nIf this is a protected location, RealFinder may need Full Disk Access (Settings › Privacy)."
+                ? message + "\n\nIf this is a protected location, Foray may need Full Disk Access (Settings › Privacy)."
                 : message
             messageLabel.isHidden = false
         case .complete where state.snapshot.items.isEmpty && state.location.searchQuery != nil:
@@ -500,7 +500,7 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
     // MARK: Opening
 
     func open(_ items: [FileItem], inNewTab: Bool) {
-        // Aliases and symlinks resolve here, so folder aliases open in RealFinder, not Finder.
+        // Aliases and symlinks resolve here, so folder aliases open in Foray, not Finder.
         let items = items.filter { !openAlias($0, inNewTab: inNewTab || items.count > 1) && !openSmartFolder($0, inNewTab: inNewTab || items.count > 1) }
         let folders = items.filter(\.isNavigableFolder)
         let files = items.filter { !$0.isNavigableFolder }

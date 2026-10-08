@@ -13,7 +13,7 @@ import Testing
         let r = await s.run(.trash([a, b, c]))
         #expect(r.trashed.count == 3)
         let trashed = r.trashed.map(\.to)
-        // RealFinder's own records cover every item, even ones trashed in the same instant.
+        // Foray's own records cover every item, even ones trashed in the same instant.
         let d = s.center.putBackDestinations(for: trashed)
         #expect(Set(d.values.map(\.path)) == Set([a, b, c].map(\.path)))
 

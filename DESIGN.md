@@ -1,11 +1,13 @@
-# RealFinder: Design Document
+# Foray: Design Document
+
+Foray was called RealFinder during development; the name changed before public release (Q9). Older sections and the M0 spike notes use the old name.
 
 | | |
 |---|---|
 | Status | Draft v0.6: M0 results folded in (`Spikes/RESULTS.md`); M1–M3 complete; M4 built (awaits its week of daily use); M5 under way |
 | Date | 2026-10-08 |
 | Toolchain baseline | Xcode 27, Swift 6.4, developed on macOS 26.6 |
-| Working name | RealFinder (see Q9) |
+| Name | Foray (bundle ID `io.github.emkey1.Foray`; was RealFinder, see Q9) |
 
 ---
 
@@ -1000,4 +1002,4 @@ These are in order with exit criteria; there are no dates.
 | Q6 | Should Return rename (Finder) or open? | Rename by default, with a setting |
 | Q7 | Which §3.4 improvements should stay? Is dual-pane mode wanted before P3? | Keep I1–I11; dual-pane in P3 |
 | Q8 | Should the default-file-viewer toggle be offered at all? | Yes, opt-in |
-| Q9 | Keep the name "RealFinder"? "Finder" is an Apple trademark, so a publicly distributed app should avoid it in its name. | Decide before any public release |
+| Q9 | Keep the name "RealFinder"? "Finder" is an Apple trademark, so a publicly distributed app should avoid it in its name. | **Decided:** renamed Foray (2026-10-08). MIT licensed; distributed as a Developer ID–signed, notarized DMG |

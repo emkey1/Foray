@@ -19,12 +19,12 @@ public final class GuideWindowController: NSWindowController, NSToolbarDelegate,
     private init() {
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 980, height: 720),
                               styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
-        window.title = "RealFinder Guide"
+        window.title = "Foray Guide"
         window.tabbingMode = .disallowed
-        window.setFrameAutosaveName("RealFinderGuide")
+        window.setFrameAutosaveName("ForayGuide")
         super.init(window: window)
         window.contentView = webView
-        let toolbar = NSToolbar(identifier: "RealFinder.guide")
+        let toolbar = NSToolbar(identifier: "Foray.guide")
         toolbar.delegate = self
         toolbar.displayMode = .iconOnly
         window.toolbar = toolbar

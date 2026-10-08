@@ -35,7 +35,7 @@ final class SidebarViewController: NSViewController {
         var isSection: Bool { location == nil && action == nil }
     }
 
-    static let favoriteDragType = NSPasteboard.PasteboardType("local.realfinder.sidebar-favorite")
+    static let favoriteDragType = NSPasteboard.PasteboardType("io.github.emkey1.foray.sidebar-favorite")
 
     private let outline = SidebarOutlineView()
     private var sections: [Node] = []

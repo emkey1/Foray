@@ -1,17 +1,26 @@
 import Foundation
 
-/// Small Codable documents in ~/Library/Application Support/RealFinder. M1 stand-in for the
+/// Small Codable documents in ~/Library/Application Support/Foray. M1 stand-in for the
 /// SQLite store (DESIGN.md §5.10); callers depend only on load/save.
 public struct AppSupportStore: Sendable {
     public let directory: URL
 
     /// The app's store. Inside a test process it's a private temporary folder instead, so a test
     /// that forgets to substitute its own store can't touch the user's settings.
-    public static let shared = AppSupportStore(
-        directory: TestEnvironment.isActive
-            ? FileManager.default.temporaryDirectory.appendingPathComponent("rf-test-appsupport-\(getpid())", isDirectory: true)
-            : FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-                .appendingPathComponent("RealFinder", isDirectory: true))
+    public static let shared: AppSupportStore = {
+        if TestEnvironment.isActive {
+            return AppSupportStore(directory: FileManager.default.temporaryDirectory
+                .appendingPathComponent("rf-test-appsupport-\(getpid())", isDirectory: true))
+        }
+        let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        let dir = support.appendingPathComponent("Foray", isDirectory: true)
+        // Foray was called RealFinder during development: take over its folder the first time.
+        let legacy = support.appendingPathComponent("RealFinder", isDirectory: true)
+        if !FileManager.default.fileExists(atPath: dir.path), FileManager.default.fileExists(atPath: legacy.path) {
+            try? FileManager.default.moveItem(at: legacy, to: dir)
+        }
+        return AppSupportStore(directory: dir)
+    }()
 
     public init(directory: URL) { self.directory = directory }
 
@@ -28,7 +37,7 @@ public struct AppSupportStore: Sendable {
             encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
             try encoder.encode(value).write(to: directory.appendingPathComponent(name), options: .atomic)
         } catch {
-            NSLog("RealFinder: couldn't save \(name): \(error)")
+            NSLog("Foray: couldn't save \(name): \(error)")
         }
     }
 }

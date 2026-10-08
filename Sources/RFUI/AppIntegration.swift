@@ -2,7 +2,7 @@ import AppKit
 import RFFileSystem
 import RFModel
 
-/// Go › Recent Folders, the Dock menu and `realfinder://` links (DESIGN.md §4.8).
+/// Go › Recent Folders, the Dock menu and `foray://` links (DESIGN.md §4.8).
 @MainActor
 public enum AppIntegration {
     /// Items for recent folders, newest first; choosing one shows it in the front window.
@@ -30,7 +30,7 @@ public enum AppIntegration {
 
     public static func dockMenu() -> NSMenu {
         let menu = NSMenu()
-        let new = NSMenuItem(title: "New RealFinder Window", action: #selector(MenuTarget.newWindow(_:)), keyEquivalent: "")
+        let new = NSMenuItem(title: "New Foray Window", action: #selector(MenuTarget.newWindow(_:)), keyEquivalent: "")
         new.target = MenuTarget.shared
         menu.addItem(new)
         let recents = recentFolderItems()
@@ -41,10 +41,10 @@ public enum AppIntegration {
         return menu
     }
 
-    /// realfinder://open?path=/Users/me/Projects        → that folder (a file: its folder, selected)
-    /// realfinder://search?q=report%20kind:pdf&in=/path → that search ("in" omitted: This Mac)
+    /// foray://open?path=/Users/me/Projects        → that folder (a file: its folder, selected)
+    /// foray://search?q=report%20kind:pdf&in=/path → that search ("in" omitted: This Mac)
     public static func location(for url: URL) -> (Location, select: [String])? {
-        guard url.scheme?.lowercased() == "realfinder", let c = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return nil }
+        guard url.scheme?.lowercased() == "foray", let c = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return nil }
         func param(_ name: String) -> String? { c.queryItems?.first { $0.name == name }?.value }
         switch c.host?.lowercased() {
         case "open":
@@ -62,9 +62,9 @@ public enum AppIntegration {
         }
     }
 
-    /// Opens a `realfinder://` link. Returns false if it isn't one.
+    /// Opens a `foray://` link. Returns false if it isn't one.
     public static func open(_ url: URL) -> Bool {
-        guard let (location, select) = location(for: url) else { return url.scheme?.lowercased() == "realfinder" }
+        guard let (location, select) = location(for: url) else { return url.scheme?.lowercased() == "foray" }
         if let front = NSApp.mainWindow?.windowController as? BrowserWindowController {
             front.browser.state.navigate(to: location, select: select)
         } else {

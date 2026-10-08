@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>RealFinder Guide</title>
+<title>Foray Guide</title>
 <style>
   :root {
     color-scheme: light dark;
@@ -42,7 +42,7 @@
 </head>
 <body>
 <nav>
-  <div class="title">RealFinder Guide</div>
+  <div class="title">Foray Guide</div>
   <a href="#start">Getting around</a>
   <a href="#views">Views</a>
   <a href="#sorting">Sorting and grouping</a>
@@ -60,7 +60,7 @@
 </nav>
 <main>
 
-<h1>RealFinder Guide</h1>
+<h1>Foray Guide</h1>
 <p class="lede">A file browser for macOS that keeps Finder's habits and fixes its annoyances.</p>
 
 <h2 id="start">Getting around</h2>
@@ -69,13 +69,13 @@
   <li><b>Sidebar.</b> Favorites and Locations (your disks, with eject buttons). Click to go there. Drag folders onto the sidebar to add them; drag a favorite out, or right-click it, to remove it.</li>
   <li><b>Recents</b> (top of the sidebar, or <kbd>⇧⌘F</kbd>) lists files you've opened in the last 30 days, newest first, with when you last opened each and where it is. Folders, apps and files in your Library are left out, like Finder. It updates as you open things.</li>
   <li><b>Cloud.</b> iCloud Drive and services such as Dropbox, Google Drive and OneDrive appear in the sidebar's Cloud section. A small cloud next to an item means it isn't downloaded yet; opening it downloads it. Right-click for <b>Download Now</b> (whole folders too) or <b>Remove Download</b>, which frees the space but keeps the item in the cloud. Previews never download anything.</li>
-  <li><b>Servers.</b> <b>Go › Connect to Server…</b> <kbd>⌘K</kbd>: type an address (just “server/share” means SMB; afp://, nfs:// and https:// for WebDAV work too). macOS asks for the name and password itself and can keep them in your Keychain; RealFinder never sees them. Keep favorite servers with <b>+</b>; recent ones are listed too. File servers on your network appear in the sidebar's <b>Network</b> section (macOS asks once whether RealFinder may look on your local network); click one to connect.</li>
-  <li><b>Ejecting.</b> Click a disk's eject button, or select it (in Computer, <kbd>⇧⌘C</kbd>) and press <kbd>⌘E</kbd>. If something has files open on it, RealFinder says which apps, so you can quit them, or you can <b>Force Eject</b> (unsaved changes in those apps may be lost). Ejecting a disk ejects all of its volumes. Tabs that were showing it go to Computer.</li>
+  <li><b>Servers.</b> <b>Go › Connect to Server…</b> <kbd>⌘K</kbd>: type an address (just “server/share” means SMB; afp://, nfs:// and https:// for WebDAV work too). macOS asks for the name and password itself and can keep them in your Keychain; Foray never sees them. Keep favorite servers with <b>+</b>; recent ones are listed too. File servers on your network appear in the sidebar's <b>Network</b> section (macOS asks once whether Foray may look on your local network); click one to connect.</li>
+  <li><b>Ejecting.</b> Click a disk's eject button, or select it (in Computer, <kbd>⇧⌘C</kbd>) and press <kbd>⌘E</kbd>. If something has files open on it, Foray says which apps, so you can quit them, or you can <b>Force Eject</b> (unsaved changes in those apps may be lost). Ejecting a disk ejects all of its volumes. Tabs that were showing it go to Computer.</li>
   <li><b>Back and Forward.</b> <kbd>⌘[</kbd> and <kbd>⌘]</kbd>. Going back selects the item you had selected.</li>
   <li><b>Enclosing folder.</b> <kbd>⌘↑</kbd> goes up one level and selects the folder you came from. <kbd>⌘↓</kbd> opens the selection.</li>
   <li><b>Path bar.</b> Click any folder in the path bar at the bottom to go there.</li>
   <li><b>Recent Folders</b> (Go menu, and the Dock icon's menu) lists the last ten folders you visited.</li>
-  <li><b>Links.</b> <code>realfinder://open?path=/Users/me/Projects</code> opens a folder (or a file's folder, with the file selected), and <code>realfinder://search?q=report%20kind:pdf&amp;in=~/Documents</code> runs a search (leave out <code>in</code> for This Mac). Handy in notes, scripts and Shortcuts.</li>
+  <li><b>Links.</b> <code>foray://open?path=/Users/me/Projects</code> opens a folder (or a file's folder, with the file selected), and <code>foray://search?q=report%20kind:pdf&amp;in=~/Documents</code> runs a search (leave out <code>in</code> for This Mac). Handy in notes, scripts and Shortcuts.</li>
   <li><b>Type a path.</b> <kbd>⇧⌘G</kbd>, or double-click the path bar, turns it into a field. Type a path (<code>~</code> works), press <kbd>Tab</kbd> to complete folder names, <kbd>Return</kbd> to go, <kbd>Esc</kbd> to cancel. A file path opens its folder with the file selected.</li>
   <li><b>Status bar.</b> Shows the item count, how many are selected and their total size, how many items are hidden, and free space.</li>
 </ul>
@@ -100,13 +100,13 @@
   <li><b>Empty values go last</b> in both directions, e.g. folders when sorting by size.</li>
   <li><b>Group By</b> Kind, Date Modified, Date Created, Date Added or Size. Sorting applies within each group.</li>
   <li><b>Keep Folders on Top</b> works in every view.</li>
-  <li><b>Arrange icons yourself:</b> in icon view choose <b>Sort By › None</b>. Icons stay where they are, and you can drag them anywhere; RealFinder remembers where for each folder. New items fill the first free spots, and items dropped in from elsewhere land where you drop them. <b>View › Clean Up</b> lines them up on the grid. Choose any other sort to go back to automatic order.</li>
+  <li><b>Arrange icons yourself:</b> in icon view choose <b>Sort By › None</b>. Icons stay where they are, and you can drag them anywhere; Foray remembers where for each folder. New items fill the first free spots, and items dropped in from elsewhere land where you drop them. <b>View › Clean Up</b> lines them up on the grid. Choose any other sort to go back to automatic order.</li>
   <li><b>Filter by Kind</b> shows only certain kinds of files in the current folder, e.g. only images. Choose <b>All Kinds</b> to show everything again.</li>
   <li><b>Hidden files.</b> <kbd>⇧⌘.</kbd> shows or hides them.</li>
 </ul>
 
 <h2 id="settings">Which settings apply where</h2>
-<p>Finder remembers view settings per folder in a way that's hard to predict. RealFinder keeps it simple:</p>
+<p>Finder remembers view settings per folder in a way that's hard to predict. Foray keeps it simple:</p>
 <ul>
   <li>By default, your view, sort order, grouping and filters are <b>the same in every folder</b>. Change them anywhere and they apply everywhere.</li>
   <li>To give a folder its own settings, choose <b>View › Remember Settings for This Folder</b>. Choose it again to forget them. These survive renaming or moving the folder.</li>
@@ -114,12 +114,12 @@
 </ul>
 
 <h2 id="prefs">Preferences</h2>
-<p><b>RealFinder › Settings…</b> (<kbd>⌘,</kbd>):</p>
+<p><b>Foray › Settings…</b> (<kbd>⌘,</kbd>):</p>
 <ul>
   <li><b>General:</b> the folder new windows open on (Home unless you choose another); whether folders you open with <kbd>⌘</kbd>-double-click open in tabs or windows; and whether <kbd>Return</kbd> renames (like Finder) or opens the selection.</li>
   <li><b>Views:</b> view settings the same everywhere, or remembered for each folder (see <a href="#settings">above</a>).</li>
   <li><b>Search:</b> where searches start (the current folder, This Mac, or whatever you used last), whether they match names or names and contents, and whether a search follows you to other folders.</li>
-  <li><b>Privacy:</b> whether RealFinder has Full Disk Access, with a button to the right page of System Settings.</li>
+  <li><b>Privacy:</b> whether Foray has Full Disk Access, with a button to the right page of System Settings.</li>
 </ul>
 <p><b>View › Customize Toolbar…</b> (or right-click the toolbar) adds buttons for Get Info, the Inspector, Share, Move to Trash, New Folder, Quick Look, Tags, Eject, Copy Path and Connect to Server, and lets you rearrange or remove the rest.</p>
 <p>View options for the front window (icon size, columns, grouping and so on) are in <b>View › Show View Options</b> (<kbd>⌘J</kbd>). In list view, <b>Calculate all sizes</b> totals folders in the background so they show a size and sort by it.</p>
@@ -141,7 +141,7 @@
   <li><b>Ending a search:</b> <kbd>Esc</kbd>, or clear the field. You're back in the folder with your previous selection.</li>
   <li><b>Recent searches:</b> click the magnifying glass in the search field for your last 12 searches (each remembers where it searched). Choose one to run it again. Searches are saved when you leave them, not while you type.</li>
   <li><b>Nothing runs by itself at launch.</b> Tabs that were showing search results reopen on the folder you searched, with the search in the field, and your most recent search is filled in when there's nothing else. Press <kbd>Return</kbd> to run it.</li>
-  <li><b>Smart folders.</b> <b>Save…</b> in the search bar (or File › Save Search… <kbd>⌘S</kbd>) keeps a search as a smart folder, in your Saved Searches folder and, if you like, in the sidebar. It finds new matches each time you open it. Smart folders made in Finder open here too; they run Finder's own query, so only where they look can be changed. Finder can open the ones RealFinder saves. Searches using regular expressions can't be saved, since Spotlight can't run them.</li>
+  <li><b>Smart folders.</b> <b>Save…</b> in the search bar (or File › Save Search… <kbd>⌘S</kbd>) keeps a search as a smart folder, in your Saved Searches folder and, if you like, in the sidebar. It finds new matches each time you open it. Smart folders made in Finder open here too; they run Finder's own query, so only where they look can be changed. Finder can open the ones Foray saves. Searches using regular expressions can't be saved, since Spotlight can't run them.</li>
   <li><b>Finds what Spotlight misses.</b> Folder searches use Spotlight for quick first results and also scan the folder directly, so unindexed drives, network shares and (with <code>hidden:yes</code>) hidden files are found too.</li>
 </ul>
 <p class="note">Big folders take a while to scan completely (for example ~20 seconds for a home folder with 200,000 folders). Results appear as they're found, and the status bar shows progress.</p>
@@ -197,7 +197,7 @@
   <li><b>Right-click</b> for Open With, Show Package Contents (for apps and bundles), Copy Path, and Quick Look.</li>
   <li><b>Open With</b> lists the apps that can open the item, the default first. <b>Other…</b> lets you pick any app, and can make it the default for that kind of file. Hold <kbd>⌥</kbd> in the menu for <b>Always Open With</b>, which opens the item and makes that app the default for all files of its kind.</li>
   <li><b>Copy Path:</b> <kbd>⌥⌘C</kbd> copies the selected items' paths.</li>
-  <li><b>Get Info:</b> <kbd>⌘I</kbd> opens a window per selected item (or the current folder): kind, size (folders are totaled), dates, details such as dimensions or duration, tags, comments, the app it opens with, and permissions. You can change the name, <b>Locked</b>, <b>Hide extension</b>, the comment, and (for your own items) who can read and write it. These changes can be undone. Right-click the icon at the top to copy it, paste an image as the item's icon, or remove a custom icon; dropping an image file on it works too. <b>Show Inspector</b> <kbd>⌥⌘I</kbd> is one Get Info panel that follows the selection; with several items selected it totals their size and counts their kinds. The first time you save a comment, macOS asks whether RealFinder may control Finder: allowing it lets Finder show the comment too.</li>
+  <li><b>Get Info:</b> <kbd>⌘I</kbd> opens a window per selected item (or the current folder): kind, size (folders are totaled), dates, details such as dimensions or duration, tags, comments, the app it opens with, and permissions. You can change the name, <b>Locked</b>, <b>Hide extension</b>, the comment, and (for your own items) who can read and write it. These changes can be undone. Right-click the icon at the top to copy it, paste an image as the item's icon, or remove a custom icon; dropping an image file on it works too. <b>Show Inspector</b> <kbd>⌥⌘I</kbd> is one Get Info panel that follows the selection; with several items selected it totals their size and counts their kinds. The first time you save a comment, macOS asks whether Foray may control Finder: allowing it lets Finder show the comment too.</li>
   <li><b>Type to select:</b> start typing a name to jump to it.</li>
 </ul>
 
@@ -209,14 +209,14 @@
   <li><b>Rename:</b> select an item and press <kbd>Return</kbd> (unless you've set Return to open things in <a href="#prefs">Settings</a>). Type the new name, <kbd>Return</kbd> to keep it, <kbd>Esc</kbd> to cancel. You're asked before an extension changes.</li>
   <li><b>New Folder</b> <kbd>⇧⌘N</kbd> (then name it), <b>New Folder with Selection</b> <kbd>⌃⌘N</kbd>, <b>Duplicate</b> <kbd>⌘D</kbd>.</li>
   <li><b>Move to Trash</b> <kbd>⌘⌫</kbd>, or drag items onto <b>Trash</b> in the sidebar. <b>Delete Immediately</b> <kbd>⌥⌘⌫</kbd> asks first and can't be undone.</li>
-  <li><b>The Trash</b> (in the sidebar, under Locations) shows everything you've trashed, from every disk. Select items and press <kbd>⌘⌫</kbd> (or right-click › <b>Put Back</b>) to return them where they came from; if their folder is gone, it's recreated. Put Back works for things Finder trashed too. If RealFinder can't tell where something came from, it asks for a folder.</li>
-  <li><b>Empty Trash</b>: the <b>Empty…</b> button at the top of the Trash, or <b>RealFinder › Empty Trash…</b> <kbd>⇧⌘⌫</kbd>. It asks first (hold <kbd>⌥</kbd> to skip the question) and can't be undone. Seeing and emptying the Trash need Full Disk Access.</li>
+  <li><b>The Trash</b> (in the sidebar, under Locations) shows everything you've trashed, from every disk. Select items and press <kbd>⌘⌫</kbd> (or right-click › <b>Put Back</b>) to return them where they came from; if their folder is gone, it's recreated. Put Back works for things Finder trashed too. If Foray can't tell where something came from, it asks for a folder.</li>
+  <li><b>Empty Trash</b>: the <b>Empty…</b> button at the top of the Trash, or <b>Foray › Empty Trash…</b> <kbd>⇧⌘⌫</kbd>. It asks first (hold <kbd>⌥</kbd> to skip the question) and can't be undone. Seeing and emptying the Trash need Full Disk Access.</li>
   <li><b>Rename many at once:</b> select several items and choose <b>Rename N Items…</b> (File menu, right-click, or <kbd>Return</kbd>). <b>Replace Text</b> (optionally a regular expression, with <code>$1</code> for groups), <b>Add Text</b> before or after, <b>Format</b> (“Beach 1”, “00001 Beach”, or the date modified) and <b>Change Case</b>. The preview shows every new name and flags clashes before anything changes. Extensions are left alone unless you include them. One Undo puts every name back.</li>
-  <li><b>Make Alias</b> <kbd>⌃⌘A</kbd> puts “name alias” next to the item. Aliases keep working when the original moves. Opening a folder alias opens the folder here. <b>Show Original</b> <kbd>⌘R</kbd> goes to the original. If the original is gone, RealFinder offers <b>Fix Alias…</b> to point it somewhere new.</li>
+  <li><b>Make Alias</b> <kbd>⌃⌘A</kbd> puts “name alias” next to the item. Aliases keep working when the original moves. Opening a folder alias opens the folder here. <b>Show Original</b> <kbd>⌘R</kbd> goes to the original. If the original is gone, Foray offers <b>Fix Alias…</b> to point it somewhere new.</li>
   <li><b>Compress</b> (File menu or right-click) makes “name.zip”, or “Archive.zip” for several items, the same zip Finder makes. <b>Expand</b> unpacks a .zip next to itself: a single item lands beside it; several go into a folder named after the archive.</li>
   <li><b>Spring-loaded folders:</b> while dragging, pause over a folder (in the list, icons or sidebar) and it opens, so you can drop deep inside without letting go.</li>
   <li><b>Drag in from other apps:</b> attachments from Mail, photos from Photos and images from Safari can be dropped into any folder.</li>
-  <li><b>Services</b> (RealFinder › Services) work on the selected files, like in Finder.</li>
+  <li><b>Services</b> (Foray › Services) work on the selected files, like in Finder.</li>
   <li><b>Share…</b> (right-click or File menu) sends the selection with AirDrop, Mail, Messages and so on.</li>
   <li><b>Undo</b> <kbd>⌘Z</kbd> and <b>Redo</b> <kbd>⇧⌘Z</kbd> work for everything except Delete Immediately, across all windows.</li>
   <li><b>When a name is taken</b> you choose <b>Keep Both</b> (adds “2”), <b>Replace</b>, <b>Skip</b> or <b>Stop</b>, optionally for all remaining items. <b>Replace moves the old item to the Trash</b>, so you can undo it.</li>
@@ -232,7 +232,7 @@
 </ul>
 
 <h2 id="keys">Keyboard shortcuts</h2>
-<p>RealFinder uses Finder's shortcuts. Every command is in the menu bar, so you can change any shortcut in System Settings › Keyboard › Keyboard Shortcuts › App Shortcuts.</p>
+<p>Foray uses Finder's shortcuts. Every command is in the menu bar, so you can change any shortcut in System Settings › Keyboard › Keyboard Shortcuts › App Shortcuts.</p>
 <table>
   <tr><th>Shortcut</th><th>Action</th></tr>
   <tr><td><kbd>⌘N</kbd> / <kbd>⌘T</kbd></td><td>New window / new tab</td></tr>
@@ -263,14 +263,14 @@
 </table>
 
 <h2 id="access">Privacy and access</h2>
-<p>macOS asks before any app reads Desktop, Documents, Downloads, external drives and network volumes; allow RealFinder when asked. Some places (Mail, Messages and Safari data, other users' folders, the Trash) need <b>Full Disk Access</b>: System Settings › Privacy &amp; Security › Full Disk Access, then add RealFinder. <b>Settings › Privacy</b> shows whether it's on and opens that page for you. If a folder won't open because of permissions, the message says so.</p>
+<p>macOS asks before any app reads Desktop, Documents, Downloads, external drives and network volumes; allow Foray when asked. Some places (Mail, Messages and Safari data, other users' folders, the Trash) need <b>Full Disk Access</b>: System Settings › Privacy &amp; Security › Full Disk Access, then add Foray. <b>Settings › Privacy</b> shows whether it's on and opens that page for you. If a folder won't open because of permissions, the message says so.</p>
 
 <h2 id="coming">Not yet available</h2>
-<p>RealFinder is under construction. Use Finder for these for now:</p>
+<p>Foray is under construction. Use Finder for these for now:</p>
 <ul>
   <li>Stationery Pad, and editing access lists (ACLs).</li>
   <li>Quick Actions (rotate, markup, create PDF).</li>
-  <li>Making RealFinder the app that “Show in Finder” opens: this changes a system-wide setting, so it waits for your go-ahead.</li>
+  <li>Making Foray the app that “Show in Finder” opens: this changes a system-wide setting, so it waits for your go-ahead.</li>
 </ul>
 
 </main>

@@ -70,7 +70,7 @@ final class InspectorPanel: NSPanel {
         isFloatingPanel = true
         hidesOnDeactivate = true
         becomesKeyOnlyIfNeeded = true
-        setFrameAutosaveName("RealFinderInspector")
+        setFrameAutosaveName("ForayInspector")
         NotificationCenter.default.addObserver(self, selector: #selector(windowBecameKey(_:)), name: NSWindow.didBecomeKeyNotification, object: nil)
     }
 

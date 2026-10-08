@@ -18,11 +18,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private var openedFromLaunchURLs = false
 
-    /// `open -a RealFinder <folder>` and drops on the Dock icon.
+    /// `open -a Foray <folder>` and drops on the Dock icon.
     func application(_ application: NSApplication, open urls: [URL]) {
         openedFromLaunchURLs = true
         for url in urls {
-            if AppIntegration.open(url) { continue }   // realfinder:// links
+            if AppIntegration.open(url) { continue }   // foray:// links
             var isDir: ObjCBool = false
             let exists = FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir)
             guard exists else { continue }
@@ -109,8 +109,8 @@ enum MainMenu {
     private static let down = String(UnicodeScalar(NSDownArrowFunctionKey)!)
 
     private static func appMenu(_ target: AppDelegate) -> NSMenu {
-        let menu = NSMenu(title: "RealFinder")
-        menu.addItem(item("About RealFinder", #selector(NSApplication.orderFrontStandardAboutPanel(_:))))
+        let menu = NSMenu(title: "Foray")
+        menu.addItem(item("About Foray", #selector(NSApplication.orderFrontStandardAboutPanel(_:))))
         menu.addItem(.separator())
         let settings = item("Settings…", #selector(AppDelegate.showSettings(_:)), ",")
         settings.target = target
@@ -125,17 +125,17 @@ enum MainMenu {
         NSApp.servicesMenu = services
         menu.addItem(submenu(services))
         menu.addItem(.separator())
-        menu.addItem(item("Hide RealFinder", #selector(NSApplication.hide(_:)), "h"))
+        menu.addItem(item("Hide Foray", #selector(NSApplication.hide(_:)), "h"))
         menu.addItem(item("Hide Others", #selector(NSApplication.hideOtherApplications(_:)), "h", [.command, .option]))
         menu.addItem(item("Show All", #selector(NSApplication.unhideAllApplications(_:))))
         menu.addItem(.separator())
-        menu.addItem(item("Quit RealFinder", #selector(NSApplication.terminate(_:)), "q"))
+        menu.addItem(item("Quit Foray", #selector(NSApplication.terminate(_:)), "q"))
         return menu
     }
 
     private static func fileMenu(_ target: AppDelegate) -> NSMenu {
         let menu = NSMenu(title: "File")
-        let newWindow = item("New RealFinder Window", #selector(AppDelegate.newBrowserWindow(_:)), "n")
+        let newWindow = item("New Foray Window", #selector(AppDelegate.newBrowserWindow(_:)), "n")
         newWindow.target = target
         menu.addItem(newWindow)
         let newTab = item("New Tab", #selector(AppDelegate.newBrowserTab(_:)), "t")
@@ -239,7 +239,7 @@ enum MainMenu {
     private static func helpMenu(_ target: AppDelegate) -> NSMenu {
         // Not titled "Help": AppKit also looks for a menu by that title to add its search field to.
         let menu = NSMenu(title: "Help\u{200B}")
-        let guide = item("RealFinder Guide", #selector(AppDelegate.showGuide(_:)), "?")
+        let guide = item("Foray Guide", #selector(AppDelegate.showGuide(_:)), "?")
         guide.target = target
         menu.addItem(guide)
         for (title, section) in [("Searching", "search"), ("Search Filters", "syntax"), ("Keyboard Shortcuts", "keys")] {
@@ -261,6 +261,7 @@ enum MainMenu {
     }
 }
 
+LegacyMigration.run()   // before anything reads preferences
 let app = NSApplication.shared
 let delegate = AppDelegate()
 app.delegate = delegate

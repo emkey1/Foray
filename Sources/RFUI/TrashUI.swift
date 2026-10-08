@@ -107,8 +107,8 @@ extension BrowserViewController {
         panel.canCreateDirectories = true
         panel.prompt = "Put Back"
         panel.message = unknown.count == 1
-            ? "RealFinder doesn't know where “\(unknown[0].lastPathComponent)” came from. Choose a folder for it."
-            : "RealFinder doesn't know where \(unknown.count) of these items came from. Choose a folder for them."
+            ? "Foray doesn't know where “\(unknown[0].lastPathComponent)” came from. Choose a folder for it."
+            : "Foray doesn't know where \(unknown.count) of these items came from. Choose a folder for them."
         panel.beginSheetModal(for: window) { [weak self] response in
             guard let self, response == .OK, let folder = panel.url else { return }
             FileOperationsUI.shared.submit(.move(unknown, to: folder), from: self.state)

@@ -17,21 +17,21 @@ extension UISerial {
             try? FileManager.default.removeItem(at: base)
         }
 
-        @Test func realfinderLinks() throws {
+        @Test func forayLinks() throws {
             let folder = base.appendingPathComponent("Proj", isDirectory: true)
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
             FileManager.default.createFile(atPath: folder.appendingPathComponent("a b.txt").path, contents: nil)
             let enc = { (s: String) in s.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)! }
 
-            let open = try #require(AppIntegration.location(for: URL(string: "realfinder://open?path=\(enc(folder.path))")!))
+            let open = try #require(AppIntegration.location(for: URL(string: "foray://open?path=\(enc(folder.path))")!))
             #expect(open.0 == .folder(folder) || open.0.folderURL?.path == folder.path)
-            let file = try #require(AppIntegration.location(for: URL(string: "realfinder://open?path=\(enc(folder.path + "/a b.txt"))")!))
+            let file = try #require(AppIntegration.location(for: URL(string: "foray://open?path=\(enc(folder.path + "/a b.txt"))")!))
             #expect(file.0.folderURL?.path == folder.path && file.select == ["a b.txt"])
-            let search = try #require(AppIntegration.location(for: URL(string: "realfinder://search?q=\(enc("report kind:pdf"))&in=\(enc(folder.path))")!))
+            let search = try #require(AppIntegration.location(for: URL(string: "foray://search?q=\(enc("report kind:pdf"))&in=\(enc(folder.path))")!))
             #expect(search.0.searchQuery?.text == "report kind:pdf")
             #expect(search.0.searchQuery?.scope.folderURL?.path == folder.path)
-            #expect(AppIntegration.location(for: URL(string: "realfinder://search?q=x")!)?.0.searchQuery?.scope == .thisMac)
-            #expect(AppIntegration.location(for: URL(string: "realfinder://open?path=/no/such/place")!) == nil)
+            #expect(AppIntegration.location(for: URL(string: "foray://search?q=x")!)?.0.searchQuery?.scope == .thisMac)
+            #expect(AppIntegration.location(for: URL(string: "foray://open?path=/no/such/place")!) == nil)
             #expect(AppIntegration.location(for: URL(string: "https://example.com")!) == nil)
         }
 
@@ -51,7 +51,7 @@ extension UISerial {
             }
             #expect(AppModel.shared.recentFolders.count == AppModel.recentFolderLimit)
             let dock = AppIntegration.dockMenu()
-            #expect(dock.items.first?.title == "New RealFinder Window")
+            #expect(dock.items.first?.title == "New Foray Window")
             #expect(dock.items.contains { $0.title == "D11" })
             let go = AppIntegration.recentFoldersMenuItem()
             MenuTarget.shared.menuNeedsUpdate(go.submenu!)
@@ -276,5 +276,20 @@ extension UISerial {
             #expect(Date().timeIntervalSince(start) < 0.5)
             #expect(Set(frames.map { "\($0.origin)" }).count == 10_000)   // no two on the same spot
         }
+    }
+}
+
+@MainActor
+@Suite struct LegacyMigrationTests {
+    @Test func adoptsRealFinderPreferencesOnce() throws {
+        let suite = "rf-test-migration-\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        // The old app's domain can't be faked without touching real preferences; check the
+        // one-time flag and that existing values are never overwritten.
+        defaults.set("mine", forKey: "ReturnOpens")
+        LegacyMigration.run(defaults: defaults)
+        #expect(defaults.bool(forKey: LegacyMigration.doneKey))
+        #expect(defaults.string(forKey: "ReturnOpens") == "mine")
     }
 }

@@ -185,7 +185,7 @@ final class ViewOptionsPanel: NSPanel {
         hidesOnDeactivate = true
         becomesKeyOnlyIfNeeded = true
         contentView = NSHostingView(rootView: ViewOptionsView(model: model))
-        setFrameAutosaveName("RealFinderViewOptions")
+        setFrameAutosaveName("ForayViewOptions")
         NotificationCenter.default.addObserver(self, selector: #selector(windowBecameKey(_:)), name: NSWindow.didBecomeKeyNotification, object: nil)
     }
 

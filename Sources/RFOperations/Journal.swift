@@ -13,7 +13,7 @@ public final class OperationJournal: Sendable {
     private let entries = Mutex<Set<String>>([])
     private static let file = "op-journal.json"
 
-    /// Put Back records for items RealFinder trashed: path in the Trash → where it came from.
+    /// Put Back records for items Foray trashed: path in the Trash → where it came from.
     /// `trashItem` also writes Finder's `.DS_Store` record, but asynchronously, and items trashed in
     /// quick succession lose theirs (found in M5), so this is the primary source.
     struct PutBackEntry: Codable, Sendable {
@@ -48,7 +48,7 @@ public final class OperationJournal: Sendable {
         store.save(snapshot, to: Self.putBackFile)
     }
 
-    /// Where Put Back should return `trashed`, if RealFinder trashed it (and it's the same item).
+    /// Where Put Back should return `trashed`, if Foray trashed it (and it's the same item).
     public func putBackLocation(for trashed: URL) -> URL? {
         guard let entry = putBack.withLock({ $0[trashed.path] }), Self.matches(trashed.path, entry) else { return nil }
         return URL(fileURLWithPath: entry.original)

@@ -174,7 +174,7 @@ public final class SettingsWindowController: NSWindowController {
     private init() {
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 520, height: 320), styleMask: [.titled, .closable],
                               backing: .buffered, defer: true)
-        window.title = "RealFinder Settings"
+        window.title = "Foray Settings"
         window.tabbingMode = .disallowed
         super.init(window: window)
         window.contentView = NSHostingView(rootView: SettingsView(model: model))
@@ -199,15 +199,15 @@ public enum Onboarding {
         UserDefaults.standard.set(true, forKey: key)
         guard !FullDiskAccess.isGranted else { return }
         let alert = NSAlert()
-        alert.messageText = "Welcome to RealFinder"
+        alert.messageText = "Welcome to Foray"
         alert.informativeText = """
-        macOS will ask before RealFinder can see your Desktop, Documents, Downloads, external drives and \
+        macOS will ask before Foray can see your Desktop, Documents, Downloads, external drives and \
         network volumes. Allow these when asked.
 
         A few places (the Trash, Mail, Messages and Safari data, other users' folders) need Full Disk Access, \
-        which you can turn on in System Settings › Privacy & Security › Full Disk Access. RealFinder works without it.
+        which you can turn on in System Settings › Privacy & Security › Full Disk Access. Foray works without it.
 
-        The Guide (Help › RealFinder Guide, or ⌘?) explains everything else.
+        The Guide (Help › Foray Guide, or ⌘?) explains everything else.
         """
         alert.addButton(withTitle: "Open Privacy Settings")
         alert.addButton(withTitle: "Not Now")
