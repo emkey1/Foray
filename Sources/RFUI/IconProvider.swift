@@ -55,6 +55,11 @@ final class IconProvider {
         }
     }
 
+    /// Drops cached icons for an item whose icon changed (custom icon pasted or removed).
+    func forget(_ item: FileItem) {
+        fileIcons.removeObject(forKey: item.url.path as NSString)
+    }
+
     func cachedThumbnail(for item: FileItem, size: CGFloat) -> NSImage? {
         thumbnails.object(forKey: thumbnailKey(item, size) as NSString)
     }

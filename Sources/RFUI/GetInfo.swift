@@ -153,6 +153,34 @@ final class InfoModel {
         }
     }
 
+    // MARK: Custom icons (like selecting the icon in Finder's Get Info and pasting)
+
+    var hasCustomIcon: Bool { item.flags.contains(.hasCustomIcon) || customIconSet }
+    private var customIconSet = false
+
+    var canPasteIcon: Bool { NSImage(pasteboard: .general) != nil }
+
+    func pasteIcon() {
+        guard let image = NSImage(pasteboard: .general) else { return }
+        setIcon(image)
+    }
+
+    func setIcon(_ image: NSImage?) {
+        if NSWorkspace.shared.setIcon(image, forFile: item.url.path, options: []) {
+            customIconSet = image != nil
+            IconProvider.shared.forget(item)
+            thumbnail = image ?? NSWorkspace.shared.icon(forFile: item.url.path)
+        } else {
+            NSSound.beep()
+        }
+    }
+
+    func copyIcon() {
+        let icon = NSWorkspace.shared.icon(forFile: item.url.path)
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.writeObjects([icon])
+    }
+
     func commitComment() {
         guard let info, editedComment != info.comment else { return }
         set(ItemAttributes(comment: editedComment))
@@ -203,6 +231,17 @@ struct InfoView: View {
                 HStack(spacing: 14) {
                     if let thumb = model.thumbnail {
                         Image(nsImage: thumb).resizable().aspectRatio(contentMode: .fit).frame(width: 64, height: 64)
+                            .contextMenu {
+                                Button("Copy Icon") { model.copyIcon() }
+                                Button("Paste Icon") { model.pasteIcon() }.disabled(!model.canPasteIcon)
+                                Button("Remove Custom Icon") { model.setIcon(nil) }.disabled(!model.hasCustomIcon)
+                            }
+                            .dropDestination(for: URL.self) { urls, _ in
+                                guard let url = urls.first, let image = NSImage(contentsOf: url) else { return false }
+                                model.setIcon(image)
+                                return true
+                            }
+                            .help("Right-click to copy, paste or remove the icon; drop an image to use it")
                     }
                     VStack(alignment: .leading, spacing: 3) {
                         Text(model.item.displayName).font(.headline).lineLimit(2)

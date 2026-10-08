@@ -42,6 +42,21 @@ import Testing
         #expect(model.access(2) == 0)   // everyone: no access
     }
 
+    @Test func customIconsCanBeSetAndRemoved() throws {
+        let dir = TestDirs.make("info-icon")
+        defer { try? FileManager.default.removeItem(at: dir) }
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let url = dir.appendingPathComponent("doc.txt")
+        FileManager.default.createFile(atPath: url.path, contents: Data("x".utf8))
+        let model = InfoModel(item: try #require(DirectoryLoader.shared.stat(url)))
+        #expect(!model.hasCustomIcon)
+        let image = NSImage(size: NSSize(width: 32, height: 32), flipped: false) { r in NSColor.systemRed.setFill(); r.fill(); return true }
+        model.setIcon(image)
+        #expect(DirectoryLoader.shared.stat(url)?.flags.contains(.hasCustomIcon) == true)
+        model.setIcon(nil)
+        #expect(DirectoryLoader.shared.stat(url)?.flags.contains(.hasCustomIcon) == false)
+    }
+
     @Test func rendersTheWindow() async throws {
         let dir = TestDirs.make("info-render")
         defer { try? FileManager.default.removeItem(at: dir) }
