@@ -5,9 +5,13 @@ import Foundation
 public struct AppSupportStore: Sendable {
     public let directory: URL
 
+    /// The app's store. Inside a test process it's a private temporary folder instead, so a test
+    /// that forgets to substitute its own store can't touch the user's settings.
     public static let shared = AppSupportStore(
-        directory: FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("RealFinder", isDirectory: true))
+        directory: TestEnvironment.isActive
+            ? FileManager.default.temporaryDirectory.appendingPathComponent("rf-test-appsupport-\(getpid())", isDirectory: true)
+            : FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+                .appendingPathComponent("RealFinder", isDirectory: true))
 
     public init(directory: URL) { self.directory = directory }
 
@@ -27,4 +31,12 @@ public struct AppSupportStore: Sendable {
             NSLog("RealFinder: couldn't save \(name): \(error)")
         }
     }
+}
+
+/// Whether this process is a test run (`swift test`), for safety defaults.
+public enum TestEnvironment {
+    public static let isActive: Bool = {
+        let name = ProcessInfo.processInfo.processName
+        return name.contains("xctest") || name.contains("swiftpm-testing-helper") || NSClassFromString("XCTestCase") != nil
+    }()
 }

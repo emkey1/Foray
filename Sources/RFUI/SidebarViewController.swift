@@ -285,8 +285,11 @@ extension SidebarViewController: NSOutlineViewDataSource, NSOutlineViewDelegate 
         if let node = item as? Node, !node.isSection, index == NSOutlineViewDropOnItemIndex,
            info.draggingPasteboard.availableType(from: [Self.favoriteDragType]) == nil,
            case .folder(let url) = node.location {
-            return DragAndDrop.operation(info, to: url)
+            let op = DragAndDrop.operation(info, to: url)
+            SpringLoading.hover(op.isEmpty ? nil : url) { [weak self] url in self?.onNavigate?(.folder(url)) }
+            return op
         }
+        SpringLoading.hover(nil)
         // Files dropped on the Trash go to the Trash.
         if let node = item as? Node, node.location == .trash, index == NSOutlineViewDropOnItemIndex,
            info.draggingPasteboard.availableType(from: [Self.favoriteDragType]) == nil,

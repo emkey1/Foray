@@ -113,8 +113,16 @@ public enum OperationRequest: Sendable, Equatable {
 public typealias TrashFunction = @Sendable (URL) throws -> URL
 
 public enum Trash {
-    /// The system Trash (records Put Back information like Finder; M0 S4).
+    /// The system Trash (records Put Back information like Finder; M0 S4). In a test process it's a
+    /// private folder instead, so a test that forgets to substitute its own can't fill the real Trash.
     public static let system: TrashFunction = { url in
+        if TestEnvironment.isActive {
+            let dir = FileManager.default.temporaryDirectory.appendingPathComponent("rf-test-trash-\(getpid())", isDirectory: true)
+            try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            let dest = dir.appendingPathComponent(UUID().uuidString + "-" + url.lastPathComponent)
+            try FileManager.default.moveItem(at: url, to: dest)
+            return dest
+        }
         var trashed: NSURL?
         try FileManager.default.trashItem(at: url, resultingItemURL: &trashed)
         return (trashed as URL?) ?? url

@@ -355,6 +355,7 @@ final class BrowserState {
     }
 
     private func switchTo(_ newLocation: Location) {
+        if case .folder(let url) = newLocation { AppModel.shared.recordVisit(url) }
         location = newLocation
         details = .fallback(newLocation)
         collapseAll()

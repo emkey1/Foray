@@ -33,6 +33,17 @@
 	<array>
 		<string>_smb._tcp</string>
 	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>RealFinder link</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>realfinder</string>
+			</array>
+		</dict>
+	</array>
 	<key>NSSupportsAutomaticTermination</key>
 	<false/>
 	<!-- Lets `open -a RealFinder <folder>` and Dock drops deliver folders. Rank Alternate: never

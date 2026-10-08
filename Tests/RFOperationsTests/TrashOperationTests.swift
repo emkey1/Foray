@@ -82,3 +82,14 @@ import Testing
         #expect(reopened.putBackLocation(for: r.trashed[0].to) == a)
     }
 }
+
+struct SystemTrashSafetyTests {
+    @Test func theDefaultTrashIsPrivateInTests() throws {
+        let f = FileManager.default.temporaryDirectory.appendingPathComponent("rf-safety-\(UUID().uuidString).txt")
+        FileManager.default.createFile(atPath: f.path, contents: nil)
+        let dest = try Trash.system(f)
+        defer { try? FileManager.default.removeItem(at: dest) }
+        #expect(!dest.path.contains("/.Trash"))
+        #expect(dest.path.contains("rf-test-trash-"))
+    }
+}

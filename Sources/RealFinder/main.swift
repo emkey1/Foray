@@ -22,6 +22,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func application(_ application: NSApplication, open urls: [URL]) {
         openedFromLaunchURLs = true
         for url in urls {
+            if AppIntegration.open(url) { continue }   // realfinder:// links
             var isDir: ObjCBool = false
             let exists = FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir)
             guard exists else { continue }
@@ -33,6 +34,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
     }
+
+    func applicationDockMenu(_ sender: NSApplication) -> NSMenu? { AppIntegration.dockMenu() }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         if !flag { WindowManager.shared.openWindow() }
@@ -222,6 +225,7 @@ enum MainMenu {
             menu.addItem(item(title, Commands.goToStandardLocation, key, mods, tag: tag))
         }
         menu.addItem(.separator())
+        menu.addItem(AppIntegration.recentFoldersMenuItem())
         menu.addItem(item("Go to Folder…", Commands.goToFolder, "g", [.command, .shift]))
         let connect = item("Connect to Server…", #selector(AppDelegate.connectToServer(_:)), "k")
         connect.target = target

@@ -13,9 +13,25 @@ enum DragAndDrop {
         info.draggingPasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL] ?? []
     }
 
+    /// Files, plus file promises (attachments from Mail, photos from Photos, images from Safari).
+    static var acceptedTypes: [NSPasteboard.PasteboardType] {
+        [.fileURL] + NSFilePromiseReceiver.readableDraggedTypes.map { NSPasteboard.PasteboardType($0) }
+    }
+
+    static func promises(_ info: any NSDraggingInfo) -> [NSFilePromiseReceiver] {
+        info.draggingPasteboard.readObjects(forClasses: [NSFilePromiseReceiver.self], options: nil) as? [NSFilePromiseReceiver] ?? []
+    }
+
+    private static let promiseQueue: OperationQueue = {
+        let q = OperationQueue()
+        q.qualityOfService = .userInitiated
+        return q
+    }()
+
     /// What dropping here would do: .move, .copy, or [] (not allowed).
     static func operation(_ info: any NSDraggingInfo, to folder: URL) -> NSDragOperation {
         let urls = fileURLs(info)
+        if urls.isEmpty, !promises(info).isEmpty { return .copy }   // the source app writes the files here
         guard !urls.isEmpty else { return [] }
         let dest = folder.standardizedFileURL.path
         for url in urls {
@@ -44,8 +60,20 @@ enum DragAndDrop {
     /// Starts the operation for an accepted drop. Returns false if there was nothing to do.
     @discardableResult
     static func perform(_ info: any NSDraggingInfo, to folder: URL, from state: BrowserState?) -> Bool {
+        SpringLoading.cancel()
         let op = operation(info, to: folder)
         let urls = fileURLs(info)
+        if urls.isEmpty {
+            let receivers = promises(info)
+            guard !receivers.isEmpty else { return false }
+            for receiver in receivers {
+                receiver.receivePromisedFiles(atDestination: folder, options: [:], operationQueue: promiseQueue) { _, error in
+                    guard let error else { return }
+                    DispatchQueue.main.async { NSApp.presentError(error) }
+                }
+            }
+            return true
+        }
         guard !op.isEmpty, !urls.isEmpty else { return false }
         FileOperationsUI.shared.submit(op == .copy ? .copy(urls, to: folder) : .move(urls, to: folder), from: state)
         return true
@@ -68,5 +96,38 @@ enum DragAndDrop {
 
     private static func volumeID(_ url: URL) -> String? {
         (try? url.resourceValues(forKeys: [.volumeIdentifierKey]).volumeIdentifier).map { "\($0)" }
+    }
+}
+
+/// Spring-loaded folders (DESIGN.md §4.1): hovering a drag over a folder opens it after a moment,
+/// so items can be dropped deep inside without letting go.
+@MainActor
+enum SpringLoading {
+    static var delay: TimeInterval = 0.8
+    private static var target: URL?
+    private static var timer: Timer?
+    /// Tests stand in for "the mouse button is still down".
+    static var isDragging: () -> Bool = { NSEvent.pressedMouseButtons & 1 != 0 }
+
+    /// Called as a drag moves. The same folder for `delay` seconds opens it.
+    static func hover(_ folder: URL?, open: (@MainActor (URL) -> Void)? = nil) {
+        guard folder != target else { return }
+        cancel()
+        guard let folder, let open else { return }
+        target = folder
+        timer = Timer.scheduledTimer(withTimeInterval: delay, repeats: false) { _ in
+            MainActor.assumeIsolated {
+                guard target == folder, isDragging() else { return cancel() }
+                cancel()
+                NSSound(named: "Pop")?.play()
+                open(folder)
+            }
+        }
+    }
+
+    static func cancel() {
+        timer?.invalidate()
+        timer = nil
+        target = nil
     }
 }

@@ -264,7 +264,7 @@ Each of these is additive or controlled by a setting, so Finder habits keep work
 | Show/hide hidden files (Cmd-Shift-.) | `Arrangement.showHidden` | P1 |
 | Show Package Contents | | P1 |
 | Window and tab state restored after relaunch | `NSWindowRestoration` + tab state | P1 |
-| Spring-loaded folders and tabs | `NSSpringLoadingDestination` | P2 |
+| Spring-loaded folders and tabs | `NSSpringLoadingDestination` | P2 ✅ (folders in list, icon and sidebar; tabs still to do) |
 
 ### 4.2 Views
 
@@ -298,7 +298,7 @@ Each of these is additive or controlled by a setting, so Finder habits keep work
 | Inline rename; warning before changing an extension | | P1 |
 | Copy, Paste, Move (Cmd-Opt-V), Cut (I1) | §5.7 | P1 |
 | Drag and drop with Finder's modifier keys (Option = copy, Command = move, Option-Command = alias), including to and from other apps | NSDraggingSource / Destination | P1 |
-| File promises (dragging in from Mail, Photos or Safari) | `NSFilePromiseReceiver` | P2 |
+| File promises (dragging in from Mail, Photos or Safari) | `NSFilePromiseReceiver` | P2 ✅ |
 | Duplicate | | P1 |
 | Move to Trash, Delete Immediately, Empty Trash | | P1 |
 | Put Back | Journal + Finder's records (§5.7) | P2 |
@@ -351,11 +351,11 @@ Each of these is additive or controlled by a setting, so Finder habits keep work
 
 | Feature | Approach | Phase |
 |---|---|---|
-| Services and Quick Actions in the menu bar and context menus | `NSServicesMenuRequestor` | P2 |
+| Services and Quick Actions in the menu bar and context menus | `NSServicesMenuRequestor` | P2 ✅ (Services menu) |
 | Share menu | `NSSharingServicePicker` | P2 ✅ |
 | Default file viewer ("Show in Finder" in other apps opens RealFinder) | §5.12 | P2 |
-| Dock menu with windows and recent folders | | P2 |
-| `realfinder://` URL scheme | | P2 |
+| Dock menu with windows and recent folders | | P2 ✅ |
+| `realfinder://` URL scheme | | P2 ✅ |
 | AppleScript dictionary, Shortcuts actions (App Intents), `rf` command-line tool | | P3 |
 | Desktop icons and Stacks | ✗ Finder keeps the desktop (Q3) | |
 

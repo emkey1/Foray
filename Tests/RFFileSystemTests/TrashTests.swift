@@ -161,3 +161,10 @@ struct NetworkMountTests {
         #expect(NetworkMounts.Failure(status: EAUTH).errorDescription?.contains("password") == true)
     }
 }
+
+struct TestSafetyTests {
+    @Test func testRunsNeverUseTheRealAppSupportFolder() {
+        #expect(TestEnvironment.isActive)
+        #expect(!AppSupportStore.shared.directory.path.contains("Application Support"))
+    }
+}

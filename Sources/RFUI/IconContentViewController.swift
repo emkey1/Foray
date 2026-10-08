@@ -25,7 +25,7 @@ final class IconContentViewController: NSViewController, ContentView {
         collectionView.delegate = self
         collectionView.owner = self
         collectionView.register(IconItem.self, forItemWithIdentifier: IconItem.identifier)
-        collectionView.registerForDraggedTypes([.fileURL])
+        collectionView.registerForDraggedTypes(DragAndDrop.acceptedTypes)
         collectionView.setDraggingSourceOperationMask([.copy, .move, .generic, .link, .delete], forLocal: false)
         collectionView.setDraggingSourceOperationMask([.copy, .move, .generic, .link], forLocal: true)
         collectionView.register(GroupHeader.self, forSupplementaryViewOfKind: NSCollectionView.elementKindSectionHeader,
@@ -157,8 +157,13 @@ extension IconContentViewController: NSCollectionViewDataSource, NSCollectionVie
         if dropOperation.pointee == .on, proposed.section < numberOfSections(in: collectionView),
            proposed.item < self.collectionView(collectionView, numberOfItemsInSection: proposed.section) {
             let item = snapshot.items[index(of: proposed)]
-            if item.isNavigableFolder { return DragAndDrop.operation(info, to: item.url) }
+            if item.isNavigableFolder {
+                let op = DragAndDrop.operation(info, to: item.url)
+                SpringLoading.hover(op.isEmpty ? nil : item.url) { [weak self] url in self?.host?.state.navigate(to: .folder(url)) }
+                return op
+            }
         }
+        SpringLoading.hover(nil)
         guard let here = host?.state.location.folderURL else { return [] }
         dropOperation.pointee = .before
         return DragAndDrop.operation(info, to: here)

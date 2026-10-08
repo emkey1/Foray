@@ -142,6 +142,36 @@ public final class AppModel {
         for handler in favoriteObservers.values { handler() }
     }
 
+    // MARK: Recent folders (Go › Recent Folders, the Dock menu)
+
+    public static let recentFolderLimit = 10
+    private static let recentFoldersFile = "recent-folders.json"
+    private var recentFoldersSaveScheduled = false
+
+    public private(set) lazy var recentFolders: [URL] =
+        (store.load([String].self, from: Self.recentFoldersFile) ?? []).map { URL(fileURLWithPath: $0, isDirectory: true) }
+
+    func recordVisit(_ folder: URL) {
+        let url = folder.standardizedFileURL
+        guard url.path != recentFolders.first?.standardizedFileURL.path else { return }
+        recentFolders.removeAll { $0.standardizedFileURL.path == url.path }
+        recentFolders.insert(url, at: 0)
+        if recentFolders.count > Self.recentFolderLimit { recentFolders.removeLast(recentFolders.count - Self.recentFolderLimit) }
+        // Navigation is frequent; write at most once a second.
+        guard !recentFoldersSaveScheduled else { return }
+        recentFoldersSaveScheduled = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in
+            guard let self else { return }
+            self.recentFoldersSaveScheduled = false
+            self.store.save(self.recentFolders.map(\.path), to: Self.recentFoldersFile)
+        }
+    }
+
+    func clearRecentFolders() {
+        recentFolders = []
+        store.save([String](), to: Self.recentFoldersFile)
+    }
+
     // MARK: Recent searches
 
     public static let recentSearchLimit = 12

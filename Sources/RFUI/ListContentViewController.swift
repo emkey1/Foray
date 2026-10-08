@@ -58,7 +58,7 @@ final class ListContentViewController: NSViewController, ContentView {
         outline.doubleAction = #selector(doubleClicked)
         outline.owner = self
         outline.headerView?.menu = headerMenu()
-        outline.registerForDraggedTypes([.fileURL])
+        outline.registerForDraggedTypes(DragAndDrop.acceptedTypes)
         outline.setDraggingSourceOperationMask([.copy, .move, .generic, .link, .delete], forLocal: false)
         outline.setDraggingSourceOperationMask([.copy, .move, .generic, .link], forLocal: true)
         outline.draggingDestinationFeedbackStyle = .regular
@@ -409,8 +409,11 @@ extension ListContentViewController: NSOutlineViewDataSource, NSOutlineViewDeleg
                      proposedChildIndex index: Int) -> NSDragOperation {
         if let folder = (item as? Node)?.item, folder.isNavigableFolder {
             outlineView.setDropItem(item, dropChildIndex: NSOutlineViewDropOnItemIndex)
-            return DragAndDrop.operation(info, to: folder.url)
+            let op = DragAndDrop.operation(info, to: folder.url)
+            SpringLoading.hover(op.isEmpty ? nil : folder.url) { [weak self] url in self?.host?.state.navigate(to: .folder(url)) }
+            return op
         }
+        SpringLoading.hover(nil)
         guard let here = host?.state.location.folderURL else { return [] }
         outlineView.setDropItem(nil, dropChildIndex: NSOutlineViewDropOnItemIndex)
         return DragAndDrop.operation(info, to: here)
