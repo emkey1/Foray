@@ -47,12 +47,15 @@ public struct FileItem: Identifiable, Hashable, Sendable {
     /// Status change time: moves when metadata such as tags changes (used to invalidate caches).
     public let changed: Date?
     public let added: Date?
+    /// When the user last opened it. Known for Recents (and Spotlight results that fetch it);
+    /// nil elsewhere.
+    public let lastOpened: Date?
     public let sortKey: NaturalSortKey
 
     public init(
         id: FileID, url: URL, name: String, displayName: String? = nil, contentType: UTType, flags: ItemFlags,
         size: Int64?, allocatedSize: Int64? = nil, created: Date? = nil, modified: Date? = nil, changed: Date? = nil,
-        added: Date? = nil
+        added: Date? = nil, lastOpened: Date? = nil
     ) {
         self.id = id
         self.url = url
@@ -66,6 +69,7 @@ public struct FileItem: Identifiable, Hashable, Sendable {
         self.modified = modified
         self.changed = changed
         self.added = added
+        self.lastOpened = lastOpened
         self.sortKey = NaturalSortKey(self.displayName)
     }
 
@@ -73,4 +77,10 @@ public struct FileItem: Identifiable, Hashable, Sendable {
     public var isNavigableFolder: Bool { flags.contains(.directory) && !flags.contains(.package) }
 
     public var pathExtension: String { (name as NSString).pathExtension.lowercased() }
+
+    public func with(lastOpened: Date?) -> FileItem {
+        FileItem(id: id, url: url, name: name, displayName: displayName, contentType: contentType, flags: flags, size: size,
+                 allocatedSize: allocatedSize, created: created, modified: modified, changed: changed, added: added,
+                 lastOpened: lastOpened)
+    }
 }

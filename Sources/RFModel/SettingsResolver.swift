@@ -52,7 +52,12 @@ public struct ViewSettingsDatabase: Codable, Sendable {
                                            ListColumnSpec(.size), ListColumnSpec(.kind)]
             return s
         case .recents:
-            return ViewSettings(presentation: Presentation(mode: .list))
+            var s = ViewSettings(presentation: Presentation(mode: .list))
+            s.arrangement.sort = [SortDescriptor(.dateLastOpened, ascending: false)]
+            s.arrangement.foldersFirst = false
+            s.presentation.list.columns = [ListColumnSpec(.name), ListColumnSpec(.dateLastOpened), ListColumnSpec(.folder),
+                                           ListColumnSpec(.size), ListColumnSpec(.kind)]
+            return s
         default:
             return ViewSettings()
         }

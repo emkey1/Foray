@@ -607,6 +607,7 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
 
     @objc func goToStandardLocation(_ sender: NSMenuItem) {
         if sender.tag == StandardLocation.computer.rawValue { return state.jump(to: .computer) }
+        if sender.tag == StandardLocation.recents.rawValue { return state.jump(to: .recents) }
         guard let location = StandardLocation(rawValue: sender.tag), let url = location.url else { return }
         state.jump(to: .folder(url))
     }
@@ -719,7 +720,9 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
             let key = SortKey.allCases[safe: item.tag]
             item.state = a.primary.key == key ? .on : (a.sort.contains { $0.key == key } ? .mixed : .off)
             item.isHidden = key == .folder && state.location.searchQuery == nil
-            return key != .dateLastOpened && key != .tags && key != .manual
+            // Only Recents knows when things were last opened.
+            item.isHidden = item.isHidden || (key == .dateLastOpened && state.location != .recents)
+            return key != .tags && key != .manual
         case #selector(groupBy(_:)):
             item.state = (item.tag < 0 ? a.groupBy == nil : a.groupBy == GroupKey.allCases[safe: item.tag]) ? .on : .off
         case #selector(filterByKind(_:)):
@@ -785,12 +788,12 @@ extension BrowserViewController: @preconcurrency QLPreviewPanelDataSource, @prec
 
 /// Go menu standard locations (tags used by menu items).
 enum StandardLocation: Int, CaseIterable {
-    case computer = 1, home, desktop, documents, downloads, applications, utilities
+    case computer = 1, home, desktop, documents, downloads, applications, utilities, recents
 
     var url: URL? {
         let fm = FileManager.default
         switch self {
-        case .computer: return nil
+        case .computer, .recents: return nil
         case .home: return fm.homeDirectoryForCurrentUser
         case .desktop: return fm.urls(for: .desktopDirectory, in: .userDomainMask).first
         case .documents: return fm.urls(for: .documentDirectory, in: .userDomainMask).first

@@ -157,6 +157,8 @@ private actor Search {
                 add(items, fromSpotlight: true)
             case .removed(let paths):
                 remove(paths: paths.map(respell))
+            case .changed:
+                break   // search results don't follow attribute changes
             case .finishedGathering:
                 status.spotlightRunning = false
                 liveSpotlight = true   // keeps delivering live updates until cancelled

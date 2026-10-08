@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | Draft v0.6: M0 results folded in (`Spikes/RESULTS.md`); M1, M2 and M4 built (M4 awaits its week of daily use); M3 search in place except Recents |
+| Status | Draft v0.6: M0 results folded in (`Spikes/RESULTS.md`); M1–M3 complete; M4 built (awaits its week of daily use); M5 under way |
 | Date | 2026-10-08 |
 | Toolchain baseline | Xcode 27, Swift 6.4, developed on macOS 26.6 |
 | Working name | RealFinder (see Q9) |
@@ -327,7 +327,7 @@ Each of these is additive or controlled by a setting, so Finder habits keep work
 | Feature | Approach | Phase |
 |---|---|---|
 | Scoped search with kinds and tokens | §3.1, §3.2, §5.6 | P1 |
-| Recents | Spotlight query on `kMDItemLastUsedDate` | P1 |
+| Recents | Spotlight query on `kMDItemLastUsedDate` (live; dates read from the `com.apple.lastuseddate#PS` xattr, Spotlight as fallback) | P1 ✅ |
 | Criteria editor | | P2 |
 | Smart folders: open Finder `.savedSearch` files; create and save new ones | | P2 |
 
@@ -962,7 +962,7 @@ These are in order with exit criteria; there are no dates.
 | **M0 Spikes** | Questions in §10 that could change the design | Each spike's answer recorded in this document |
 | **M1 Browsing core** ✅ | App shell, windows and tabs, sidebar (with editable favorites), list view with inline folder expansion, icon view, `Arrangement` model (§3.3), navigation, path and status bars, Quick Look, FSEvents updates, state restoration, in-app user guide | Done: usable as a read-only daily browser; open, mode-switch and re-sort budgets met (§5.13); sort-preservation tests pass |
 | **M2 File operations** ✅ | Engine; copy, move, rename, trash, new folder and duplicate; drag and drop; clipboard and cut; conflicts; progress; undo; journal | Done: fuzz suite passes on every filesystem image; no data loss on `kill -9` mid-copy |
-| **M3 Search** (done early, except Recents) | Scope bar, query parser, kinds, Spotlight and Crawl backends, results view, Recents | Acceptance tests for headline requirements 1 and 2 pass |
+| **M3 Search** ✅ (Recents added in M5) | Scope bar, query parser, kinds, Spotlight and Crawl backends, results view, Recents | Acceptance tests for headline requirements 1 and 2 pass |
 | **M4 P1 complete** (built) | Column and gallery views, tags, read-only Get Info, View Options, Open With, eject, preferences, onboarding and TCC | The developer uses RealFinder instead of Finder for a full week. *Built:* everything in scope. Settings (⌘,): new-window folder, tabs or windows, Return renames or opens, search scope and match defaults, per-folder or same-everywhere views, Full Disk Access. Open With has Other… and ⌥ Always Open With (sets the LaunchServices default for the type). Get Info shows comments and permissions read-only. Not yet: Eject All, a confirmation before ejecting a multi-volume disk. Waiting on the week of daily use |
 | **M5 Parity (P2)** | All remaining P2 rows in §4 | Parity checklist complete, except ✗ and P3 items |
 | **M6 Advanced (P3)** | Privileged helper, scripting, Shortcuts and CLI, dual-pane mode, extras | — |

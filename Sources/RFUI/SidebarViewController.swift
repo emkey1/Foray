@@ -37,6 +37,8 @@ final class SidebarViewController: NSViewController {
     private var sections: [Node] = []
     var sectionsForTesting: [Node] { sections }
     private var favoritesSection: Node? { sections.first }
+    /// Rows above the favorites in their section (Recents): outline child index = favorite index + this.
+    private static let fixedFavoriteRows = 1
     private var observers: [NSObjectProtocol] = []
     private var favoritesObserver: UUID?
     private var highlighted: Location?
@@ -82,7 +84,9 @@ final class SidebarViewController: NSViewController {
                  favoriteIndex: i)
         }
         sections = [
-            Node(title: "Favorites", children: favorites),
+            Node(title: "Favorites", children:
+                [Node(title: "Recents", location: .recents, icon: NSImage(systemSymbolName: "clock", accessibilityDescription: nil))]
+                + favorites),
             Node(title: "Locations", children:
                 [Node(title: "Computer", location: .computer, icon: NSImage(systemSymbolName: "desktopcomputer", accessibilityDescription: nil))]
                 + Volumes.mounted().map { v in
@@ -252,11 +256,11 @@ extension SidebarViewController: NSOutlineViewDataSource, NSOutlineViewDelegate 
            !DragAndDrop.fileURLs(info).isEmpty {
             return .delete
         }
-        // Otherwise (between rows) folders are added as favorites.
-        var target = index
+        // Otherwise (between rows) folders are added as favorites. `target` is an outline child index.
+        var target = max(index, Self.fixedFavoriteRows)
         if let node = item as? Node, node !== favorites {
             guard let i = node.favoriteIndex else { return [] }
-            target = i + 1
+            target = i + 1 + Self.fixedFavoriteRows
         } else if item == nil || index < 0 {
             target = favorites.children.count
         }
@@ -279,13 +283,14 @@ extension SidebarViewController: NSOutlineViewDataSource, NSOutlineViewDelegate 
             FileOperationsUI.shared.submit(.trash(urls), from: nil)
             return true
         }
+        let favoriteIndex = max(0, index - Self.fixedFavoriteRows)
         if let s = info.draggingPasteboard.string(forType: Self.favoriteDragType), let from = Int(s) {
-            AppModel.shared.moveFavorite(from: from, to: index)
+            AppModel.shared.moveFavorite(from: from, to: favoriteIndex)
             return true
         }
         let folders = droppedFolders(info)
         guard !folders.isEmpty else { return false }
-        AppModel.shared.addFavorites(folders, at: index)
+        AppModel.shared.addFavorites(folders, at: favoriteIndex)
         return true
     }
 

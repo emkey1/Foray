@@ -15,6 +15,8 @@ public enum ViewMode: String, Codable, Sendable, CaseIterable {
 
 public enum ListColumn: String, Codable, Sendable, CaseIterable {
     case name, dateModified, dateCreated, dateAdded, size, kind, fileExtension
+    /// Recents only (other locations don't know it).
+    case dateLastOpened
     /// Enclosing folder, relative to the search scope (search results).
     case folder
 
@@ -24,6 +26,7 @@ public enum ListColumn: String, Codable, Sendable, CaseIterable {
         case .dateModified: .dateModified
         case .dateCreated: .dateCreated
         case .dateAdded: .dateAdded
+        case .dateLastOpened: .dateLastOpened
         case .size: .size
         case .kind: .kind
         case .fileExtension: .fileExtension

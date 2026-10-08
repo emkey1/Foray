@@ -6,6 +6,8 @@ final class SpotlightRunner: @unchecked Sendable {
     enum Event: Sendable {
         case added([String])
         case removed([String])
+        /// Results whose attributes changed (e.g. opened again).
+        case changed([String])
         case finishedGathering
     }
 
@@ -52,9 +54,11 @@ final class SpotlightRunner: @unchecked Sendable {
                     center.addObserver(forName: .NSMetadataQueryDidUpdate, object: query, queue: queue) { note in
                         let added = (note.userInfo?[NSMetadataQueryUpdateAddedItemsKey] as? [NSMetadataItem]) ?? []
                         let removed = (note.userInfo?[NSMetadataQueryUpdateRemovedItemsKey] as? [NSMetadataItem]) ?? []
+                        let changed = (note.userInfo?[NSMetadataQueryUpdateChangedItemsKey] as? [NSMetadataItem]) ?? []
                         let paths = { (items: [NSMetadataItem]) in items.compactMap { $0.value(forAttribute: NSMetadataItemPathKey) as? String } }
                         if !added.isEmpty { continuation.yield(.added(paths(added))) }
                         if !removed.isEmpty { continuation.yield(.removed(paths(removed))) }
+                        if !changed.isEmpty { continuation.yield(.changed(paths(changed))) }
                     },
                 ]
                 if !query.start() { continuation.finish() }

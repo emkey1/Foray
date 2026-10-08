@@ -222,7 +222,7 @@ final class BrowserState {
             case .computer:
                 q.scope = .thisMac
                 return navigate(to: .search(q))
-            case .search, .trash:
+            case .search, .trash, .recents:
                 break
             }
         }
@@ -301,6 +301,7 @@ final class BrowserState {
         case .computer: .thisMac
         case .search(let q): q.scope
         case .trash: .folder(TrashFolders.home, recursive: true)
+        case .recents: .thisMac
         }
     }
 
@@ -412,8 +413,12 @@ final class BrowserState {
                     }
                     self.notify(.loadState)
                 }
-            case .folder, .trash:
-                let events = if case .folder(let url) = location { FolderContents.observe(url) } else { TrashContents.observe() }
+            case .folder, .trash, .recents:
+                let events = switch location {
+                case .folder(let url): FolderContents.observe(url)
+                case .recents: Recents.observe()
+                default: TrashContents.observe()
+                }
                 for await event in events {
                     if Task.isCancelled { break }
                     switch event {

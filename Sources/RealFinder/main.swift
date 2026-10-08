@@ -204,6 +204,7 @@ enum MainMenu {
         menu.addItem(item("Open Selection", Commands.openSelection, down))
         menu.addItem(.separator())
         let places: [(String, Int, String, NSEvent.ModifierFlags)] = [
+            ("Recents", 8, "f", [.command, .shift]),
             ("Computer", 1, "c", [.command, .shift]), ("Home", 2, "h", [.command, .shift]),
             ("Desktop", 3, "d", [.command, .shift]), ("Documents", 4, "o", [.command, .shift]),
             ("Downloads", 5, "l", [.command, .option]), ("Applications", 6, "a", [.command, .shift]),

@@ -8,6 +8,8 @@ public enum Location: Hashable, Codable, Sendable {
     case search(SearchQuery)
     /// Every Trash folder (home and each volume's) together.
     case trash
+    /// Files opened in the last 30 days (Spotlight).
+    case recents
 
     public var searchQuery: SearchQuery? {
         if case .search(let q) = self { return q }
@@ -26,6 +28,7 @@ public enum Location: Hashable, Codable, Sendable {
         case .computer: "Computer"
         case .search(let q): "Searching “\(q.text)”"
         case .trash: "Trash"
+        case .recents: "Recents"
         }
     }
 
@@ -41,6 +44,8 @@ public enum Location: Hashable, Codable, Sendable {
             return .searchResults
         case .trash:
             return .trash
+        case .recents:
+            return .recents
         }
     }
 }

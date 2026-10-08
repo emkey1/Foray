@@ -93,6 +93,10 @@ extension UISerial {
             _ = sidebar.view
             sidebar.reload()
             #expect(sidebar.sectionsForTesting.flatMap(\.children).contains { $0.location == .trash })
+            // Recents heads the Favorites section and isn't a removable favorite.
+            let recents = try #require(sidebar.sectionsForTesting.first?.children.first)
+            #expect(recents.location == .recents && recents.favoriteIndex == nil)
+            #expect(sidebar.sectionsForTesting.first?.children.dropFirst().first?.favoriteIndex == 0)
         }
     }
 }

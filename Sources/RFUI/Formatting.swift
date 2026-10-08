@@ -58,6 +58,7 @@ enum Formatting {
         case .dateModified: date(item.modified, relative: relativeDates)
         case .dateCreated: date(item.created, relative: relativeDates)
         case .dateAdded: date(item.added, relative: relativeDates)
+        case .dateLastOpened: date(item.lastOpened, relative: relativeDates)
         case .size: size(for: item)
         case .kind: KindNames.name(for: item)
         case .fileExtension: item.pathExtension.isEmpty ? "--" : item.pathExtension

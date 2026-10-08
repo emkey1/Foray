@@ -104,6 +104,7 @@ public enum ArrangementEngine {
                 case .dateModified: return .numeric(items.map { $0.modified?.timeIntervalSince1970 ?? .nan }, ascending: d.ascending)
                 case .dateCreated: return .numeric(items.map { $0.created?.timeIntervalSince1970 ?? .nan }, ascending: d.ascending)
                 case .dateAdded: return .numeric(items.map { $0.added?.timeIntervalSince1970 ?? .nan }, ascending: d.ascending)
+                case .dateLastOpened: return .numeric(items.map { $0.lastOpened?.timeIntervalSince1970 ?? .nan }, ascending: d.ascending)
                 case .kind:
                     return .numeric(Self.ranks(items.map(KindNames.name(for:))) { $0.localizedStandardCompare($1) == .orderedAscending },
                                     ascending: d.ascending)
@@ -113,7 +114,7 @@ public enum ArrangementEngine {
                     return .numeric(Self.ranks(items.map { $0.url.deletingLastPathComponent().path }) {
                         $0.localizedStandardCompare($1) == .orderedAscending
                     }, ascending: d.ascending)
-                case .dateLastOpened, .tags, .manual:
+                case .tags, .manual:
                     return nil  // lazy attributes arrive later
                 }
             }
@@ -182,6 +183,7 @@ public enum ArrangementEngine {
         case .dateModified: item.modified == nil
         case .dateCreated: item.created == nil
         case .dateAdded: item.added == nil
+        case .dateLastOpened: item.lastOpened == nil
         default: false
         }
     }
@@ -206,7 +208,9 @@ public enum ArrangementEngine {
             return compareOptional(a.created, b.created)
         case .dateAdded:
             return compareOptional(a.added, b.added)
-        case .dateLastOpened, .tags, .manual:
+        case .dateLastOpened:
+            return compareOptional(a.lastOpened, b.lastOpened)
+        case .tags, .manual:
             // Lazy attributes (side tables) arrive in a later milestone.
             return .orderedSame
         }
