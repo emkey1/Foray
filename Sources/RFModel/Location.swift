@@ -26,7 +26,7 @@ public enum Location: Hashable, Codable, Sendable {
         switch self {
         case .folder(let url): url.path == "/" ? "/" : url.lastPathComponent
         case .computer: "Computer"
-        case .search(let q): "Searching “\(q.text)”"
+        case .search(let q): q.rawSpotlight == nil ? "Searching “\(q.text)”" : q.text
         case .trash: "Trash"
         case .recents: "Recents"
         }

@@ -328,8 +328,8 @@ Each of these is additive or controlled by a setting, so Finder habits keep work
 |---|---|---|
 | Scoped search with kinds and tokens | §3.1, §3.2, §5.6 | P1 |
 | Recents | Spotlight query on `kMDItemLastUsedDate` (live; dates read from the `com.apple.lastuseddate#PS` xattr, Spotlight as fallback) | P1 ✅ |
-| Criteria editor | | P2 |
-| Smart folders: open Finder `.savedSearch` files; create and save new ones | | P2 |
+| Criteria editor | | P2 (replaced for now by the filter syntax and kind chips; revisit) |
+| Smart folders: open Finder `.savedSearch` files; create and save new ones | | P2 ✅ (Finder's run their RawQuery; ours store their search text too) |
 
 ### 4.7 Devices, network and cloud
 

@@ -7,6 +7,8 @@ import RFModel
 @MainActor
 final class SearchScopeBar: NSView {
     var onChange: (((inout SearchQuery) -> Void) -> Void)?
+    var onSave: (() -> Void)?
+    private let save = NSButton(title: "Save…", target: nil, action: nil)
 
     private let scope = NSSegmentedControl(labels: ["Folder", "This Mac"], trackingMode: .selectOne, target: nil, action: nil)
     private let subfolders = NSButton(checkboxWithTitle: "Subfolders", target: nil, action: nil)
@@ -43,7 +45,12 @@ final class SearchScopeBar: NSView {
         follow.target = self
         follow.action = #selector(followChanged)
         follow.toolTip = "When you go to another folder (sidebar, path bar, Go menu), search there instead of ending the search"
-        let top = NSStackView(views: [label, scope, subfolders, match, follow])
+        save.controlSize = .small
+        save.bezelStyle = .push
+        save.target = self
+        save.action = #selector(saveClicked)
+        save.toolTip = "Save this search as a smart folder (Finder can open it too)"
+        let top = NSStackView(views: [label, scope, subfolders, match, follow, save])
         top.spacing = 10
         problems.textColor = .systemOrange
         problems.font = .systemFont(ofSize: NSFont.smallSystemFontSize)
@@ -87,13 +94,21 @@ final class SearchScopeBar: NSView {
         }
         match.selectItem(at: q.match == .names ? 0 : 1)
         follow.state = BrowserState.searchFollowsFolderChanges ? .on : .off
-        let unreadable = QueryParser.problems(in: q.text)
-        problems.isHidden = unreadable.isEmpty
-        problems.stringValue = "Didn't understand: " + unreadable.joined(separator: ", ")
-            + " — try size:>1MB, modified:<7d, created:2026, kind:images"
+        // A smart folder made in Finder runs its own query: only the scope can change.
+        let isRaw = q.rawSpotlight != nil
+        match.isEnabled = !isRaw
+        chips.isEnabled = !isRaw
+        let unreadable = isRaw ? [] : QueryParser.problems(in: q.text)
+        problems.isHidden = unreadable.isEmpty && !isRaw
+        problems.textColor = isRaw ? .secondaryLabelColor : .systemOrange
+        problems.stringValue = isRaw
+            ? "A smart folder made in Finder. Type in the search field to start a new search instead."
+            : "Didn't understand: " + unreadable.joined(separator: ", ") + " — try size:>1MB, modified:<7d, created:2026, kind:images"
         let kinds = q.kinds
         for (i, c) in categories.enumerated() { chips.setSelected(kinds.contains(c.id), forSegment: i) }
     }
+
+    @objc private func saveClicked() { onSave?() }
 
     @objc private func scopeChanged() {
         let thisMac = scope.selectedSegment == 1

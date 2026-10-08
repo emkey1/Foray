@@ -25,16 +25,20 @@ public struct SearchQuery: Hashable, Codable, Sendable {
     public var match: MatchMode
     /// The folder the search started from: the scope bar's folder button, and where Escape returns.
     public var origin: URL?
+    /// A smart folder made by Finder: its Spotlight query, run as is. `text` is then the smart
+    /// folder's name; typing in the search field replaces it with an ordinary search.
+    public var rawSpotlight: String?
 
-    public init(text: String, scope: SearchScope, match: MatchMode = .names, origin: URL? = nil) {
+    public init(text: String, scope: SearchScope, match: MatchMode = .names, origin: URL? = nil, rawSpotlight: String? = nil) {
         self.text = text
         self.scope = scope
         self.match = match
         self.origin = origin ?? scope.folderURL
+        self.rawSpotlight = rawSpotlight
     }
 
-    public var parsed: QueryNode { QueryParser.parse(text) }
-    public var isEmpty: Bool { text.trimmingCharacters(in: .whitespaces).isEmpty }
+    public var parsed: QueryNode { rawSpotlight == nil ? QueryParser.parse(text) : .all([]) }
+    public var isEmpty: Bool { rawSpotlight == nil && text.trimmingCharacters(in: .whitespaces).isEmpty }
 
     /// `hidden:yes` anywhere in the query.
     public var includeHidden: Bool { parsed.contains { if case .hidden(true) = $0 { true } else { false } } }

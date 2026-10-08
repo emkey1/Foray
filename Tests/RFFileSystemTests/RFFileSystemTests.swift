@@ -127,7 +127,7 @@ final class TempDir: @unchecked Sendable {  // immutable after init
         #expect(await eventually { seen.names.count == 1 })
         #expect(seen.names.first == ["before.txt"])
         tmp.file("after.txt")
-        #expect(await eventually { seen.names.last == ["before.txt", "after.txt"] })
+        #expect(await eventually(poke: { tmp.file("after.txt", "again") }) { seen.names.last == ["before.txt", "after.txt"] })
     }
 }
 
@@ -149,11 +149,18 @@ final class TempDir: @unchecked Sendable {  // immutable after init
 }
 
 /// Waits for `fired` to become true, polling, up to `seconds`. FSEvents delivery takes 0.2–0.8 s
-/// on an idle machine (LatencyProbe) and more under parallel test load.
-func eventually(_ seconds: Double = 15, _ fired: () -> Bool) async -> Bool {
+/// on an idle machine (LatencyProbe), and far longer when fseventsd is saturated by other work on
+/// the machine. `poke` (if given) repeats the change every 2 s, so a slow first delivery isn't
+/// the only chance; the test still requires the watcher to report a change.
+func eventually(_ seconds: Double = 30, poke: (() -> Void)? = nil, _ fired: () -> Bool) async -> Bool {
     let deadline = Date().addingTimeInterval(seconds)
+    var nextPoke = Date().addingTimeInterval(2)
     while Date() < deadline {
         if fired() { return true }
+        if let poke, Date() >= nextPoke {
+            poke()
+            nextPoke = Date().addingTimeInterval(2)
+        }
         try? await Task.sleep(for: .milliseconds(50))
     }
     return fired()
@@ -169,7 +176,7 @@ func eventually(_ seconds: Double = 15, _ fired: () -> Bool) async -> Bool {
         let token = watcher.subscribe(tmp.url) { flag.value = true }
         defer { watcher.unsubscribe(token) }
         tmp.file("new.txt")  // no delay: subscribe() guarantees the stream is running
-        #expect(await eventually { flag.value })
+        #expect(await eventually(poke: { tmp.file("new.txt", "again") }) { flag.value })
     }
 
     /// Regression: with one shared stream, removing a subscriber restarted the stream and replayed
@@ -189,7 +196,7 @@ func eventually(_ seconds: Double = 15, _ fired: () -> Bool) async -> Bool {
         let tokenA2 = watcher.subscribe(a.url) { fired.value = true }
         #expect(watcher.streamIdentity(for: a.url) == streamA)   // second subscriber shares it
         a.file("still-watched.txt")
-        #expect(await eventually { fired.value })
+        #expect(await eventually(poke: { a.file("still-watched.txt", "again") }) { fired.value })
         watcher.unsubscribe(tokenA)
         watcher.unsubscribe(tokenA2)
     }

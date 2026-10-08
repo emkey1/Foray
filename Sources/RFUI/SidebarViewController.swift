@@ -1,6 +1,7 @@
 import AppKit
 import RFFileSystem
 import RFModel
+import RFSearch
 
 /// Source-list sidebar: Favorites and Locations (DESIGN.md §4.1). Favorites are user-editable:
 /// drag folders in, drag to reorder, drag out or right-click to remove. Tags arrive in M4.
@@ -83,9 +84,14 @@ final class SidebarViewController: NSViewController {
 
     func reload() {
         let favorites = AppModel.shared.favorites.enumerated().map { i, url in
-            Node(title: FileManager.default.displayName(atPath: url.path), location: .folder(url),
-                 icon: NSImage(systemSymbolName: Self.symbols[url.standardizedFileURL.path] ?? "folder", accessibilityDescription: nil),
-                 favoriteIndex: i)
+            // Smart folders (.savedSearch) run their search; everything else is a folder.
+            if let search = SavedSearch.sidebarLocation(url) {
+                return Node(title: url.deletingPathExtension().lastPathComponent, location: search,
+                            icon: NSImage(systemSymbolName: "gearshape", accessibilityDescription: "Smart folder"), favoriteIndex: i)
+            }
+            return Node(title: FileManager.default.displayName(atPath: url.path), location: .folder(url),
+                        icon: NSImage(systemSymbolName: Self.symbols[url.standardizedFileURL.path] ?? "folder", accessibilityDescription: nil),
+                        favoriteIndex: i)
         }
         sections = [
             Node(title: "Favorites", children:

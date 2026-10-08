@@ -162,6 +162,7 @@ enum MainMenu {
         menu.addItem(item("Eject", Commands.eject, "e"))
         menu.addItem(.separator())
         menu.addItem(item("Find", Commands.focusSearch, "f"))
+        menu.addItem(item("Save Search…", Commands.saveSearch, "s"))
         menu.addItem(item("Copy Path", Commands.copyPath, "c", [.command, .option]))
         menu.addItem(item("Add to Sidebar", Commands.addToSidebar, "t", [.command, .control]))
         return menu

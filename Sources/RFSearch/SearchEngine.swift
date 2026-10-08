@@ -55,6 +55,16 @@ private actor Search {
             continuation.finish()
             return
         }
+        // A Finder smart folder: its own Spotlight query, nothing else.
+        if let raw = query.rawSpotlight {
+            status.spotlightRunning = true
+            let scopes: [SpotlightRunner.Scope] = query.scope.folderURL.map { [.folder($0)] } ?? [.localComputer]
+            await withTaskGroup(of: Void.self) { group in
+                group.addTask { await self.publisher() }
+                group.addTask { await self.runSpotlight(raw, scopes: scopes) }
+            }
+            return
+        }
         let spotlight = SpotlightQuery.string(for: query)
         switch query.scope {
         case .folder(let url, recursive: false):
@@ -131,6 +141,7 @@ private actor Search {
             // Spotlight can return items inside hidden folders; crawls never descend into them.
             if fromSpotlight && item.url.pathComponents.contains(where: { $0.hasPrefix(".") }) { return false }
         }
+        if query.rawSpotlight != nil { return true }   // Spotlight already applied the smart folder's query
         let tags = needsTags ? Tags.names(at: item.url) : []
         return matcher.matches(item, tags: tags, contentMatches: fromSpotlight)
     }

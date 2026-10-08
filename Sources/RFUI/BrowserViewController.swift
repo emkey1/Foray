@@ -80,6 +80,7 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
         sizeSlider.action = #selector(iconSizeChanged)
 
         scopeBar.onChange = { [weak self] change in self?.state.updateSearch(change) }
+        scopeBar.onSave = { [weak self] in self?.saveSearch(nil) }
         trashBar.onEmpty = { [weak self] in self?.emptyTrash(nil) }
         let views: [NSView] = [trashBar, scopeBar, contentContainer, messageLabel, pathBar, addressField, statusLabel, sizeSlider]
         for v in views {
@@ -500,7 +501,7 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
 
     func open(_ items: [FileItem], inNewTab: Bool) {
         // Aliases and symlinks resolve here, so folder aliases open in RealFinder, not Finder.
-        let items = items.filter { !openAlias($0, inNewTab: inNewTab || items.count > 1) }
+        let items = items.filter { !openAlias($0, inNewTab: inNewTab || items.count > 1) && !openSmartFolder($0, inNewTab: inNewTab || items.count > 1) }
         let folders = items.filter(\.isNavigableFolder)
         let files = items.filter { !$0.isNavigableFolder }
         if folders.count == 1 && files.isEmpty && !inNewTab {
@@ -741,6 +742,7 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
         case #selector(showOriginal(_:)): return state.selectedItems.count == 1 && !selectedAliases.isEmpty
         case #selector(expandSelection(_:)): return !selectedArchives.isEmpty
         case #selector(shareSelection(_:)): return !state.selectedItems.isEmpty
+        case #selector(saveSearch(_:)): return state.location.searchQuery.map { !$0.isEmpty } ?? false
         case #selector(makeAlias(_:)), #selector(compressSelection(_:)):
             if item.action == #selector(compressSelection(_:)) { item.title = state.selectedItems.isEmpty ? "Compress" : compressTitle }
             return !state.selectedItems.isEmpty && state.location != .computer && state.location != .trash

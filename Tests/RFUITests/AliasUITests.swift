@@ -5,6 +5,7 @@ import Testing
 @testable import RFFileSystem
 @testable import RFModel
 @testable import RFOperations
+@testable import RFSearch
 @testable import RFUI
 
 extension UISerial {
@@ -137,6 +138,41 @@ extension UISerial {
             let network = sidebar.sectionsForTesting.first { $0.title == "Network" }
             #expect(network?.children.map(\.title) == ["Office NAS"])
             #expect(network?.children.first?.action != nil && network?.children.first?.isSection == false)
+        }
+    }
+}
+
+extension UISerial {
+    @MainActor
+    @Suite(.serialized) final class SmartFolderUITests {
+        let base = TestDirs.make("smartui")
+        isolated deinit { try? FileManager.default.removeItem(at: base) }
+
+        @Test func openingASmartFolderRunsItAndItCanSitInTheSidebar() async throws {
+            AppModel.shared = AppModel(store: AppSupportStore(directory: base.appendingPathComponent("store")))
+            let work = base.appendingPathComponent("W", isDirectory: true)
+            try FileManager.default.createDirectory(at: work, withIntermediateDirectories: true)
+            let saved = work.appendingPathComponent("Reports.savedSearch")
+            try SavedSearch.write(SearchQuery(text: "report", scope: .folder(work, recursive: true)), to: saved)
+
+            let vc = BrowserViewController(location: .folder(work))
+            let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 800, height: 500), styleMask: [.titled], backing: .buffered, defer: false)
+            window.contentViewController = vc
+            defer { vc.state.invalidate() }
+            let deadline = Date().addingTimeInterval(15)
+            while vc.state.snapshot.items.isEmpty && Date() < deadline { try await Task.sleep(for: .milliseconds(20)) }
+            vc.state.select(names: ["Reports.savedSearch"])
+            while vc.state.selectedItems.isEmpty && Date() < deadline { try await Task.sleep(for: .milliseconds(20)) }
+            vc.openSelection(nil)
+            #expect(vc.state.location.searchQuery?.text == "report")
+            let save = NSMenuItem(title: "", action: #selector(BrowserViewController.saveSearch(_:)), keyEquivalent: "")
+            #expect(vc.validateMenuItem(save))
+
+            AppModel.shared.addFavorites([saved])
+            let sidebar = SidebarViewController()
+            _ = sidebar.view
+            let node = sidebar.sectionsForTesting.first?.children.first { $0.title == "Reports" }
+            #expect(node?.location?.searchQuery?.text == "report")
         }
     }
 }
