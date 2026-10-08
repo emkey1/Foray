@@ -212,6 +212,34 @@ import Testing
         #expect(state.location == .folder(folder))
     }
 
+    @Test func searchFollowsFolderChangesButNotOpeningResults() async throws {
+        let saved = BrowserState.searchFollowsFolderChanges
+        defer { BrowserState.searchFollowsFolderChanges = saved }
+        BrowserState.searchFollowsFolderChanges = true
+        let deep = folder.appendingPathComponent("deep")
+        let state = BrowserState(location: .folder(folder))
+        defer { state.invalidate() }
+        state.search("report")
+        state.jump(to: .folder(deep))                   // e.g. a sidebar click
+        let q = try #require(state.location.searchQuery)
+        #expect(q.text == "report")
+        #expect(q.scope == .folder(deep, recursive: true))
+        await wait { state.loadState == .complete && state.snapshot.items.count == 2 }
+        #expect(Set(state.snapshot.items.map(\.name)) == ["report notes.txt", "photo report.jpg"])
+
+        state.goEnclosing()                             // ⌘↑ searches the parent of the origin
+        #expect(state.location.searchQuery?.scope == .folder(folder, recursive: true))
+
+        state.navigate(to: .folder(deep))               // opening a result shows the folder
+        #expect(state.location == .folder(deep))
+        state.goBack()
+        #expect(state.location.searchQuery?.text == "report")
+
+        BrowserState.searchFollowsFolderChanges = false
+        state.jump(to: .folder(deep))
+        #expect(state.location == .folder(deep))
+    }
+
     @Test func searchFromComputerSearchesThisMac() {
         let state = BrowserState(location: .computer)
         defer { state.invalidate() }

@@ -11,6 +11,7 @@ final class SearchScopeBar: NSView {
     private let scope = NSSegmentedControl(labels: ["Folder", "This Mac"], trackingMode: .selectOne, target: nil, action: nil)
     private let subfolders = NSButton(checkboxWithTitle: "Subfolders", target: nil, action: nil)
     private let match = NSPopUpButton()
+    private let follow = NSButton(checkboxWithTitle: "Keep searching in new folders", target: nil, action: nil)
     private let chips: NSSegmentedControl
     private let categories = KindCatalog.shared.categories
     private var query: SearchQuery?
@@ -37,7 +38,11 @@ final class SearchScopeBar: NSView {
         match.target = self
         match.action = #selector(matchChanged)
 
-        let top = NSStackView(views: [label, scope, subfolders, match])
+        follow.controlSize = .small
+        follow.target = self
+        follow.action = #selector(followChanged)
+        follow.toolTip = "When you go to another folder (sidebar, path bar, Go menu), search there instead of ending the search"
+        let top = NSStackView(views: [label, scope, subfolders, match, follow])
         top.spacing = 10
         let all = NSStackView(views: [top, chips])
         all.orientation = .vertical
@@ -77,6 +82,7 @@ final class SearchScopeBar: NSView {
             subfolders.isEnabled = false
         }
         match.selectItem(at: q.match == .names ? 0 : 1)
+        follow.state = BrowserState.searchFollowsFolderChanges ? .on : .off
         let kinds = q.kinds
         for (i, c) in categories.enumerated() { chips.setSelected(kinds.contains(c.id), forSegment: i) }
     }
@@ -91,6 +97,10 @@ final class SearchScopeBar: NSView {
     @objc private func subfoldersChanged() {
         let on = subfolders.state == .on
         onChange? { q in if let url = q.scope.folderURL { q.scope = .folder(url, recursive: on) } }
+    }
+
+    @objc private func followChanged() {
+        BrowserState.searchFollowsFolderChanges = follow.state == .on
     }
 
     @objc private func matchChanged() {

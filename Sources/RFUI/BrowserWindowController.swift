@@ -24,7 +24,9 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate, NSToo
                               styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
                               backing: .buffered, defer: false)
         window.tabbingIdentifier = "RealFinder.browser"
-        window.tabbingMode = .preferred
+        // .automatic: tabs only when asked (⌘T, the tab bar's +) or when the user's system
+        // setting prefers tabs. (.preferred merged every new window into a tab.)
+        window.tabbingMode = .automatic
         window.titlebarSeparatorStyle = .automatic
         window.minSize = NSSize(width: 520, height: 300)
         super.init(window: window)
@@ -45,7 +47,7 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate, NSToo
         window.toolbar = toolbar
         window.toolbarStyle = .unified
 
-        sidebar.onNavigate = { [weak self] location in self?.browser.navigate(to: location) }
+        sidebar.onNavigate = { [weak self] location in self?.browser.state.jump(to: location) }
         browser.state.observe { [weak self] change in
             switch change {
             case .location, .details, .settings: self?.syncChrome()
@@ -202,13 +204,24 @@ public final class WindowManager {
     public static let shared = WindowManager()
 
     private var controllers: [BrowserWindowController] = []
+    var controllersForTesting: [BrowserWindowController] { controllers }
+
+    init() {}
     private var isTerminating = false
     private var saveScheduled = false
 
     public func openWindow(_ location: Location? = nil) {
         let controller = make(location ?? .folder(FileManager.default.homeDirectoryForCurrentUser))
         controller.window?.center()
+        showAsSeparateWindow(controller)
+    }
+
+    /// New Window means a window, even when the system setting prefers tabs.
+    private func showAsSeparateWindow(_ controller: BrowserWindowController) {
+        guard let window = controller.window else { return }
+        window.tabbingMode = .disallowed
         controller.showWindow(nil)
+        window.tabbingMode = .automatic
     }
 
     /// Opens a tab next to `existing` (or in the key window).
@@ -272,7 +285,7 @@ public final class WindowManager {
         for saved in session.windows where !saved.tabs.isEmpty {
             let first = make(saved.tabs[0])
             if let frame = saved.frame { first.window?.setFrame(NSRectFromString(frame), display: false) }
-            first.showWindow(nil)
+            showAsSeparateWindow(first)
             var tabWindows = [first.window!]
             for location in saved.tabs.dropFirst() {
                 let c = make(location)

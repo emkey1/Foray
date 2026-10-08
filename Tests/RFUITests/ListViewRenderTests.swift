@@ -73,3 +73,25 @@ import Testing
         browser.state.invalidate()
     }
 }
+
+@MainActor
+@Suite(.serialized) struct WindowTests {
+    /// Regression: windows preferred tabs, so New Window merged into the existing window.
+    @Test func newWindowIsSeparateAndNewTabIsATab() async throws {
+        _ = NSApplication.shared
+        let store = FileManager.default.temporaryDirectory.appendingPathComponent("rf-win-\(UUID().uuidString)")
+        AppModel.shared = AppModel(store: AppSupportStore(directory: store))
+        let manager = WindowManager()
+        let home = Location.folder(FileManager.default.temporaryDirectory)
+        manager.openWindow(home)
+        manager.openWindow(home)
+        let windows = manager.controllersForTesting.compactMap(\.window)
+        #expect(windows.count == 2)
+        #expect(windows.allSatisfy { ($0.tabbedWindows?.count ?? 1) == 1 })
+
+        manager.openTab(home, nextTo: manager.controllersForTesting[0])
+        let first = try #require(manager.controllersForTesting[0].window)
+        #expect(first.tabbedWindows?.count == 2)
+        for c in manager.controllersForTesting { c.window?.close() }
+    }
+}

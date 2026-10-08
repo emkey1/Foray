@@ -83,8 +83,39 @@ final class BrowserState {
         switchTo(entry.location)
     }
 
+    /// Whether an active search follows folder changes made with the sidebar, path bar or Go menu
+    /// (on by default; the scope bar's "Keep searching in new folders" checkbox).
+    static var searchFollowsFolderChanges: Bool {
+        get { UserDefaults.standard.object(forKey: "SearchFollowsFolderChanges") as? Bool ?? true }
+        set { UserDefaults.standard.set(newValue, forKey: "SearchFollowsFolderChanges") }
+    }
+
+    /// Navigation by "going somewhere" (sidebar, path bar, Go menu, Go to Folder). During a search
+    /// it re-runs the search in the new place instead of ending it. Opening a result uses `navigate`.
+    func jump(to target: Location, select names: [String] = []) {
+        if Self.searchFollowsFolderChanges, var q = location.searchQuery {
+            switch target {
+            case .folder(let url):
+                let recursive = if case .folder(_, let r) = q.scope { r } else { true }
+                q.scope = .folder(url, recursive: recursive)
+                q.origin = url
+                return navigate(to: .search(q))
+            case .computer:
+                q.scope = .thisMac
+                return navigate(to: .search(q))
+            case .search:
+                break
+            }
+        }
+        navigate(to: target, select: names)
+    }
+
     /// Cmd-Up: the enclosing folder, with the folder we came from selected.
     func goEnclosing() {
+        if let origin = location.searchQuery?.origin {
+            guard origin.path != "/" else { return jump(to: .computer) }
+            return jump(to: .folder(origin.deletingLastPathComponent()))
+        }
         guard let url = location.folderURL, url.path != "/" else {
             if case .folder = location { navigate(to: .computer) }
             return

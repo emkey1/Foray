@@ -371,19 +371,17 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
     @objc func reloadFolder(_ sender: Any?) { state.reload() }
 
     @objc func goToStandardLocation(_ sender: NSMenuItem) {
-        if sender.tag == StandardLocation.computer.rawValue { return state.navigate(to: .computer) }
+        if sender.tag == StandardLocation.computer.rawValue { return state.jump(to: .computer) }
         guard let location = StandardLocation(rawValue: sender.tag), let url = location.url else { return }
-        state.navigate(to: .folder(url))
+        state.jump(to: .folder(url))
     }
-
-    func navigate(to location: Location) { state.navigate(to: location) }
 
     @objc private func pathBarClicked() {
         guard let clicked = pathBar.clickedPathItem, let i = pathBar.pathItems.firstIndex(of: clicked),
               i < state.details.pathChain.count else { return }
         let target = state.details.pathChain[i].url
         let child = i + 1 < state.details.pathChain.count ? state.details.pathChain[i + 1].url.lastPathComponent : nil
-        state.navigate(to: .folder(target), select: child.map { [$0] } ?? [])
+        state.jump(to: .folder(target), select: child.map { [$0] } ?? [])
     }
 
     // MARK: Go to Folder (inline address field, DESIGN.md I2)
@@ -416,9 +414,9 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
                 return
             }
             if item.isNavigableFolder || item.flags.contains(.mountPoint) {
-                state.navigate(to: .folder(item.url))
+                state.jump(to: .folder(item.url))
             } else {
-                state.navigate(to: .folder(item.url.deletingLastPathComponent()), select: [item.name])
+                state.jump(to: .folder(item.url.deletingLastPathComponent()), select: [item.name])
             }
         }
     }
