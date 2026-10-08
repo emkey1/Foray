@@ -7,6 +7,11 @@ final class JobsToolbarButton: NSButton {
     private let spinner = NSProgressIndicator()
     private var observer: UUID?
     private let popover = NSPopover()
+    /// The toolbar item hosting this button; hidden entirely when there's nothing to show
+    /// (hiding just the button leaves an empty capsule in the toolbar).
+    weak var toolbarItem: NSToolbarItem? {
+        didSet { refresh() }
+    }
 
     init() {
         super.init(frame: NSRect(x: 0, y: 0, width: 28, height: 28))
@@ -35,7 +40,7 @@ final class JobsToolbarButton: NSButton {
 
     private func refresh() {
         let active = !OperationCenter.shared.activeJobs.isEmpty
-        isHidden = OperationCenter.shared.jobs.isEmpty
+        toolbarItem?.isHidden = OperationCenter.shared.jobs.isEmpty
         if active {
             spinner.startAnimation(nil)
             image = nil

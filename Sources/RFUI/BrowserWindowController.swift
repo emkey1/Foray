@@ -151,8 +151,10 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate, NSToo
             return item
         case ToolbarID.jobs:
             let item = NSToolbarItem(itemIdentifier: id)
-            item.view = JobsToolbarButton()
+            let button = JobsToolbarButton()
+            item.view = button
             item.label = "Operations"
+            button.toolbarItem = item
             return item
         case ToolbarID.guide:
             let item = NSToolbarItem(itemIdentifier: id)
