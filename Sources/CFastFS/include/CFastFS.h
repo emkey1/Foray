@@ -31,4 +31,20 @@ int rf_enumerate(const char *path, rf_entry_cb cb, void *ctx);
 /// Same attributes for a single item (used to re-stat after change events). Returns 0 or an errno.
 int rf_stat(const char *path, rf_entry_cb cb, void *ctx);
 
+// MARK: File operations (RFOperations)
+
+/// Progress callback for rf_copy_file: bytes copied so far for this file. Return nonzero to stop
+/// (the copy then fails with ECANCELED and the partial destination is removed).
+typedef int (*rf_copy_progress_cb)(int64_t bytes_copied, void *ctx);
+
+/// Copies one file, symlink or empty directory entry from `src` to `dst` with all metadata
+/// (data, resource fork, xattrs, ACLs, flags, dates), cloning on APFS when possible and keeping
+/// sparse files sparse. Never follows a symlink at `src` and never overwrites `dst`.
+/// Returns 0 or an errno.
+int rf_copy_file(const char *src, const char *dst, rf_copy_progress_cb cb, void *ctx);
+
+/// Copies a directory's own metadata (permissions, flags, xattrs, ACLs, dates) onto `dst`.
+/// Call after its contents are copied, so the copied dates aren't disturbed. Returns 0 or an errno.
+int rf_copy_directory_metadata(const char *src, const char *dst);
+
 #endif

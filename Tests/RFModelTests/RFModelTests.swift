@@ -284,3 +284,34 @@ private let finderOrder: @Sendable (String, String) -> Bool = { $0.localizedStan
         }
     }
 }
+
+@Suite struct FileNamingTests {
+    private func taken(_ names: Set<String>) -> (String) -> Bool { { names.contains($0) } }
+
+    @Test func keepBoth() {
+        #expect(FileNaming.keepBothName(for: "report.pdf", isTaken: taken(["report.pdf"])) == "report 2.pdf")
+        #expect(FileNaming.keepBothName(for: "report.pdf", isTaken: taken(["report 2.pdf"])) == "report 3.pdf")
+        #expect(FileNaming.keepBothName(for: "report 2.pdf", isTaken: taken([])) == "report 3.pdf")
+        #expect(FileNaming.keepBothName(for: "Folder", isTaken: taken([])) == "Folder 2")
+        #expect(FileNaming.keepBothName(for: "Photos.app", isTaken: taken([])) == "Photos 2.app")
+    }
+
+    @Test func duplicate() {
+        #expect(FileNaming.duplicateName(for: "notes.txt", isTaken: taken([])) == "notes copy.txt")
+        #expect(FileNaming.duplicateName(for: "notes.txt", isTaken: taken(["notes copy.txt"])) == "notes copy 2.txt")
+        #expect(FileNaming.duplicateName(for: "v1.2 notes", isTaken: taken([])) == "v1.2 notes copy")   // not an extension
+        #expect(FileNaming.duplicateName(for: ".zshrc", isTaken: taken([])) == ".zshrc copy")
+    }
+
+    @Test func newFolder() {
+        #expect(FileNaming.newFolderName(isTaken: taken([])) == "untitled folder")
+        #expect(FileNaming.newFolderName(isTaken: taken(["untitled folder", "untitled folder 2"])) == "untitled folder 3")
+    }
+
+    @Test func problems() {
+        #expect(FileNaming.problem(with: "fine.txt") == nil)
+        #expect(FileNaming.problem(with: "  ") != nil)
+        #expect(FileNaming.problem(with: "a/b") != nil)
+        #expect(FileNaming.problem(with: String(repeating: "é", count: 200)) != nil)   // > 255 bytes
+    }
+}

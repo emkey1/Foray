@@ -141,3 +141,45 @@ int rf_stat(const char *path, rf_entry_cb cb, void *ctx) {
     free(rec);
     return 0;
 }
+
+// MARK: - File operations
+
+#include <copyfile.h>
+
+typedef struct {
+    rf_copy_progress_cb cb;
+    void *ctx;
+} rf_copy_ctx;
+
+static int copy_status(int what, int stage, copyfile_state_t state, const char *src, const char *dst, void *raw) {
+    rf_copy_ctx *c = raw;
+    if (what == COPYFILE_COPY_DATA && stage == COPYFILE_PROGRESS && c->cb) {
+        off_t copied = 0;
+        copyfile_state_get(state, COPYFILE_STATE_COPIED, &copied);
+        if (c->cb((int64_t)copied, c->ctx) != 0) return COPYFILE_QUIT;
+    }
+    if (stage == COPYFILE_ERR) return COPYFILE_QUIT;
+    return COPYFILE_CONTINUE;
+}
+
+int rf_copy_file(const char *src, const char *dst, rf_copy_progress_cb cb, void *ctx) {
+    copyfile_state_t state = copyfile_state_alloc();
+    if (!state) return ENOMEM;
+    rf_copy_ctx c = { cb, ctx };
+    copyfile_state_set(state, COPYFILE_STATE_STATUS_CB, (const void *)&copy_status);
+    copyfile_state_set(state, COPYFILE_STATE_STATUS_CTX, &c);
+    // COPYFILE_CLONE tries a clone first and falls back to copying. EXCL: never overwrite.
+    int flags = COPYFILE_ALL | COPYFILE_CLONE | COPYFILE_NOFOLLOW | COPYFILE_EXCL | COPYFILE_DATA_SPARSE;
+    int rc = copyfile(src, dst, state, flags);
+    int err = rc == 0 ? 0 : (errno ? errno : EIO);
+    copyfile_state_free(state);
+    if (err == ECANCELED || (rc != 0 && err != EEXIST)) {
+        // Never leave a partial file behind (EEXIST means dst was someone else's file: keep it).
+        unlink(dst);
+    }
+    return err;
+}
+
+int rf_copy_directory_metadata(const char *src, const char *dst) {
+    return copyfile(src, dst, NULL, COPYFILE_METADATA | COPYFILE_STAT | COPYFILE_NOFOLLOW) == 0 ? 0 : errno;
+}
