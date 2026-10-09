@@ -44,7 +44,7 @@ public enum AppIntegration {
     /// foray://open?path=/Users/me/Projects        → that folder (a file: its folder, selected)
     /// foray://search?q=report%20kind:pdf&in=/path → that search ("in" omitted: This Mac)
     public static func location(for url: URL) -> (Location, select: [String])? {
-        guard url.scheme?.lowercased() == "foray", let c = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return nil }
+        guard isOurs(url), let c = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return nil }
         func param(_ name: String) -> String? { c.queryItems?.first { $0.name == name }?.value }
         switch c.host?.lowercased() {
         case "open":
@@ -62,9 +62,12 @@ public enum AppIntegration {
         }
     }
 
+    /// foray:// (or foray-dev:// for test builds).
+    static func isOurs(_ url: URL) -> Bool { ["foray", "foray-dev"].contains(url.scheme?.lowercased() ?? "") }
+
     /// Opens a `foray://` link. Returns false if it isn't one.
     public static func open(_ url: URL) -> Bool {
-        guard let (location, select) = location(for: url) else { return url.scheme?.lowercased() == "foray" }
+        guard let (location, select) = location(for: url) else { return isOurs(url) }
         if let front = NSApp.mainWindow?.windowController as? BrowserWindowController {
             front.browser.state.navigate(to: location, select: select)
         } else {

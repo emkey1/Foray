@@ -1,9 +1,10 @@
-// Draws Foray's app icon and writes Resources/Foray.icns (and a 1024 px PNG for the README).
+// Draws Foray's app icon and writes Resources/Foray.icns (and a 1024 px PNG for the README), plus
+// Resources/Foray-Dev.icns, the same icon with a "DEV" band, for test builds ("Foray Dev").
 //   swift scripts/make-icon.swift
 // A compass needle over a folder: a foray into your files. Drawn in code so it can be tweaked.
 import AppKit
 
-func draw(_ size: CGFloat) -> NSBitmapImageRep {
+func draw(_ size: CGFloat, dev: Bool = false) -> NSBitmapImageRep {
     let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: Int(size), pixelsHigh: Int(size), bitsPerSample: 8,
                                samplesPerPixel: 4, hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
     NSGraphicsContext.saveGraphicsState()
@@ -103,25 +104,44 @@ func draw(_ size: CGFloat) -> NSBitmapImageRep {
         NSColor.white.withAlphaComponent(0.12).cgColor, NSColor.white.withAlphaComponent(0).cgColor,
     ] as CFArray, locations: [0, 1])!
     cg.drawLinearGradient(sheen, start: CGPoint(x: 512, y: 924), end: CGPoint(x: 512, y: 560), options: [])
+    if dev {
+        // Test builds: a band across the bottom of the tile.
+        cg.setFillColor(NSColor(srgbRed: 0.93, green: 0.30, blue: 0.24, alpha: 0.95).cgColor)
+        cg.fill(CGRect(x: 100, y: 120, width: 824, height: 150))
+        let label = NSAttributedString(string: "DEV", attributes: [
+            .font: NSFont.systemFont(ofSize: 120, weight: .heavy), .foregroundColor: NSColor.white, .kern: 12,
+        ])
+        NSGraphicsContext.saveGraphicsState()
+        let w = label.size().width
+        label.draw(at: NSPoint(x: 512 - w / 2, y: 128))
+        NSGraphicsContext.restoreGraphicsState()
+    }
     cg.restoreGState()
     NSGraphicsContext.restoreGraphicsState()
     return rep
 }
 
 let root = URL(fileURLWithPath: CommandLine.arguments[0]).deletingLastPathComponent().deletingLastPathComponent()
-let iconset = FileManager.default.temporaryDirectory.appendingPathComponent("Foray.iconset")
-try? FileManager.default.removeItem(at: iconset)
-try FileManager.default.createDirectory(at: iconset, withIntermediateDirectories: true)
-for base in [16, 32, 128, 256, 512] {
-    for scale in [1, 2] {
-        let name = scale == 1 ? "icon_\(base)x\(base).png" : "icon_\(base)x\(base)@2x.png"
-        try draw(CGFloat(base * scale)).representation(using: .png, properties: [:])!.write(to: iconset.appendingPathComponent(name))
+
+func makeIcns(dev: Bool) throws {
+    let name = dev ? "Foray-Dev" : "Foray"
+    let iconset = FileManager.default.temporaryDirectory.appendingPathComponent("\(name).iconset")
+    try? FileManager.default.removeItem(at: iconset)
+    try FileManager.default.createDirectory(at: iconset, withIntermediateDirectories: true)
+    for base in [16, 32, 128, 256, 512] {
+        for scale in [1, 2] {
+            let file = scale == 1 ? "icon_\(base)x\(base).png" : "icon_\(base)x\(base)@2x.png"
+            try draw(CGFloat(base * scale), dev: dev).representation(using: .png, properties: [:])!.write(to: iconset.appendingPathComponent(file))
+        }
     }
+    let p = Process()
+    p.executableURL = URL(fileURLWithPath: "/usr/bin/iconutil")
+    p.arguments = ["-c", "icns", iconset.path, "-o", root.appendingPathComponent("Resources/\(name).icns").path]
+    try p.run()
+    p.waitUntilExit()
+    print(p.terminationStatus == 0 ? "Resources/\(name).icns" : "iconutil failed for \(name)")
 }
+
 try draw(1024).representation(using: .png, properties: [:])!.write(to: root.appendingPathComponent("Resources/Icon/Foray-1024.png"))
-let p = Process()
-p.executableURL = URL(fileURLWithPath: "/usr/bin/iconutil")
-p.arguments = ["-c", "icns", iconset.path, "-o", root.appendingPathComponent("Resources/Foray.icns").path]
-try p.run()
-p.waitUntilExit()
-print(p.terminationStatus == 0 ? "Resources/Foray.icns" : "iconutil failed")
+try makeIcns(dev: false)
+try makeIcns(dev: true)

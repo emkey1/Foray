@@ -100,8 +100,8 @@ enum MainMenu {
     private static let down = String(UnicodeScalar(NSDownArrowFunctionKey)!)
 
     private static func appMenu(_ target: AppDelegate) -> NSMenu {
-        let menu = NSMenu(title: "Foray")
-        menu.addItem(item("About Foray", #selector(NSApplication.orderFrontStandardAboutPanel(_:))))
+        let menu = NSMenu(title: appName)
+        menu.addItem(item("About \(appName)", #selector(NSApplication.orderFrontStandardAboutPanel(_:))))
         menu.addItem(.separator())
         let settings = item("Settings…", #selector(AppDelegate.showSettings(_:)), ",")
         settings.target = target
@@ -116,11 +116,11 @@ enum MainMenu {
         NSApp.servicesMenu = services
         menu.addItem(submenu(services))
         menu.addItem(.separator())
-        menu.addItem(item("Hide Foray", #selector(NSApplication.hide(_:)), "h"))
+        menu.addItem(item("Hide \(appName)", #selector(NSApplication.hide(_:)), "h"))
         menu.addItem(item("Hide Others", #selector(NSApplication.hideOtherApplications(_:)), "h", [.command, .option]))
         menu.addItem(item("Show All", #selector(NSApplication.unhideAllApplications(_:))))
         menu.addItem(.separator())
-        menu.addItem(item("Quit Foray", #selector(NSApplication.terminate(_:)), "q"))
+        menu.addItem(item("Quit \(appName)", #selector(NSApplication.terminate(_:)), "q"))
         return menu
     }
 
@@ -258,6 +258,9 @@ enum MainMenu {
         return menu
     }
 }
+
+/// "Foray", or "Foray Dev" for test builds.
+let appName = Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String ?? "Foray"
 
 LegacyMigration.run()   // before anything reads preferences
 let app = NSApplication.shared

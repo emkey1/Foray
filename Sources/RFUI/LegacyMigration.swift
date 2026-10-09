@@ -8,7 +8,7 @@ public enum LegacyMigration {
     static let doneKey = "MigratedFromRealFinder"
 
     public static func run(defaults: UserDefaults = .standard) {
-        guard !defaults.bool(forKey: doneKey) else { return }
+        guard !defaults.bool(forKey: doneKey), Bundle.main.bundleIdentifier?.hasSuffix(".dev") != true else { return }
         defaults.set(true, forKey: doneKey)
         guard let old = defaults.persistentDomain(forName: oldDomain) else { return }
         for (key, value) in old where defaults.object(forKey: key) == nil {

@@ -60,7 +60,7 @@ fi
 distributable=false
 [[ $identity == "Developer ID Application"* ]] && distributable=true
 
-RF_UNIVERSAL=1 RF_SIGN_IDENTITY="$identity" scripts/bundle.sh release >/dev/null
+RF_RELEASE=1 RF_UNIVERSAL=1 RF_SIGN_IDENTITY="$identity" scripts/bundle.sh release >/dev/null
 app=.build/Foray.app
 version=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" "$app/Contents/Info.plist")
 

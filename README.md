@@ -25,16 +25,11 @@ Requires macOS 26 or later (Apple silicon or Intel).
 Requires Xcode 27 (Swift 6.4).
 
 ```sh
-scripts/bundle.sh release && open .build/Foray.app      # build and run
-swift test                                              # run the tests
-scripts/make-dmg.sh                                     # build dist/Foray-<version>.dmg
+scripts/bundle.sh release && open ".build/Foray Dev.app"   # build and run a test copy
+swift test                                                  # run the tests
 ```
 
-Privacy permissions such as Full Disk Access are tied to how the app is signed. Ad-hoc builds lose them on every rebuild; sign with your own certificate to keep them:
-
-```sh
-RF_SIGN_IDENTITY="Apple Development" scripts/bundle.sh release
-```
+Test builds are a separate app, **Foray Dev** (its own bundle ID, settings and privacy grants, and a DEV badge on the icon), so they never get mixed up with an installed Foray. They're signed with your Apple Development certificate when you have one, which keeps permissions like Full Disk Access across rebuilds.
 
 Releases are built from `Xcode/Foray.xcodeproj` (scheme "Foray App"): Product › Archive, then Distribute App › Direct Distribution signs with Developer ID and notarizes. `scripts/make-dmg.sh <exported Foray.app>` turns the result into the DMG.
 

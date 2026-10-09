@@ -13,10 +13,12 @@ public struct AppSupportStore: Sendable {
                 .appendingPathComponent("rf-test-appsupport-\(getpid())", isDirectory: true))
         }
         let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        let dir = support.appendingPathComponent("Foray", isDirectory: true)
+        // "Foray", or "Foray Dev" for test builds (their own settings, sidebar and history).
+        let name = Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String ?? "Foray"
+        let dir = support.appendingPathComponent(name, isDirectory: true)
         // Foray was called RealFinder during development: take over its folder the first time.
         let legacy = support.appendingPathComponent("RealFinder", isDirectory: true)
-        if !FileManager.default.fileExists(atPath: dir.path), FileManager.default.fileExists(atPath: legacy.path) {
+        if name == "Foray", !FileManager.default.fileExists(atPath: dir.path), FileManager.default.fileExists(atPath: legacy.path) {
             try? FileManager.default.moveItem(at: legacy, to: dir)
         }
         return AppSupportStore(directory: dir)
