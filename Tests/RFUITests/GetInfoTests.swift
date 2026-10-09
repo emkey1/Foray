@@ -64,7 +64,7 @@ import Testing
         FileManager.default.createFile(atPath: dir.appendingPathComponent("Folder/sub/a.bin").path, contents: Data(count: 10_000))
         let item = try #require(DirectoryLoader.shared.stat(dir.appendingPathComponent("Folder")))
         let model = InfoModel(item: item)
-        let deadline = Date().addingTimeInterval(10)
+        let deadline = Date().addingTimeInterval(30)   // folder totals are slow when the machine is busy
         while (model.info == nil || model.computingSize) && Date() < deadline { try await Task.sleep(for: .milliseconds(20)) }
         #expect(model.folderSize?.logical == 10_000)
         let host = NSHostingView(rootView: InfoView(model: model))

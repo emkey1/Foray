@@ -571,3 +571,104 @@ extension UISerial {
         }
     }
 }
+
+/// Stands in for the real system settings in tests.
+@MainActor
+final class FakeSystemControl: SystemControl {
+    var finderDesktopShown = true
+    var folderHandler: String? = "com.apple.finder"
+    var loginItem = false
+    var finderRunning = true
+    var approveLoginItem = true
+    var calls: [String] = []
+    func setFinderDesktop(shown: Bool) { finderDesktopShown = shown; calls.append("desktop:\(shown)") }
+    func setFolderHandler(_ bundleID: String) { folderHandler = bundleID; calls.append("folders:\(bundleID)") }
+    func setLoginItem(_ on: Bool) -> Bool { loginItem = on; calls.append("login:\(on)"); return approveLoginItem }
+    func quitFinder() { finderRunning = false; calls.append("quitFinder") }
+    func launchFinder() { finderRunning = true; calls.append("launchFinder") }
+}
+
+extension UISerial {
+    @MainActor
+    @Suite(.serialized) final class FinderTakeoverTests {
+        let fake = FakeSystemControl()
+        let suite = "rf-test-takeover-\(UUID().uuidString)"
+        var viewer: String?
+        var desktopShown = false
+        let realRead = FileViewerSetting.read, realWrite = FileViewerSetting.write
+
+        init() {
+            // Never the real Finder, Launch Services, login items or global preferences.
+            FinderTakeover.system = fake
+            FinderTakeover.defaults = UserDefaults(suiteName: suite)!
+            FinderTakeover.showDesktop = { [unowned self] in self.desktopShown = true }
+            FinderTakeover.hideDesktop = { [unowned self] in self.desktopShown = false }
+            FileViewerSetting.read = { [unowned self] in self.viewer }
+            FileViewerSetting.write = { [unowned self] in self.viewer = $0 }
+        }
+
+        isolated deinit {
+            FinderTakeover.system = RealSystemControl()
+            FinderTakeover.defaults = .standard
+            FinderTakeover.showDesktop = { DesktopWindowController.show() }
+            FinderTakeover.hideDesktop = { DesktopWindowController.hide() }
+            FileViewerSetting.read = realRead
+            FileViewerSetting.write = realWrite
+            UserDefaults().removePersistentDomain(forName: suite)
+        }
+
+        @Test func offUntilTheUserTurnsItOn() {
+            #expect(!FinderTakeover.isEnabled)
+            FinderTakeover.applyAtLaunch()
+            #expect(fake.calls.isEmpty && !desktopShown && viewer == nil)
+            // The Settings switch asks first; saying no changes nothing.
+            let model = SettingsPaneModel()
+            model.setInsteadOfFinder(true, confirm: { false })
+            #expect(!model.insteadOfFinder && fake.calls.isEmpty)
+        }
+
+        @Test func onChangesEverythingAndOffPutsItBack() {
+            let model = SettingsPaneModel()
+            model.setInsteadOfFinder(true, confirm: { true })
+            #expect(model.insteadOfFinder && FinderTakeover.isEnabled)
+            #expect(desktopShown && !fake.finderDesktopShown)
+            #expect(fake.folderHandler == FinderTakeover.bundleID && viewer == FinderTakeover.bundleID && fake.loginItem)
+            #expect(fake.finderRunning)   // not quit unless asked
+            model.quitFinder = true
+            #expect(!fake.finderRunning)
+
+            model.setInsteadOfFinder(false)
+            #expect(!FinderTakeover.isEnabled && !desktopShown)
+            #expect(fake.finderDesktopShown && fake.folderHandler == "com.apple.finder" && viewer == nil && !fake.loginItem)
+            #expect(fake.finderRunning)
+        }
+
+        @Test func leavesAloneWhatItDidNotChange() {
+            fake.finderDesktopShown = false     // the user had hidden Finder's desktop already
+            fake.loginItem = true               // and added Foray to Login Items themselves
+            fake.folderHandler = "com.example.OtherViewer"
+            FinderTakeover.enable(quitFinder: false)
+            FinderTakeover.disable()
+            #expect(!fake.finderDesktopShown && fake.loginItem)
+            #expect(fake.folderHandler == "com.example.OtherViewer")   // their previous choice comes back
+            #expect(!fake.calls.contains("desktop:true") && !fake.calls.contains("login:false"))
+        }
+
+        @Test func keepsTheUsersChoiceAfterMacOSPutsThingsBack() {
+            FinderTakeover.enable(quitFinder: true)
+            fake.finderDesktopShown = true   // e.g. after a macOS update
+            fake.finderRunning = true
+            desktopShown = false
+            FinderTakeover.applyAtLaunch()
+            #expect(desktopShown && !fake.finderDesktopShown && !fake.finderRunning)
+            FinderTakeover.disable()
+        }
+
+        @Test func reportsWhenLoginItemNeedsApproval() {
+            fake.approveLoginItem = false
+            let notes = FinderTakeover.enable(quitFinder: false)
+            #expect(notes.first?.contains("Login Items") == true)
+            FinderTakeover.disable()
+        }
+    }
+}

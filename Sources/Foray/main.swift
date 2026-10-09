@@ -11,6 +11,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         WindowManager.shared.prefillMostRecentSearch()
         EjectUI.startWatchingUnmounts()
+        FinderTakeover.applyAtLaunch()   // does nothing unless the user turned it on in Settings
         NetworkBrowser.shared.start()
         DispatchQueue.main.async { Onboarding.showIfNeeded() }
         DispatchQueue.main.asyncAfter(deadline: .now() + 5) { Updater.shared.checkInBackgroundIfDue() }
@@ -35,6 +36,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        // While Foray stands in for Finder, quitting takes the desktop icons with it: ask first.
+        if FinderTakeover.isEnabled, !FinderTakeover.confirmQuit() { return .terminateCancel }
         WindowManager.shared.prepareForTermination()
         return .terminateNow
     }

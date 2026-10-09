@@ -56,6 +56,7 @@
   <a href="#tags">Tags</a>
   <a href="#keys">Keyboard shortcuts</a>
   <a href="#access">Privacy and access</a>
+  <a href="#desktop">The desktop</a>
   <a href="#coming">Not yet available</a>
 </nav>
 <main>
@@ -116,7 +117,7 @@
 <h2 id="prefs">Preferences</h2>
 <p><b>Foray › Settings…</b> (<kbd>⌘,</kbd>):</p>
 <ul>
-  <li><b>General:</b> the folder new windows open on (Home unless you choose another); whether folders you open with <kbd>⌘</kbd>-double-click open in tabs or windows; whether <kbd>Return</kbd> renames (like Finder) or opens the selection; <b>Check for updates automatically</b> (once a day Foray asks GitHub whether there's a newer release, and offers it; it downloads and installs only when you say so, after checking the new version is signed by Foray's developer and notarized by Apple; Foray › Check for Updates… checks any time); and <b>Use Foray for “Show in Finder” in other apps</b>, which makes other apps' “Show in Finder” (and “Reveal in Finder”) open Foray with the file selected. That last one is a system-wide setting; turn it off to go back to Finder.</li>
+  <li><b>General:</b> the folder new windows open on (Home unless you choose another); whether folders you open with <kbd>⌘</kbd>-double-click open in tabs or windows; whether <kbd>Return</kbd> renames (like Finder) or opens the selection; <b>Use Foray instead of Finder</b> (off until you turn it on: Foray shows your desktop icons and Finder's are hidden, folders opened from other apps and “Show in Finder” open Foray, and Foray opens at login; <b>Also quit Finder</b> keeps Finder quit while Foray runs; turning it off puts everything back as it was, and quitting Foray while it's on asks first, since your desktop icons go with it); <b>Check for updates automatically</b> (once a day Foray asks GitHub whether there's a newer release, and offers it; it downloads and installs only when you say so, after checking the new version is signed by Foray's developer and notarized by Apple; Foray › Check for Updates… checks any time); and <b>Use Foray for “Show in Finder” in other apps</b>, which makes other apps' “Show in Finder” (and “Reveal in Finder”) open Foray with the file selected. That last one is a system-wide setting; turn it off to go back to Finder.</li>
   <li><b>Views:</b> view settings the same everywhere, or remembered for each folder (see <a href="#settings">above</a>).</li>
   <li><b>Search:</b> where searches start (the current folder, This Mac, or whatever you used last), whether they match names or names and contents, and whether a search follows you to other folders.</li>
   <li><b>Privacy:</b> whether Foray has Full Disk Access, with a button to the right page of System Settings.</li>
@@ -266,6 +267,10 @@
 
 <h2 id="access">Privacy and access</h2>
 <p>macOS asks before any app reads Desktop, Documents, Downloads, external drives and network volumes; allow Foray when asked. Some places (Mail, Messages and Safari data, other users' folders, the Trash) need <b>Full Disk Access</b>: System Settings › Privacy &amp; Security › Full Disk Access, then add Foray. <b>Settings › Privacy</b> shows whether it's on and opens that page for you. If a folder won't open because of permissions, the message says so.</p>
+
+<h2 id="desktop">The desktop</h2>
+<p>With <b>Use Foray instead of Finder</b> on (Settings › General), Foray draws your desktop: the files in your Desktop folder, over your wallpaper, behind every window. Open, rename, drag, Quick Look, Get Info and the right-click menu work as in any Foray window; opening a folder opens a Foray window. Icons stay where you put them and snap to a grid (View Options changes that while the desktop is selected). Disks aren't shown on the desktop; they're in the sidebar.</p>
+<p>If Foray isn't running, the desktop is empty until it opens again. To give the desktop back to Finder without Foray, run <code>defaults delete com.apple.finder CreateDesktop; killall Finder</code> in Terminal.</p>
 
 <h2 id="coming">Not yet available</h2>
 <p>Foray covers what Finder does. Next on the list: AppleScript and Shortcuts support, a command-line tool, an optional two-pane view, and a helper for changes that need an administrator password.</p>

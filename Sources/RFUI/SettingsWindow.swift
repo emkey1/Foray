@@ -90,6 +90,37 @@ final class SettingsPaneModel {
     var fileViewer = FileViewerSetting.isForay { didSet { if fileViewer != oldValue { FileViewerSetting.set(fileViewer) } } }
     var fileViewerName = FileViewerSetting.currentViewerName
     var checkForUpdates = Updater.automatic { didSet { Updater.automatic = checkForUpdates } }
+    private(set) var insteadOfFinder = FinderTakeover.isEnabled
+    var quitFinder = FinderTakeover.state.quitFinder { didSet { if quitFinder != oldValue { FinderTakeover.setQuitFinder(quitFinder) } } }
+    var takeoverNote: String?
+
+    /// The switch: asks first, then applies (or undoes) the changes.
+    func setInsteadOfFinder(_ on: Bool, confirm: (() -> Bool)? = nil) {
+        guard on != insteadOfFinder else { return }
+        if on {
+            guard (confirm ?? Self.confirmTakeover)() else { return }
+            takeoverNote = FinderTakeover.enable(quitFinder: quitFinder).first
+        } else {
+            FinderTakeover.disable()
+            takeoverNote = nil
+        }
+        insteadOfFinder = FinderTakeover.isEnabled
+        refreshAccess()
+    }
+
+    static func confirmTakeover() -> Bool {
+        let alert = NSAlert()
+        alert.messageText = "Use Foray instead of Finder?"
+        alert.informativeText = """
+        Foray will show your desktop icons and Finder's will be hidden (Finder restarts once to do it). \
+        Folders opened from other apps, and “Show in Finder”, will open Foray, and Foray will open at login.
+
+        Turn this off any time to put everything back as it was.
+        """
+        alert.addButton(withTitle: "Use Foray")
+        alert.addButton(withTitle: "Cancel")
+        return alert.runModal() == .alertFirstButtonReturn
+    }
 
     func chooseNewWindowFolder() {
         let panel = NSOpenPanel()
@@ -101,6 +132,7 @@ final class SettingsPaneModel {
 
     func refreshAccess() {
         fullDiskAccess = FullDiskAccess.isGranted
+        insteadOfFinder = FinderTakeover.isEnabled
         fileViewer = FileViewerSetting.isForay
         fileViewerName = FileViewerSetting.currentViewerName
     }
@@ -123,6 +155,18 @@ struct SettingsView: View {
                 Picker("Return key", selection: $model.returnOpens) {
                     Text("Renames the selected item (like Finder)").tag(false)
                     Text("Opens the selected item").tag(true)
+                }
+                Toggle("Use Foray instead of Finder", isOn: Binding(get: { model.insteadOfFinder }, set: { model.setInsteadOfFinder($0) }))
+                Text(model.insteadOfFinder
+                     ? "Foray shows your desktop, opens folders from other apps and “Show in Finder”, and opens at login. Turn this off to put everything back."
+                     : "Foray shows your desktop instead of Finder (whose desktop icons are hidden), opens folders from other apps and “Show in Finder”, and opens at login. Off until you turn it on; turning it off puts everything back.")
+                    .font(.callout).foregroundStyle(.secondary)
+                if model.insteadOfFinder {
+                    Toggle("Also quit Finder", isOn: $model.quitFinder)
+                        .help("Finder stays quit while Foray runs. A few system features (some disk and server dialogs, AirDrop's window) start it again.")
+                }
+                if let note = model.takeoverNote {
+                    Text(note).font(.callout).foregroundStyle(.orange)
                 }
                 Toggle("Check for updates automatically", isOn: $model.checkForUpdates)
                     .help("Once a day, Foray asks GitHub whether there's a newer release. It never installs without asking.")
@@ -176,7 +220,7 @@ struct SettingsView: View {
             .formStyle(.grouped)
             .tabItem { Label("Privacy", systemImage: "lock.shield") }
         }
-        .frame(width: 560, height: 380)
+        .frame(width: 580, height: 500)
     }
 }
 
@@ -186,7 +230,7 @@ public final class SettingsWindowController: NSWindowController {
     private let model = SettingsPaneModel()
 
     private init() {
-        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 560, height: 400), styleMask: [.titled, .closable],
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 580, height: 520), styleMask: [.titled, .closable],
                               backing: .buffered, defer: true)
         window.title = "Foray Settings"
         window.tabbingMode = .disallowed

@@ -996,7 +996,7 @@ These are in order with exit criteria; there are no dates.
 |---|---|---|
 | Q1 | What is the minimum macOS version? | macOS 26, your current OS. Supporting older versions costs UI branching. |
 | Q2 | Is this a personal tool or for public distribution? This affects Developer ID signing, notarization, Sparkle and helper signing. | Build as if it's public; it costs little up front |
-| Q3 | Should RealFinder leave the desktop to Finder, or replace it (draw desktop icons itself)? | Leave it to Finder in v1 |
+| Q3 | Should RealFinder leave the desktop to Finder, or replace it (draw desktop icons itself)? | **Decided (2026-10-09):** optional. Settings › General › "Use Foray instead of Finder", off by default and only ever turned on by the user: Foray draws the desktop (DesktopWindowController) with Finder's CreateDesktop off, becomes the default app for folders, sets NSFileViewer, adds a login item, optionally quits Finder; it records what it changed and turning it off restores exactly that (FinderTakeover; SystemControl is faked in tests) |
 | Q4 | Which view-settings model should be the default: "same everywhere, with opt-in per-folder pins" or "remember per folder"? | Same everywhere; pins are opt-in |
 | Q5 | Should search match Names or Names & Contents by default? | Names |
 | Q6 | Should Return rename (Finder) or open? | Rename by default, with a setting |
