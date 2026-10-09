@@ -8,13 +8,13 @@
 
 /* Begin PBXBuildFile section */
 		F0A000000000000000000101 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0A000000000000000000201 /* main.swift */; };
-		F0A000000000000000000102 /* Foray.icns in Resources */ = {isa = PBXBuildFile; fileRef = F0A000000000000000000202 /* Foray.icns */; };
+		F0A000000000000000000102 /* Foray.icon in Resources */ = {isa = PBXBuildFile; fileRef = F0A000000000000000000202 /* Foray.icon */; };
 		F0A000000000000000000103 /* ForayKit in Frameworks */ = {isa = PBXBuildFile; productRef = F0A000000000000000000901 /* ForayKit */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		F0A000000000000000000201 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = main.swift; path = ../Sources/Foray/main.swift; sourceTree = SOURCE_ROOT; };
-		F0A000000000000000000202 /* Foray.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = Foray.icns; path = ../Resources/Foray.icns; sourceTree = SOURCE_ROOT; };
+		F0A000000000000000000202 /* Foray.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; name = Foray.icon; path = ../Resources/Foray.icon; sourceTree = SOURCE_ROOT; };
 		F0A000000000000000000203 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = ../Resources/Info.plist; sourceTree = SOURCE_ROOT; };
 		F0A000000000000000000204 /* Foray.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = Foray.entitlements; path = ../Resources/Foray.entitlements; sourceTree = SOURCE_ROOT; };
 		F0A000000000000000000205 /* Foray.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Foray.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -38,7 +38,7 @@
 				F0A000000000000000000201 /* main.swift */,
 				F0A000000000000000000203 /* Info.plist */,
 				F0A000000000000000000204 /* Foray.entitlements */,
-				F0A000000000000000000202 /* Foray.icns */,
+				F0A000000000000000000202 /* Foray.icon */,
 				F0A000000000000000000402 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -115,7 +115,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				F0A000000000000000000102 /* Foray.icns in Resources */,
+				F0A000000000000000000102 /* Foray.icon in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -175,6 +175,7 @@
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "$(SRCROOT)/../Resources/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				ASSETCATALOG_COMPILER_APPICON_NAME = Foray;
 				PRODUCT_BUNDLE_IDENTIFIER = io.github.emkey1.Foray;
 				PRODUCT_NAME = Foray;
 			};
@@ -192,6 +193,7 @@
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "$(SRCROOT)/../Resources/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				ASSETCATALOG_COMPILER_APPICON_NAME = Foray;
 				PRODUCT_BUNDLE_IDENTIFIER = io.github.emkey1.Foray;
 				PRODUCT_NAME = Foray;
 			};

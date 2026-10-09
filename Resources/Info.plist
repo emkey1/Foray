@@ -24,6 +24,8 @@
 	<string>Foray</string>
 	<key>CFBundleIconFile</key>
 	<string>Foray</string>
+	<key>CFBundleIconName</key>
+	<string>Foray</string>
 	<key>CFBundleIdentifier</key>
 	<string>io.github.emkey1.Foray</string>
 	<key>CFBundleName</key>
