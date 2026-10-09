@@ -2,56 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>CFBundleName</key>
-	<string>Foray</string>
 	<key>CFBundleDisplayName</key>
 	<string>Foray</string>
-	<key>CFBundleExecutable</key>
-	<string>Foray</string>
-	<!-- Never change once shipped: privacy grants, settings and Keychain items are tied to it. -->
-	<key>CFBundleIdentifier</key>
-	<string>io.github.emkey1.Foray</string>
-	<key>CFBundlePackageType</key>
-	<string>APPL</string>
-	<key>CFBundleShortVersionString</key>
-	<string>0.9.0</string>
-	<key>CFBundleIconFile</key>
-	<string>Foray</string>
-	<key>NSHumanReadableCopyright</key>
-	<string>Copyright © 2026 Michael Miller. MIT License.</string>
-	<key>CFBundleVersion</key>
-	<string>1</string>
-	<key>LSMinimumSystemVersion</key>
-	<string>26.0</string>
-	<key>LSApplicationCategoryType</key>
-	<string>public.app-category.productivity</string>
-	<key>NSPrincipalClass</key>
-	<string>NSApplication</string>
-	<key>NSHighResolutionCapable</key>
-	<true/>
-	<key>NSAppleEventsUsageDescription</key>
-	<string>Foray asks Finder to save the comments you write in Get Info, so Finder shows them too.</string>
-	<key>NSLocalNetworkUsageDescription</key>
-	<string>Foray lists file servers on your network in the sidebar, like Finder.</string>
-	<key>NSBonjourServices</key>
-	<array>
-		<string>_smb._tcp</string>
-	</array>
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleURLName</key>
-			<string>Foray link</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>foray</string>
-			</array>
-		</dict>
-	</array>
-	<key>NSSupportsAutomaticTermination</key>
-	<false/>
-	<!-- Lets `open -a Foray <folder>` and Dock drops deliver folders. Rank Alternate: never
-	     takes over folders from Finder unless the user opts in (DESIGN.md §5.12). -->
 	<key>CFBundleDocumentTypes</key>
 	<array>
 		<dict>
@@ -68,5 +20,50 @@
 			</array>
 		</dict>
 	</array>
+	<key>CFBundleExecutable</key>
+	<string>Foray</string>
+	<key>CFBundleIconFile</key>
+	<string>Foray</string>
+	<key>CFBundleIdentifier</key>
+	<string>io.github.emkey1.Foray</string>
+	<key>CFBundleName</key>
+	<string>Foray</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>0.9.1</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>Foray link</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>foray</string>
+			</array>
+		</dict>
+	</array>
+	<key>CFBundleVersion</key>
+	<string>2</string>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.productivity</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>26.0</string>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>Foray asks Finder to save the comments you write in Get Info, so Finder shows them too.</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_smb._tcp</string>
+	</array>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+	<key>NSHumanReadableCopyright</key>
+	<string>Copyright © 2026 Michael Miller. MIT License.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Foray lists file servers on your network in the sidebar, like Finder.</string>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
+	<key>NSSupportsAutomaticTermination</key>
+	<false/>
 </dict>
 </plist>
