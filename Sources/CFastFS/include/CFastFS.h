@@ -1,6 +1,7 @@
 #ifndef CFASTFS_H
 #define CFASTFS_H
 
+#include <membership.h>   // mbr_uid_to_uuid etc., for access lists (RFFileSystem)
 #include <stdint.h>
 #include <time.h>
 

@@ -13,6 +13,7 @@ enum FileOps {
     static func exists(_ url: URL) -> Bool { lstat(url) != nil }
 
     static func isDirectory(_ st: stat) -> Bool { st.st_mode & S_IFMT == S_IFDIR }
+    static func isSymlink(_ st: stat) -> Bool { st.st_mode & S_IFMT == S_IFLNK }
 
     static func sameFile(_ a: URL, _ b: URL) -> Bool {
         guard let x = lstat(a), let y = lstat(b) else { return false }

@@ -33,6 +33,7 @@ enum ItemBuilder {
         if e.flags & UF_IMMUTABLE != 0 { flags.insert(.locked) }
         if e.flags & SF_DATALESS != 0 { flags.insert(.dataless) }
         if e.finderflags & kHasCustomIcon != 0 { flags.insert(.hasCustomIcon) }
+        if e.finderflags & 0x0800 != 0 && !isDir { flags.insert(.stationery) }   // kIsStationery
         if e.ismountpoint != 0 { flags.insert(.mountPoint) }
         if e.objtype == VREG && e.mode & 0o111 != 0 { flags.insert(.executable) }
 

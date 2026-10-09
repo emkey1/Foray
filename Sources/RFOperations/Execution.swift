@@ -102,6 +102,7 @@ final class Execution: @unchecked Sendable {
         case .setAttributes(let list): await setAttributes(list)
         case .batchRename(let pairs): await batchRename(pairs)
         case .rotate(let items, let cw): await rotate(items, clockwise: cw)
+        case .applyAccessToEnclosed(let folder): await applyAccess(inside: folder)
         case .createPDF(let items): await createPDF(items)
         case .compress(let items): await compress(items)
         case .expand(let archives): await expand(archives)
@@ -501,6 +502,62 @@ final class Execution: @unchecked Sendable {
             result.changedFolders.insert(pair.to.deletingLastPathComponent())
             update { $0.itemsDone += 1 }
         }
+    }
+
+    /// What each item inside gets: the folder's read/write privileges for owner, group and
+    /// everyone (files keep their own execute bits; folders are searchable where readable), and its
+    /// access list rebuilt for files or folders.
+    static func enclosedAccess(folderMode: UInt16, folderACL: [AccessEntry], itemMode: UInt16, isDirectory: Bool) -> ItemAttributes {
+        var mode: UInt16 = 0
+        for shift: UInt16 in [6, 3, 0] {
+            let bits = (folderMode >> shift) & 0o7
+            var new = bits & 0o6   // read, write
+            if isDirectory { if bits & 0o4 != 0 { new |= 0o1 } } else { new |= (itemMode >> shift) & 0o1 }
+            mode |= new << shift
+        }
+        let entries = folderACL.filter { !$0.isInherited }.map { e -> AccessEntry in
+            if e.level != .custom { return e.with(level: e.level, isDirectory: isDirectory) }
+            var copy = e
+            if !isDirectory { copy.flags.removeAll { $0.hasSuffix("_inherit") }; copy.permissions.remove("delete_child") }
+            return copy
+        }
+        return ItemAttributes(permissions: mode, accessList: AccessList.text(for: entries))
+    }
+
+    private func applyAccess(inside folder: URL) async {
+        update { $0.phase = .running }
+        let items: [URL] = await blocking {
+            var out: [URL] = []
+            let e = FileManager.default.enumerator(at: folder, includingPropertiesForKeys: nil, options: [])
+            while let url = e?.nextObject() as? URL { out.append(url) }
+            return out
+        }
+        update { $0.itemsTotal = items.count }
+        guard let st = FileOps.lstat(folder) else { return fail(folder, ENOENT, "apply permissions in") }
+        let folderMode = UInt16(st.st_mode & 0o777)
+        let folderACL = AccessList.entries(AccessList.text(folder))
+        for item in items {
+            guard control.checkpoint() else { break }
+            update { $0.currentName = item.lastPathComponent }
+            guard let ist = FileOps.lstat(item), !FileOps.isSymlink(ist) else { update { $0.itemsDone += 1 }; continue }
+            if ist.st_uid != getuid() {
+                fail(item, EPERM, "change permissions of")
+                update { $0.itemsDone += 1 }
+                continue
+            }
+            let target = Self.enclosedAccess(folderMode: folderMode, folderACL: folderACL, itemMode: UInt16(ist.st_mode & 0o777),
+                                             isDirectory: FileOps.isDirectory(ist))
+            let (before, rc) = await blocking {
+                (ItemAttributes.read(item, fields: target), ItemAttributes.write(target, to: item))
+            }
+            if rc == 0 {
+                if before != target { result.record(.attributes(item, before: before, after: target)) }
+            } else {
+                fail(item, rc, "change permissions of")
+            }
+            update { $0.itemsDone += 1 }
+        }
+        result.changedFolders.insert(folder)
     }
 
     private func setAttributes(_ list: [OperationRequest.AttributeAssignment]) async {

@@ -8,12 +8,18 @@ public struct ItemAttributes: Sendable, Hashable, Codable {
     /// The permission bits (`mode & 0o777`).
     public var permissions: UInt16?
     public var comment: String?
+    public var stationery: Bool?
+    /// The access list in text form (`AccessList`); "" for none.
+    public var accessList: String?
 
-    public init(locked: Bool? = nil, extensionHidden: Bool? = nil, permissions: UInt16? = nil, comment: String? = nil) {
+    public init(locked: Bool? = nil, extensionHidden: Bool? = nil, permissions: UInt16? = nil, comment: String? = nil,
+                stationery: Bool? = nil, accessList: String? = nil) {
         self.locked = locked
         self.extensionHidden = extensionHidden
         self.permissions = permissions
         self.comment = comment
+        self.stationery = stationery
+        self.accessList = accessList
     }
 
     /// The current values of the fields set in `fields`.
@@ -25,6 +31,8 @@ public struct ItemAttributes: Sendable, Hashable, Codable {
         if fields.permissions != nil { out.permissions = ok ? UInt16(st.st_mode & 0o777) : nil }
         if fields.extensionHidden != nil { out.extensionHidden = (try? url.resourceValues(forKeys: [.hasHiddenExtensionKey]))?.hasHiddenExtension ?? false }
         if fields.comment != nil { out.comment = Comments.read(url) }
+        if fields.stationery != nil { out.stationery = Stationery.isSet(url) }
+        if fields.accessList != nil { out.accessList = AccessList.text(url) }
         return out
     }
 
@@ -40,6 +48,8 @@ public struct ItemAttributes: Sendable, Hashable, Codable {
             do { try url.setResourceValues(v) } catch { return EIO }
         }
         if let c = a.comment, let rc = Comments.write(c, to: url).errno, rc != 0 { return rc }
+        if let s = a.stationery { let rc = Stationery.set(s, url); if rc != 0 { return rc } }
+        if let acl = a.accessList { let rc = AccessList.write(acl, to: url); if rc != 0 { return rc } }
         if a.locked == true, let rc = setLocked(true, url), rc != 0 { return rc }
         return 0
     }

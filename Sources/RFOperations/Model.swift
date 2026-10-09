@@ -34,6 +34,9 @@ public enum OperationRequest: Sendable, Equatable {
     /// Renames many items at once (each pair: current URL → new URL in the same folder). Swaps
     /// and cycles work; the whole batch undoes in one step.
     case batchRename([Pair])
+    /// Get Info › Apply to Enclosed Items: the folder's owner/group/everyone access and access list,
+    /// for everything inside it (items you don't own are skipped and reported). Undoable.
+    case applyAccessToEnclosed(URL)
     /// Quick Action: a quarter turn for each image or PDF.
     case rotate([URL], clockwise: Bool)
     /// Quick Action: images and PDFs, in order, combined into one new PDF beside the first.
@@ -87,6 +90,7 @@ public enum OperationRequest: Sendable, Equatable {
         case .setAttributes(let list): return list.count == 1 ? "Changing “\(list[0].url.lastPathComponent)”" : "Changing \(list.count) items"
         case .batchRename(let pairs): return "Renaming \(pairs.count) items"
         case .rotate(let items, _): return "Rotating \(n(items))"
+        case .applyAccessToEnclosed(let folder): return "Applying permissions inside “\(folder.lastPathComponent)”"
         case .createPDF(let items): return "Making a PDF from \(n(items))"
         }
     }
@@ -102,6 +106,7 @@ public enum OperationRequest: Sendable, Equatable {
         case .rename, .batchRename: "Rename"
         case .rotate(_, let cw): cw ? "Rotate Right" : "Rotate Left"
         case .createPDF: "Create PDF"
+        case .applyAccessToEnclosed: "Apply Permissions"
         case .newFolder: "New Folder"
         case .restore: "Restore"
         case .putBack: "Put Back"

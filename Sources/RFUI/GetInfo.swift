@@ -1,4 +1,5 @@
 import AppKit
+import Collaboration
 import CoreServices
 import QuickLookThumbnailing
 import RFFileSystem
@@ -25,6 +26,8 @@ struct ItemInfo: Sendable {
     var ownedByMe = false
     var locked = false
     var extensionHidden = false
+    var stationery = false
+    var accessText = ""
     var tags: [Tag] = []
     var comment = ""
     var more: [(String, String)] = []
@@ -44,6 +47,8 @@ struct ItemInfo: Sendable {
             info.locked = st.st_flags & UInt32(UF_IMMUTABLE) != 0
         }
         info.extensionHidden = (try? item.url.resourceValues(forKeys: [.hasHiddenExtensionKey]))?.hasHiddenExtension ?? false
+        info.stationery = Stationery.isSet(item.url)
+        info.accessText = AccessList.text(item.url)
         info.tags = Tags.read(at: item.url)
         info.comment = Comments.read(item.url)
         if let md = MDItemCreateWithURL(nil, item.url as CFURL) {
@@ -202,6 +207,69 @@ final class InfoModel {
         set(ItemAttributes(permissions: mode))
     }
 
+    // MARK: Access list (users and groups beyond owner/group/everyone)
+
+    var accessEntries: [AccessEntry] { AccessList.entries(info?.accessText ?? "") }
+
+    private func setAccess(_ entries: [AccessEntry]) {
+        set(ItemAttributes(accessList: AccessList.text(for: entries)))
+    }
+
+    func setLevel(_ level: AccessEntry.Level, at index: Int) {
+        var entries = accessEntries
+        guard entries.indices.contains(index), level != .custom else { return }
+        entries[index] = entries[index].with(level: level, isDirectory: item.isNavigableFolder)
+        setAccess(entries)
+    }
+
+    func removeAccess(at index: Int) {
+        var entries = accessEntries
+        guard entries.indices.contains(index) else { return }
+        entries.remove(at: index)
+        setAccess(entries)
+    }
+
+    /// The system's user and group picker, like Finder's "+".
+    func addPeople() {
+        let picker = CBIdentityPicker()
+        picker.allowsMultipleSelection = true
+        let finish: (NSApplication.ModalResponse) -> Void = { [weak self] response in
+            guard let self, response == .OK else { return }
+            let folder = self.item.isNavigableFolder
+            let added: [AccessEntry] = picker.identities.compactMap { identity in
+                if let user = identity as? CBUserIdentity {
+                    return .make(.user, name: user.posixName, id: user.posixUID, level: .readOnly, isDirectory: folder)
+                }
+                if let group = identity as? CBGroupIdentity {
+                    return .make(.group, name: group.posixName, id: group.posixGID, level: .readOnly, isDirectory: folder)
+                }
+                return nil
+            }
+            let existing = self.accessEntries
+            let new = added.filter { a in !existing.contains { $0.tag == a.tag && $0.name == a.name } }
+            if !new.isEmpty { self.setAccess(existing + new) }
+        }
+        if let window = NSApp.keyWindow { picker.runModal(for: window, completionHandler: finish) } else { finish(NSApplication.ModalResponse(rawValue: picker.runModal())) }
+    }
+
+    /// The folder's permissions and access list for everything inside it (asks first).
+    func applyToEnclosed() {
+        let alert = NSAlert()
+        alert.messageText = "Apply these permissions to everything in “\(item.displayName)”?"
+        alert.informativeText = "Each item inside gets this folder's privileges for owner, group, everyone and the people listed. Items you don't own are skipped. You can undo this."
+        alert.addButton(withTitle: "Apply")
+        alert.addButton(withTitle: "Cancel")
+        let run = { [weak self] in
+            guard let self else { return }
+            _ = FileOperationsUI.shared.submit(.applyAccessToEnclosed(self.item.url), from: nil)
+        }
+        if let window = NSApp.keyWindow {
+            alert.beginSheetModal(for: window) { if $0 == .alertFirstButtonReturn { run() } }
+        } else if alert.runModal() == .alertFirstButtonReturn {
+            run()
+        }
+    }
+
     func commitName() {
         let name = editedName.trimmingCharacters(in: .whitespaces)
         guard name != item.name, FileNaming.problem(with: name) == nil else {
@@ -278,6 +346,12 @@ struct InfoView: View {
                     Toggle("Hide extension", isOn: Binding(get: { model.info?.extensionHidden ?? false },
                                                            set: { model.set(ItemAttributes(extensionHidden: $0)) }))
                 }
+                if !model.item.flags.contains(.directory) {
+                    Toggle("Stationery pad", isOn: Binding(get: { model.info?.stationery ?? false },
+                                                           set: { model.set(ItemAttributes(stationery: $0)) }))
+                        .help("Opening it opens a copy, so the original stays a template")
+                        .disabled(model.info?.locked == true)
+                }
             }
             Section("Tags") {
                 if let tags = model.info?.tags, !tags.isEmpty {
@@ -310,7 +384,9 @@ struct InfoView: View {
             }
             Section("Sharing & Permissions") {
                 let labels = [model.info?.owner ?? "Owner", model.info?.group ?? "Group", "everyone"]
-                ForEach(0..<3, id: \.self) { who in
+                // Distinct IDs for the two row lists: a Form flattens rows, and plain offsets from
+                // both lists collided (an access entry replaced the owner row).
+                ForEach(["posix-owner", "posix-group", "posix-everyone"].indices, id: \.self) { who in
                     Picker(who == 0 && model.info?.ownedByMe == true ? "\(labels[0]) (Me)" : labels[who], selection: Binding(get: { model.access(who) },
                                                                                        set: { model.setAccess(who, $0) })) {
                         Text("Read & Write").tag(3)
@@ -320,6 +396,39 @@ struct InfoView: View {
                     }
                     .disabled(model.info?.ownedByMe != true || model.info?.locked == true)
                 }
+                let canEdit = model.info?.ownedByMe == true && model.info?.locked != true
+                ForEach(Array(model.accessEntries.enumerated()), id: \.element.line) { index, entry in
+                    HStack {
+                        Image(systemName: entry.tag == .user ? "person" : "person.2").foregroundStyle(.secondary)
+                        if entry.level == .custom || entry.isInherited {
+                            LabeledContent(entry.name) {
+                                Text(entry.isInherited ? "\(levelTitle(entry.level)) (inherited)" : (entry.allow ? "Custom" : "Custom (deny)"))
+                                    .foregroundStyle(.secondary)
+                            }
+                        } else {
+                            Picker(entry.name, selection: Binding(get: { entry.level }, set: { model.setLevel($0, at: index) })) {
+                                Text("Read & Write").tag(AccessEntry.Level.readWrite)
+                                Text("Read only").tag(AccessEntry.Level.readOnly)
+                                Text("Write only").tag(AccessEntry.Level.writeOnly)
+                            }
+                            .disabled(!canEdit)
+                        }
+                        if !entry.isInherited && canEdit {
+                            Button { model.removeAccess(at: index) } label: { Image(systemName: "minus.circle") }
+                                .buttonStyle(.borderless)
+                                .help("Remove \(entry.name)")
+                        }
+                    }
+                }
+                HStack {
+                    Button { model.addPeople() } label: { Label("Add People…", systemImage: "plus") }
+                        .disabled(!canEdit)
+                    if model.item.isNavigableFolder {
+                        Spacer()
+                        Button("Apply to Enclosed Items…") { model.applyToEnclosed() }
+                            .disabled(model.info?.ownedByMe != true)
+                    }
+                }
                 row("Permissions", model.info?.permissions ?? "").monospaced()
                 if model.info?.ownedByMe == false {
                     Text("Only the owner can change these.").font(.callout).foregroundStyle(.secondary)
@@ -328,6 +437,15 @@ struct InfoView: View {
         }
         .formStyle(.grouped)
         .frame(minWidth: 360, idealWidth: 400, minHeight: 420)
+    }
+
+    private func levelTitle(_ level: AccessEntry.Level) -> String {
+        switch level {
+        case .readWrite: "Read & Write"
+        case .readOnly: "Read only"
+        case .writeOnly: "Write only"
+        case .custom: "Custom"
+        }
     }
 
     private var sizeSummary: String {

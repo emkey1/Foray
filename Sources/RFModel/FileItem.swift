@@ -28,6 +28,8 @@ public struct ItemFlags: OptionSet, Hashable, Sendable {
     public static let hasCustomIcon = ItemFlags(rawValue: 1 << 7)
     public static let mountPoint = ItemFlags(rawValue: 1 << 8)
     public static let dataless = ItemFlags(rawValue: 1 << 9)
+    /// Finder's Stationery Pad: opening it opens a copy.
+    public static let stationery = ItemFlags(rawValue: 1 << 10)
 }
 
 /// Immutable value snapshot of one item. Built off-main; cheap to copy.

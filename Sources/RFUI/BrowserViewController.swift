@@ -510,7 +510,21 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
         } else {
             for f in folders { openInNewTab?(.folder(f.url)) }
         }
-        for f in files { NSWorkspace.shared.open(f.url) }
+        for f in files {
+            if f.flags.contains(.stationery) { openStationery(f) } else { Self.openFile(f.url) }
+        }
+    }
+
+    /// Opens a file in its app. Tests substitute this so nothing launches.
+    static var openFile: @MainActor (URL) -> Void = { _ = NSWorkspace.shared.open($0) }
+
+    /// Stationery Pad: open a fresh copy ("name copy"), leaving the original as the template.
+    func openStationery(_ item: FileItem) {
+        FileOperationsUI.shared.submit(.duplicate([item.url]), from: state) { result in
+            guard let copy = result.created.first else { return }
+            _ = Stationery.set(false, copy)
+            Self.openFile(copy)
+        }
     }
 
     @objc func openSelection(_ sender: Any?) { open(state.selectedItems, inNewTab: false) }

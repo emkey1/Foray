@@ -334,3 +334,68 @@ extension UISerial {
         }
     }
 }
+
+extension UISerial {
+    @MainActor
+    @Suite(.serialized) final class AccessUITests {
+        let base = TestDirs.make("accessui")
+        isolated deinit {
+            BrowserViewController.openFile = { _ = NSWorkspace.shared.open($0) }
+            try? FileManager.default.removeItem(at: base)
+        }
+
+        @Test func stationeryOpensACopy() async throws {
+            AppModel.shared = AppModel(store: AppSupportStore(directory: base.appendingPathComponent("store")))
+            let w = base.appendingPathComponent("W", isDirectory: true)
+            try FileManager.default.createDirectory(at: w, withIntermediateDirectories: true)
+            let template = w.appendingPathComponent("Letter.txt")
+            FileManager.default.createFile(atPath: template.path, contents: Data("Dear".utf8))
+            #expect(Stationery.set(true, template) == 0)
+            var opened: [URL] = []
+            BrowserViewController.openFile = { opened.append($0) }
+            let vc = BrowserViewController(location: .folder(w))
+            let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 800, height: 400), styleMask: [.titled], backing: .buffered, defer: false)
+            window.contentViewController = vc
+            defer { vc.state.invalidate() }
+            let deadline = Date().addingTimeInterval(15)
+            while vc.state.snapshot.items.isEmpty && Date() < deadline { try await Task.sleep(for: .milliseconds(20)) }
+            #expect(vc.state.snapshot.items.first?.flags.contains(.stationery) == true)
+            vc.state.select(names: ["Letter.txt"])
+            vc.openSelection(nil)
+            while opened.isEmpty && Date() < deadline { try await Task.sleep(for: .milliseconds(20)) }
+            #expect(opened.map(\.lastPathComponent) == ["Letter copy.txt"])
+            #expect(!Stationery.isSet(try #require(opened.first)))
+            #expect(Stationery.isSet(template))   // the template stays a template
+        }
+
+        @Test func getInfoEditsTheAccessList() async throws {
+            let w = base.appendingPathComponent("Shared", isDirectory: true)
+            try FileManager.default.createDirectory(at: w, withIntermediateDirectories: true)
+            let staff = AccessEntry.make(.group, name: "staff", id: 20, level: .readOnly, isDirectory: true)
+            #expect(AccessList.write(AccessList.text(for: [staff]), to: w) == 0)
+            let model = InfoModel(item: try #require(DirectoryLoader.shared.stat(w)))
+            let deadline = Date().addingTimeInterval(10)
+            while model.info == nil && Date() < deadline { try await Task.sleep(for: .milliseconds(20)) }
+            #expect(model.accessEntries.map(\.name) == ["staff"])
+            model.setLevel(.readWrite, at: 0)
+            while AccessList.entries(AccessList.text(w)).first?.level != .readWrite && Date() < deadline { try await Task.sleep(for: .milliseconds(20)) }
+            #expect(AccessList.entries(AccessList.text(w)).first?.level == .readWrite)
+            while model.accessEntries.first?.level != .readWrite && Date() < deadline { try await Task.sleep(for: .milliseconds(20)) }
+
+            let host = NSHostingView(rootView: InfoView(model: model))
+            host.frame = NSRect(x: 0, y: 0, width: 420, height: 1100)
+            host.appearance = NSAppearance(named: .aqua)
+            let window = NSWindow(contentRect: host.frame, styleMask: [.titled], backing: .buffered, defer: false)
+            window.contentView = host
+            try await Task.sleep(for: .milliseconds(400))
+            host.layoutSubtreeIfNeeded()
+            if let rep = host.bitmapImageRepForCachingDisplay(in: host.bounds) {
+                host.cacheDisplay(in: host.bounds, to: rep)
+                try rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: "/tmp/claude-501/rf-info-access.png"))
+            }
+            model.removeAccess(at: 0)
+            while !AccessList.text(w).isEmpty && Date() < deadline { try await Task.sleep(for: .milliseconds(20)) }
+            #expect(AccessList.text(w).isEmpty)
+        }
+    }
+}
