@@ -18,21 +18,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private var openedFromLaunchURLs = false
 
-    /// `open -a Foray <folder>` and drops on the Dock icon.
+    /// `open -a Foray <folder>`, drops on the Dock icon, and other apps' "Show in Finder" when Foray
+    /// is the file viewer (macOS sends those as plain open-documents events naming the file).
     func application(_ application: NSApplication, open urls: [URL]) {
         openedFromLaunchURLs = true
-        for url in urls {
-            if AppIntegration.open(url) { continue }   // foray:// links
-            var isDir: ObjCBool = false
-            let exists = FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir)
-            guard exists else { continue }
-            let folder = isDir.boolValue ? url : url.deletingLastPathComponent()
-            if NSApp.keyWindow != nil {
-                WindowManager.shared.openTab(.folder(folder))
-            } else {
-                WindowManager.shared.openWindow(.folder(folder))
-            }
-        }
+        let files = urls.filter { !AppIntegration.open($0) }   // foray:// links are handled there
+        WindowManager.shared.reveal(files)
     }
 
     func applicationDockMenu(_ sender: NSApplication) -> NSMenu? { AppIntegration.dockMenu() }

@@ -65,7 +65,8 @@ extension UISerial {
             #expect(AppSettings.searchScopeDefault == .thisMac)
 
             let host = NSHostingView(rootView: SettingsView(model: model))
-            host.frame = NSRect(x: 0, y: 0, width: 520, height: 300)
+            host.frame = NSRect(x: 0, y: 0, width: 560, height: 340)
+            host.appearance = NSAppearance(named: .aqua)
             let window = NSWindow(contentRect: host.frame, styleMask: [.titled], backing: .buffered, defer: false)
             window.contentView = host
             host.layoutSubtreeIfNeeded()

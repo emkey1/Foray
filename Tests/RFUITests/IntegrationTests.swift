@@ -399,3 +399,55 @@ extension UISerial {
         }
     }
 }
+
+extension UISerial {
+    @MainActor
+    @Suite(.serialized) final class FileViewerTests {
+        let base = TestDirs.make("fileviewer")
+        var stored: String?
+        let realRead = FileViewerSetting.read, realWrite = FileViewerSetting.write
+
+        init() {
+            // Never the real system-wide preference.
+            FileViewerSetting.read = { [unowned self] in self.stored }
+            FileViewerSetting.write = { [unowned self] in self.stored = $0 }
+        }
+
+        isolated deinit {
+            FileViewerSetting.read = realRead
+            FileViewerSetting.write = realWrite
+            try? FileManager.default.removeItem(at: base)
+        }
+
+        @Test func switchSetsAndClearsOnlyOurOwnValue() {
+            #expect(!FileViewerSetting.isForay)
+            FileViewerSetting.set(true)
+            #expect(stored == FileViewerSetting.bundleID && FileViewerSetting.isForay)
+            FileViewerSetting.set(false)
+            #expect(stored == nil)
+            stored = "com.cocoatech.PathFinder"
+            FileViewerSetting.set(false)
+            #expect(stored == "com.cocoatech.PathFinder")   // someone else's choice is left alone
+            let model = SettingsPaneModel()
+            #expect(!model.fileViewer)
+            model.fileViewer = true
+            #expect(stored == FileViewerSetting.bundleID)
+        }
+
+        @Test func showInFinderRevealsFilesSelected() async throws {
+            AppModel.shared = AppModel(store: AppSupportStore(directory: base.appendingPathComponent("store")))
+            let w = base.appendingPathComponent("Docs", isDirectory: true)
+            try FileManager.default.createDirectory(at: w.appendingPathComponent("Sub"), withIntermediateDirectories: true)
+            for n in ["a.txt", "b.txt"] { FileManager.default.createFile(atPath: w.appendingPathComponent(n).path, contents: nil) }
+            let opened = WindowManager.shared.revealing([w.appendingPathComponent("a.txt"), w.appendingPathComponent("b.txt"), w.appendingPathComponent("Sub")])
+            defer { for c in opened { c.browser.state.invalidate(); c.window?.close() } }
+            #expect(opened.count == 2)   // one for Docs (both files selected), one for Sub
+            let docs = try #require(opened.first)
+            #expect(docs.browser.state.location.folderURL?.lastPathComponent == "Docs")
+            let deadline = Date().addingTimeInterval(15)
+            while docs.browser.state.selectedItems.count < 2 && Date() < deadline { try await Task.sleep(for: .milliseconds(20)) }
+            #expect(Set(docs.browser.state.selectedItems.map(\.name)) == ["a.txt", "b.txt"])
+            #expect(opened.last?.browser.state.location.folderURL?.lastPathComponent == "Sub")
+        }
+    }
+}

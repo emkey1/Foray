@@ -355,7 +355,7 @@ Each of these is additive or controlled by a setting, so Finder habits keep work
 |---|---|---|
 | Services and Quick Actions in the menu bar and context menus | `NSServicesMenuRequestor` | P2 ✅ (Services menu) |
 | Share menu | `NSSharingServicePicker` | P2 ✅ |
-| Default file viewer ("Show in Finder" in other apps opens RealFinder) | §5.12 | P2 |
+| Default file viewer ("Show in Finder" in other apps opens RealFinder) | §5.12 | P2 ✅ (opt-in switch in Settings › General writes/removes the global `NSFileViewer`; macOS delivers reveals as plain `aevt/odoc` events naming the file, verified with a probe app on 2026-10-09) |
 | Dock menu with windows and recent folders | | P2 ✅ |
 | `realfinder://` URL scheme | | P2 ✅ |
 | AppleScript dictionary, Shortcuts actions (App Intents), `rf` command-line tool | | P3 |
@@ -982,7 +982,7 @@ These are in order with exit criteria; there are no dates.
 | S5 | Reading and writing Finder's tag list and colors so both apps agree | Consistent tags | **Done:** write tags only through the API; read the catalog but never write it (§5.8) |
 | S6 | Making comments visible in Finder without `.DS_Store` | Comments interop | **Done:** xattr-only writes are invisible to Finder. Write through Apple Events plus the xattr (§5.8) |
 | S7 | Whether thumbnails or previews of dataless cloud files trigger downloads | Unwanted downloads and bandwidth use | **Done for thumbnails** (iCloud: no download). Quick Look previews and third-party File Provider domains (Dropbox and others) are still to check in M1, alongside Quick Look |
-| S8 | How `NSFileViewer` behaves on current macOS | Default-file-viewer feature | Test "Show in Finder" in common apps |
+| S8 | How `NSFileViewer` behaves on current macOS | Default-file-viewer feature | **Done (2026-10-09, without changing the global setting):** `activateFileViewerSelecting` and `selectFile` send the viewer an `aevt/odoc` for the file itself, so the app shows its folder with it selected. Still to try with the switch on: a few real apps |
 | S9 | Native window tabs with many tabs (state restoration, memory use) | Tab UX | Prototype in M1; fall back to a custom tab bar |
 | S10 | Undocumented private formats (Finder favorites `.sfl*`, put-back records, tag catalog) change between macOS releases | Import and interop break | Treat as best effort, isolate behind adapters, never write private formats |
 | S11 | How faithfully the copy engine preserves metadata (creation dates, ACLs, xattrs, resource forks, sparse files, hard links) compared with Finder | Data fidelity | Filesystem-matrix integration tests; compare against Finder copies |

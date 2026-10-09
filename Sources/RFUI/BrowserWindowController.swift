@@ -363,6 +363,39 @@ public final class WindowManager {
         showAsSeparateWindow(controller)
     }
 
+    /// Items handed to Foray by other apps: "Show in Finder" (when Foray is the file viewer),
+    /// `open -a Foray`, drops on the Dock icon. Folders open; files are shown selected in their
+    /// folder (one tab per folder). Returns the tabs it opened.
+    public func reveal(_ urls: [URL]) { revealing(urls) }
+
+    @discardableResult
+    func revealing(_ urls: [URL]) -> [BrowserWindowController] {
+        var folders: [URL] = []
+        var selections: [URL: [String]] = [:]
+        for url in urls {
+            var isDir: ObjCBool = false
+            guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir) else { continue }
+            let isPackage = (try? url.resourceValues(forKeys: [.isPackageKey]).isPackage) == true
+            if isDir.boolValue && !isPackage {
+                if !folders.contains(url) { folders.append(url) }
+            } else {
+                let parent = url.deletingLastPathComponent()
+                if selections[parent] == nil { folders.append(parent) }
+                selections[parent, default: []].append(url.lastPathComponent)
+            }
+        }
+        var opened: [BrowserWindowController] = []
+        for folder in folders {
+            let anchor = NSApplication.shared.keyWindow?.windowController as? BrowserWindowController
+            if let anchor { openTab(.folder(folder), nextTo: anchor) } else { openWindow(.folder(folder)) }
+            guard let controller = controllers.last else { continue }
+            if let names = selections[folder] { controller.browser.state.select(names: names) }
+            opened.append(controller)
+        }
+        NSApplication.shared.activate()
+        return opened
+    }
+
     /// Shows `location` in the front browser window, or a new window if there's none.
     public func show(_ location: Location) {
         let front = (NSApp.mainWindow?.windowController as? BrowserWindowController) ?? controllers.last

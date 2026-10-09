@@ -87,6 +87,8 @@ final class SettingsPaneModel {
         didSet { AppModel.shared.setSettingsModel(perFolderSettings ? .perFolder : .sameEverywhere) }
     }
     var fullDiskAccess = FullDiskAccess.isGranted
+    var fileViewer = FileViewerSetting.isForay { didSet { if fileViewer != oldValue { FileViewerSetting.set(fileViewer) } } }
+    var fileViewerName = FileViewerSetting.currentViewerName
 
     func chooseNewWindowFolder() {
         let panel = NSOpenPanel()
@@ -96,7 +98,11 @@ final class SettingsPaneModel {
         if panel.runModal() == .OK { newWindowFolder = panel.url }
     }
 
-    func refreshAccess() { fullDiskAccess = FullDiskAccess.isGranted }
+    func refreshAccess() {
+        fullDiskAccess = FullDiskAccess.isGranted
+        fileViewer = FileViewerSetting.isForay
+        fileViewerName = FileViewerSetting.currentViewerName
+    }
 }
 
 struct SettingsView: View {
@@ -117,6 +123,11 @@ struct SettingsView: View {
                     Text("Renames the selected item (like Finder)").tag(false)
                     Text("Opens the selected item").tag(true)
                 }
+                Toggle("Use Foray for “Show in Finder” in other apps", isOn: $model.fileViewer)
+                Text(model.fileViewer
+                     ? "Other apps reveal files in Foray. This is a system-wide setting; turn it off to go back to Finder."
+                     : "Other apps reveal files in \(model.fileViewerName). Turning this on changes a system-wide setting; Finder stays installed and you can switch back anytime.")
+                    .font(.callout).foregroundStyle(.secondary)
             }
             .formStyle(.grouped)
             .tabItem { Label("General", systemImage: "gearshape") }
@@ -162,7 +173,7 @@ struct SettingsView: View {
             .formStyle(.grouped)
             .tabItem { Label("Privacy", systemImage: "lock.shield") }
         }
-        .frame(width: 520, height: 300)
+        .frame(width: 560, height: 340)
     }
 }
 
@@ -172,7 +183,7 @@ public final class SettingsWindowController: NSWindowController {
     private let model = SettingsPaneModel()
 
     private init() {
-        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 520, height: 320), styleMask: [.titled, .closable],
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 560, height: 360), styleMask: [.titled, .closable],
                               backing: .buffered, defer: true)
         window.title = "Foray Settings"
         window.tabbingMode = .disallowed
@@ -212,5 +223,35 @@ public enum Onboarding {
         alert.addButton(withTitle: "Open Privacy Settings")
         alert.addButton(withTitle: "Not Now")
         if alert.runModal() == .alertFirstButtonReturn { FullDiskAccess.openSystemSettings() }
+    }
+}
+
+/// Whether other apps' "Show in Finder" opens Foray: the system-wide `NSFileViewer` preference
+/// (DESIGN.md §5.12, S8). Changed only when the user flips the switch in Settings; turning it off
+/// removes the preference, so Finder is back.
+@MainActor
+public enum FileViewerSetting {
+    static let key = "NSFileViewer"
+    static var bundleID: String { Bundle.main.bundleIdentifier ?? "io.github.emkey1.Foray" }
+
+    /// The global preference. Tests substitute these so they never touch the real one.
+    static var read: () -> String? = {
+        CFPreferencesCopyValue(key as CFString, kCFPreferencesAnyApplication, kCFPreferencesCurrentUser, kCFPreferencesAnyHost) as? String
+    }
+    static var write: (String?) -> Void = { value in
+        CFPreferencesSetValue(key as CFString, value as CFString?, kCFPreferencesAnyApplication, kCFPreferencesCurrentUser, kCFPreferencesAnyHost)
+        CFPreferencesSynchronize(kCFPreferencesAnyApplication, kCFPreferencesCurrentUser, kCFPreferencesAnyHost)
+    }
+
+    public static var isForay: Bool { read() == bundleID }
+
+    /// Who handles "Show in Finder" now, for the Settings note ("Finder" when unset).
+    static var currentViewerName: String {
+        guard let id = read(), let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: id) else { return "Finder" }
+        return FileManager.default.displayName(atPath: url.path).replacingOccurrences(of: ".app", with: "")
+    }
+
+    public static func set(_ on: Bool) {
+        if on { write(bundleID) } else if isForay { write(nil) }   // don't remove another app's setting
     }
 }
