@@ -48,7 +48,16 @@ fi
 version=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" "$app/Contents/Info.plist")
 volname="Foray $version"
 mount="/Volumes/$volname"
-[[ -e $mount ]] && { print -u2 "\"$mount\" is already mounted; eject it first."; exit 1; }
+if [[ -e $mount ]]; then
+  # An earlier installer image with the same name (e.g. one opened to look at it): eject it.
+  if hdiutil info | grep -qF "$mount"; then
+    print "Ejecting the earlier \"$volname\" disk image."
+    hdiutil detach "$mount" -quiet || hdiutil detach "$mount" -force -quiet
+  else
+    print -u2 "\"$mount\" is in use by something else; eject it first."
+    exit 1
+  fi
+fi
 
 # A writable image to lay out, then compressed.
 megabytes=$(( $(du -sm "$app" | cut -f1) + 20 ))
