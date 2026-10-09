@@ -89,6 +89,7 @@ final class SettingsPaneModel {
     var fullDiskAccess = FullDiskAccess.isGranted
     var fileViewer = FileViewerSetting.isForay { didSet { if fileViewer != oldValue { FileViewerSetting.set(fileViewer) } } }
     var fileViewerName = FileViewerSetting.currentViewerName
+    var checkForUpdates = Updater.automatic { didSet { Updater.automatic = checkForUpdates } }
 
     func chooseNewWindowFolder() {
         let panel = NSOpenPanel()
@@ -123,6 +124,8 @@ struct SettingsView: View {
                     Text("Renames the selected item (like Finder)").tag(false)
                     Text("Opens the selected item").tag(true)
                 }
+                Toggle("Check for updates automatically", isOn: $model.checkForUpdates)
+                    .help("Once a day, Foray asks GitHub whether there's a newer release. It never installs without asking.")
                 Toggle("Use Foray for “Show in Finder” in other apps", isOn: $model.fileViewer)
                 Text(model.fileViewer
                      ? "Other apps reveal files in Foray. This is a system-wide setting; turn it off to go back to Finder."
@@ -173,7 +176,7 @@ struct SettingsView: View {
             .formStyle(.grouped)
             .tabItem { Label("Privacy", systemImage: "lock.shield") }
         }
-        .frame(width: 560, height: 340)
+        .frame(width: 560, height: 380)
     }
 }
 
@@ -183,7 +186,7 @@ public final class SettingsWindowController: NSWindowController {
     private let model = SettingsPaneModel()
 
     private init() {
-        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 560, height: 360), styleMask: [.titled, .closable],
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 560, height: 400), styleMask: [.titled, .closable],
                               backing: .buffered, defer: true)
         window.title = "Foray Settings"
         window.tabbingMode = .disallowed

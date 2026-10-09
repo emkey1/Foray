@@ -13,6 +13,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         EjectUI.startWatchingUnmounts()
         NetworkBrowser.shared.start()
         DispatchQueue.main.async { Onboarding.showIfNeeded() }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5) { Updater.shared.checkInBackgroundIfDue() }
         NSApp.activate()
     }
 
@@ -45,6 +46,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc func showGuide(_ sender: Any?) { GuideWindowController.shared.show() }
 
     @objc func showSettings(_ sender: Any?) { SettingsWindowController.shared.show() }
+
+    @objc func checkForUpdates(_ sender: Any?) { Updater.shared.checkNow() }
 
     @objc func connectToServer(_ sender: Any?) { ConnectToServerWindowController.shared.show() }
 
@@ -103,6 +106,9 @@ enum MainMenu {
         let menu = NSMenu(title: appName)
         menu.addItem(item("About \(appName)", #selector(NSApplication.orderFrontStandardAboutPanel(_:))))
         menu.addItem(.separator())
+        let updates = item("Check for Updates…", #selector(AppDelegate.checkForUpdates(_:)))
+        updates.target = target
+        menu.addItem(updates)
         let settings = item("Settings…", #selector(AppDelegate.showSettings(_:)), ",")
         settings.target = target
         menu.addItem(settings)
