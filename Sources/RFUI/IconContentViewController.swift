@@ -46,6 +46,9 @@ final class IconContentViewController: NSViewController, ContentView {
     func apply(_ snapshot: ItemSnapshot, settings: ViewSettings) {
         isApplying = true
         defer { isApplying = false }
+        // Turning on Snap to Grid lines up the icons that are already there.
+        let snapTurnedOn = settings.presentation.icon.snapToGrid && !self.settings.presentation.icon.snapToGrid
+            && settings.arrangement.primary.key == .manual && self.settings.arrangement.primary.key == .manual
         self.snapshot = snapshot
         self.settings = settings
         let icon = settings.presentation.icon
@@ -63,6 +66,7 @@ final class IconContentViewController: NSViewController, ContentView {
             collectionView.collectionViewLayout = layout
         }
         collectionView.reloadData()
+        if snapTurnedOn { cleanUp() }
     }
 
     // MARK: Free arrangement (Sort By None)
@@ -129,6 +133,13 @@ final class IconContentViewController: NSViewController, ContentView {
         for i in draggedIndices where freeLayout.frames.indices.contains(i) {
             let o = freeLayout.frames[i].origin
             moved[snapshot.items[i].name] = CGPoint(x: max(0, o.x + dx), y: max(0, o.y + dy))
+        }
+        if settings.presentation.icon.snapToGrid {
+            var others: [String: CGPoint] = [:]
+            for (i, item) in snapshot.items.enumerated() where moved[item.name] == nil && freeLayout.frames.indices.contains(i) {
+                others[item.name] = freeLayout.frames[i].origin
+            }
+            moved = arrangementGrid.snapped(moved, others: others)
         }
         AppModel.shared.setIconPositions(moved, in: folder)
         apply(snapshot, settings: settings)

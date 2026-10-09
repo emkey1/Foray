@@ -451,3 +451,21 @@ extension UISerial {
         }
     }
 }
+
+extension UISerial {
+    @MainActor
+    @Suite final class SnapToGridTests {
+        @Test func movedIconsLandOnFreeGridSpots() {
+            let grid = FreeArrangement(cellSize: NSSize(width: 100, height: 100), spacing: 10, width: 360)
+            let others = ["a": grid.cellOrigin(0), "b": grid.cellOrigin(1)]
+            // Dropped almost on top of b: goes to the nearest free cell instead.
+            let s = grid.snapped(["m": CGPoint(x: 130, y: 14)], others: others)
+            #expect(s["m"] == grid.cellOrigin(2))
+            let free = grid.snapped(["m": CGPoint(x: 20, y: 125)], others: others)
+            #expect(free["m"] == grid.cellOrigin(3))
+            // Old settings without the field still load.
+            let old = #"{"iconSize":64,"gridSpacing":24,"labelPosition":"bottom","showPreviews":true}"#
+            #expect((try? JSONDecoder().decode(IconOptions.self, from: Data(old.utf8)))?.snapToGrid == false)
+        }
+    }
+}

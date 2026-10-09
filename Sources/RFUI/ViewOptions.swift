@@ -141,6 +141,10 @@ struct ViewOptionsView: View {
                         Slider(value: model.presentation(\.icon.gridSpacing), in: 4...60, step: 2)
                     }
                     Toggle("Show icon previews", isOn: model.presentation(\.icon.showPreviews))
+                    if model.settings.arrangement.primary.key == .manual {
+                        Toggle("Snap to grid", isOn: model.presentation(\.icon.snapToGrid))
+                            .help("Icons you move land on the nearest free spot in the grid")
+                    }
                 }
             case .list:
                 Section("Show columns") {

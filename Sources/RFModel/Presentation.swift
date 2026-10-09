@@ -64,7 +64,22 @@ public struct IconOptions: Codable, Hashable, Sendable {
     public var gridSpacing: Double = 24
     public var labelPosition: LabelPosition = .bottom
     public var showPreviews = true
+    /// Sort By None: moved icons land on the nearest free grid spot (Finder's "Snap to Grid").
+    public var snapToGrid = false
     public init() {}
+
+    // Settings saved before a field existed still load: missing fields take their defaults.
+    private enum CodingKeys: String, CodingKey { case iconSize, gridSpacing, labelPosition, showPreviews, snapToGrid }
+
+    public init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let d = IconOptions()
+        iconSize = try c.decodeIfPresent(Double.self, forKey: .iconSize) ?? d.iconSize
+        gridSpacing = try c.decodeIfPresent(Double.self, forKey: .gridSpacing) ?? d.gridSpacing
+        labelPosition = try c.decodeIfPresent(LabelPosition.self, forKey: .labelPosition) ?? d.labelPosition
+        showPreviews = try c.decodeIfPresent(Bool.self, forKey: .showPreviews) ?? d.showPreviews
+        snapToGrid = try c.decodeIfPresent(Bool.self, forKey: .snapToGrid) ?? d.snapToGrid
+    }
 }
 
 public struct ListOptions: Codable, Hashable, Sendable {

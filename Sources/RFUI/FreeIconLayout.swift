@@ -92,6 +92,31 @@ struct FreeArrangement {
         return out
     }
 
+    /// Snap to Grid while moving: each moved item to the nearest grid cell that no other item
+    /// (moved or not) occupies.
+    func snapped(_ moved: [String: CGPoint], others: [String: CGPoint]) -> [String: CGPoint] {
+        var used = Set(others.values.map { cell(of: $0) })
+        var out: [String: CGPoint] = [:]
+        for (name, p) in moved.sorted(by: { ($0.value.y, $0.value.x) < ($1.value.y, $1.value.x) }) {
+            let base = cell(of: p)
+            var step = 0
+            var chosen: Int?
+            while chosen == nil {
+                chosen = [base + step, base - step].first { $0 >= 0 && !used.contains($0) }
+                step += 1
+            }
+            used.insert(chosen!)
+            out[name] = cellOrigin(chosen!)
+        }
+        return out
+    }
+
+    private func cell(of p: CGPoint) -> Int {
+        let col = min(columns - 1, max(0, Int(((p.x - inset.x) / pitch.width).rounded())))
+        let row = max(0, Int(((p.y - inset.y) / pitch.height).rounded()))
+        return row * columns + col
+    }
+
     /// Where dropped items go: stacked down and right from the drop point.
     func dropPositions(_ names: [String], at point: NSPoint) -> [String: CGPoint] {
         var out: [String: CGPoint] = [:]
