@@ -92,7 +92,7 @@ final class ViewOptionsModel {
     /// This folder's own settings become the default for all folders.
     func useAsDefaults() {
         guard let state else { return }
-        AppModel.shared.setClassDefault(state.settings, cls: state.location.settingsClass)
+        AppModel.shared.setClassDefault(state.settings, cls: state.settingsClass)
         refresh()
     }
 }

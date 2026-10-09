@@ -51,6 +51,7 @@ final class IconContentViewController: NSViewController, ContentView {
             && settings.arrangement.primary.key == .manual && self.settings.arrangement.primary.key == .manual
         self.snapshot = snapshot
         self.settings = settings
+        styleForDesktop()
         let icon = settings.presentation.icon
         let labelHeight: CGFloat = 34
         layout.itemSize = NSSize(width: max(icon.iconSize + 36, 84), height: icon.iconSize + labelHeight + 12)
@@ -75,7 +76,21 @@ final class IconContentViewController: NSViewController, ContentView {
 
     var arrangementGrid: FreeArrangement {
         FreeArrangement(cellSize: layout.itemSize, spacing: settings.presentation.icon.gridSpacing / 2,
-                        width: max(scrollView.contentSize.width, layout.itemSize.width + 28))
+                        width: max(scrollView.contentSize.width, layout.itemSize.width + 28),
+                        height: max(scrollView.contentSize.height, layout.itemSize.height + 20), fromRight: onDesktop)
+    }
+
+    /// Drawn over the wallpaper as the desktop.
+    private var onDesktop: Bool { host?.state.isDesktop == true }
+
+    private func styleForDesktop() {
+        guard onDesktop else { return }
+        // Nearly clear rather than clear: fully transparent pixels would let clicks fall through
+        // to the wallpaper, and the desktop needs them (selection, its menu, drops).
+        collectionView.backgroundColors = [NSColor(white: 0, alpha: 0.004)]
+        scrollView.drawsBackground = false
+        scrollView.hasVerticalScroller = false
+        scrollView.hasHorizontalScroller = false
     }
 
     /// Saved positions, plus grid cells for items that have none (which are then saved, so they
@@ -220,6 +235,7 @@ extension IconContentViewController: NSCollectionViewDataSource, NSCollectionVie
 
     func collectionView(_ collectionView: NSCollectionView, itemForRepresentedObjectAt indexPath: IndexPath) -> NSCollectionViewItem {
         let cell = collectionView.makeItem(withIdentifier: IconItem.identifier, for: indexPath) as! IconItem
+        cell.onDesktop = onDesktop
         cell.configure(snapshot.items[index(of: indexPath)], options: settings.presentation.icon,
                        scale: view.window?.backingScaleFactor ?? 2)
         return cell
@@ -375,6 +391,20 @@ private final class IconItem: NSCollectionViewItem {
         for v in [iconBackground, iconView, label, dots, cloud] { view.addSubview(v) }
     }
 
+    /// White labels with a shadow, readable over any wallpaper, like Finder's desktop.
+    var onDesktop = false {
+        didSet {
+            guard onDesktop != oldValue else { return }
+            let shadow = NSShadow()
+            shadow.shadowColor = NSColor.black.withAlphaComponent(0.75)
+            shadow.shadowOffset = NSSize(width: 0, height: -1)
+            shadow.shadowBlurRadius = 2
+            label.shadow = onDesktop ? shadow : nil
+            label.font = onDesktop ? .systemFont(ofSize: 12, weight: .medium) : .systemFont(ofSize: 12)
+            updateSelection()
+        }
+    }
+
     func configure(_ item: FileItem, options: IconOptions, scale: CGFloat) {
         self.item = item
         iconSize = options.iconSize
@@ -433,7 +463,8 @@ private final class IconItem: NSCollectionViewItem {
         let on = isSelected || highlightState == .forSelection
         iconBackground.layer?.backgroundColor = on ? NSColor.quaternaryLabelColor.cgColor : nil
         label.layer?.backgroundColor = on ? NSColor.selectedContentBackgroundColor.cgColor : nil
-        label.textColor = on ? .alternateSelectedControlTextColor : .labelColor
+        label.textColor = on ? .alternateSelectedControlTextColor : (onDesktop ? .white : .labelColor)
+        if onDesktop { iconBackground.layer?.backgroundColor = on ? NSColor.black.withAlphaComponent(0.25).cgColor : nil }
     }
 }
 

@@ -378,6 +378,13 @@ public final class WindowManager {
     /// folder (one tab per folder). Returns the tabs it opened.
     public func reveal(_ urls: [URL]) { revealing(urls) }
 
+    /// A new window at `location`, with `names` selected (from the desktop).
+    func open(_ location: Location, select names: [String]) {
+        openWindow(location)
+        if !names.isEmpty { controllers.last?.browser.state.select(names: names) }
+        NSApplication.shared.activate()
+    }
+
     @discardableResult
     func revealing(_ urls: [URL]) -> [BrowserWindowController] {
         var folders: [URL] = []

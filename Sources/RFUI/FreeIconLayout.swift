@@ -39,12 +39,20 @@ struct FreeArrangement {
     var spacing: CGFloat
     var width: CGFloat
     var inset = NSPoint(x: 14, y: 10)
+    /// The desktop fills columns from the top right, like Finder; windows fill rows from the top left.
+    var height: CGFloat = 0
+    var fromRight = false
 
     var pitch: NSSize { NSSize(width: cellSize.width + spacing, height: cellSize.height + spacing) }
     var columns: Int { max(1, Int((width - inset.x * 2 + spacing) / pitch.width)) }
+    var rows: Int { max(1, Int((height - inset.y * 2 + spacing) / pitch.height)) }
 
     func cellOrigin(_ index: Int) -> NSPoint {
-        NSPoint(x: inset.x + CGFloat(index % columns) * pitch.width, y: inset.y + CGFloat(index / columns) * pitch.height)
+        if fromRight {
+            return NSPoint(x: width - inset.x - cellSize.width - CGFloat(index / rows) * pitch.width,
+                           y: inset.y + CGFloat(index % rows) * pitch.height)
+        }
+        return NSPoint(x: inset.x + CGFloat(index % columns) * pitch.width, y: inset.y + CGFloat(index / columns) * pitch.height)
     }
 
     /// Frames for `names` (in display order), using `saved` where present. Linear: saved frames
@@ -54,6 +62,10 @@ struct FreeArrangement {
         let cols = columns
         for name in names {
             guard let p = saved[name] else { continue }
+            if fromRight {
+                occupied.insert(cell(of: p))
+                continue
+            }
             let r = NSRect(origin: p, size: cellSize).insetBy(dx: 4, dy: 4)
             let c0 = max(0, Int(floor((r.minX - inset.x) / pitch.width))), c1 = Int(floor((r.maxX - inset.x) / pitch.width))
             let r0 = max(0, Int(floor((r.minY - inset.y) / pitch.height))), r1 = Int(floor((r.maxY - inset.y) / pitch.height))
@@ -77,9 +89,7 @@ struct FreeArrangement {
         var out: [String: CGPoint] = [:]
         let ordered = positions.sorted { ($0.value.y, $0.value.x, $0.key) < ($1.value.y, $1.value.x, $1.key) }
         for (name, p) in ordered {
-            let col = min(columns - 1, max(0, Int(((p.x - inset.x) / pitch.width).rounded())))
-            let row = max(0, Int(((p.y - inset.y) / pitch.height).rounded()))
-            let base = row * columns + col
+            let base = cell(of: p)
             var step = 0
             var chosen: Int?
             while chosen == nil {
@@ -112,6 +122,11 @@ struct FreeArrangement {
     }
 
     private func cell(of p: CGPoint) -> Int {
+        if fromRight {
+            let col = max(0, Int(((width - inset.x - cellSize.width - p.x) / pitch.width).rounded()))
+            let row = min(rows - 1, max(0, Int(((p.y - inset.y) / pitch.height).rounded())))
+            return col * rows + row
+        }
         let col = min(columns - 1, max(0, Int(((p.x - inset.x) / pitch.width).rounded())))
         let row = max(0, Int(((p.y - inset.y) / pitch.height).rounded()))
         return row * columns + col

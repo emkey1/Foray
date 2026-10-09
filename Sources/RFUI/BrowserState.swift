@@ -56,11 +56,19 @@ final class BrowserState {
     private static var registry: [ObjectIdentifier: () -> BrowserState?] = [:]
     static var live: [BrowserState] { registry.values.compactMap { $0() } }
 
-    init(location: Location) {
+    /// The desktop window's browser: its own settings (never a folder's) and no navigating away.
+    let isDesktop: Bool
+
+    /// Which settings this tab uses and records.
+    var settingsClass: LocationClass { isDesktop ? .desktop : location.settingsClass }
+    private var settingsFolderKey: FolderKey? { isDesktop ? nil : details.folderKey }
+
+    init(location: Location, isDesktop: Bool = false) {
         self.location = location
+        self.isDesktop = isDesktop
         self.history = NavigationHistory(location)
         self.details = .fallback(location)
-        self.settings = AppModel.shared.resolve(location.settingsClass, folder: nil).0
+        self.settings = AppModel.shared.resolve(isDesktop ? .desktop : location.settingsClass, folder: nil).0
         settingsObserver = AppModel.shared.observeSettings { [weak self] in self?.reresolveSettings() }
         let id = ObjectIdentifier(self)
         Self.registry[id] = { [weak self] in self }
@@ -183,8 +191,15 @@ final class BrowserState {
 
     // MARK: Navigation
 
+    /// The desktop never navigates away: going somewhere opens a Foray window there instead.
+    var openElsewhere: ((Location, [String]) -> Void)?
+
     func navigate(to newLocation: Location, select names: [String] = []) {
         guard newLocation != location else { return }
+        if isDesktop {
+            openElsewhere?(newLocation, names)
+            return
+        }
         recordSearchIfLeaving()
         history.visit(newLocation, leaving: departingEntry())
         pendingSelection = names
@@ -215,6 +230,7 @@ final class BrowserState {
     /// Navigation by "going somewhere" (sidebar, path bar, Go menu, Go to Folder). During a search
     /// it re-runs the search in the new place instead of ending it. Opening a result uses `navigate`.
     func jump(to target: Location, select names: [String] = []) {
+        if isDesktop { return navigate(to: target, select: names) }
         if Self.searchFollowsFolderChanges, var q = location.searchQuery {
             switch target {
             case .folder(let url):
@@ -365,7 +381,7 @@ final class BrowserState {
         // Sorts requested for the previous location may still be running; never show their results.
         appliedGeneration = requestedGeneration
         searchStatus = nil
-        settings = AppModel.shared.resolve(newLocation.settingsClass, folder: nil).0
+        settings = AppModel.shared.resolve(isDesktop ? .desktop : newLocation.settingsClass, folder: nil).0
         notify(.location)
         notify(.settings)
         notify(.snapshot)
@@ -532,7 +548,7 @@ final class BrowserState {
 
     private func commit(_ s: ViewSettings) {
         apply(settings: s)
-        AppModel.shared.record(s, cls: location.settingsClass, folder: details.folderKey)
+        AppModel.shared.record(s, cls: settingsClass, folder: settingsFolderKey)
     }
 
     /// "Calculate all sizes": total each folder in the list in the background, re-sorting as
@@ -568,7 +584,7 @@ final class BrowserState {
     }
 
     private func applyResolvedSettings() {
-        let (s, source) = AppModel.shared.resolve(location.settingsClass, folder: details.folderKey)
+        let (s, source) = AppModel.shared.resolve(settingsClass, folder: settingsFolderKey)
         settingsSource = source
         apply(settings: s)
     }

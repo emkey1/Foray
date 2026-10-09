@@ -524,3 +524,50 @@ extension UISerial {
         }
     }
 }
+
+extension UISerial {
+    @MainActor
+    @Suite(.serialized) final class DesktopWindowTests {
+        let base = TestDirs.make("desktopwin")
+        isolated deinit { try? FileManager.default.removeItem(at: base) }
+
+        @Test func desktopShowsTheFolderAndOpensFoldersElsewhere() async throws {
+            AppModel.shared = AppModel(store: AppSupportStore(directory: base.appendingPathComponent("store")))
+            let desk = base.appendingPathComponent("Desktop", isDirectory: true)
+            try FileManager.default.createDirectory(at: desk.appendingPathComponent("Projects"), withIntermediateDirectories: true)
+            FileManager.default.createFile(atPath: desk.appendingPathComponent("notes.txt").path, contents: nil)
+            let controller = DesktopWindowController(folder: desk)   // not shown on screen
+            defer { controller.browser.state.invalidate() }
+            let state = controller.browser.state
+            let deadline = Date().addingTimeInterval(15)
+            while state.snapshot.items.count < 2 && Date() < deadline { try await Task.sleep(for: .milliseconds(20)) }
+            #expect(state.isDesktop && state.settingsClass == .desktop)
+            #expect(state.settings.presentation.mode == .icon && state.settings.arrangement.primary.key == .manual)
+            #expect(Set(state.snapshot.items.map(\.name)) == ["Projects", "notes.txt"])
+            #expect(controller.window?.level.rawValue == Int(CGWindowLevelForKey(.desktopIconWindow)))
+            #expect(controller.window?.isExcludedFromWindowsMenu == true)
+            #expect(controller.windowShouldClose(controller.window!) == false)
+
+            // Opening a folder opens a window there; the desktop stays on the Desktop folder.
+            var opened: [(Location, [String])] = []
+            state.openElsewhere = { opened.append(($0, $1)) }
+            state.select(names: ["Projects"])
+            controller.browser.openSelection(nil)
+            #expect(opened.first?.0.folderURL?.lastPathComponent == "Projects")
+            #expect(state.location.folderURL?.lastPathComponent == "Desktop")
+            state.jump(to: .computer)
+            #expect(opened.last?.0 == .computer && state.location.folderURL?.lastPathComponent == "Desktop")
+        }
+
+        @Test func desktopIconsFillColumnsFromTheRight() {
+            let grid = FreeArrangement(cellSize: NSSize(width: 100, height: 100), spacing: 10, width: 1000, height: 340, fromRight: true)
+            #expect(grid.rows == 3)
+            let frames = grid.frames(for: ["a", "b", "c", "d"], saved: [:])
+            #expect(frames[0].origin == CGPoint(x: 1000 - 14 - 100, y: 10))         // top right
+            #expect(frames[1].origin == CGPoint(x: 886, y: 120))                     // down the column
+            #expect(frames[3].origin == CGPoint(x: 886 - 110, y: 10))                // next column to the left
+            let snapped = grid.snapped(["m": CGPoint(x: 880, y: 118)], others: ["a": frames[0].origin])
+            #expect(snapped["m"] == frames[1].origin)
+        }
+    }
+}

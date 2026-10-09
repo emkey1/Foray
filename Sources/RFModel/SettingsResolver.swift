@@ -51,6 +51,14 @@ public struct ViewSettingsDatabase: Codable, Sendable {
             s.presentation.list.columns = [ListColumnSpec(.name), ListColumnSpec(.folder), ListColumnSpec(.dateModified),
                                            ListColumnSpec(.size), ListColumnSpec(.kind)]
             return s
+        case .desktop:
+            var s = ViewSettings(presentation: Presentation(mode: .icon))
+            s.arrangement.sort = [SortDescriptor(.manual), SortDescriptor(.kind), SortDescriptor(.name)]
+            s.arrangement.foldersFirst = false
+            s.presentation.icon.iconSize = 64
+            s.presentation.icon.gridSpacing = 20
+            s.presentation.icon.snapToGrid = true
+            return s
         case .recents:
             var s = ViewSettings(presentation: Presentation(mode: .list))
             s.arrangement.sort = [SortDescriptor(.dateLastOpened, ascending: false)]

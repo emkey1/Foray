@@ -40,10 +40,13 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
     private var typeSelect = TypeSelectBuffer()
     private var previewPanel: QLPreviewPanel?
 
-    init(location: Location) {
-        state = BrowserState(location: location)
+    init(location: Location, isDesktop: Bool = false) {
+        state = BrowserState(location: location, isDesktop: isDesktop)
         super.init(nibName: nil, bundle: nil)
     }
+
+    /// The desktop window's browser: just the icons, over the wallpaper.
+    var isDesktop: Bool { state.isDesktop }
 
     required init?(coder: NSCoder) { fatalError() }
 
@@ -82,56 +85,72 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
         scopeBar.onChange = { [weak self] change in self?.state.updateSearch(change) }
         scopeBar.onSave = { [weak self] in self?.saveSearch(nil) }
         trashBar.onEmpty = { [weak self] in self?.emptyTrash(nil) }
-        let views: [NSView] = [trashBar, scopeBar, contentContainer, messageLabel, pathBar, addressField, statusLabel, sizeSlider]
-        for v in views {
-            v.translatesAutoresizingMaskIntoConstraints = false
-            root.addSubview(v)
+        if isDesktop {
+            // Desktop: only the content, filling the window; no bars.
+            for v in [contentContainer, messageLabel] as [NSView] {
+                v.translatesAutoresizingMaskIntoConstraints = false
+                root.addSubview(v)
+            }
+            NSLayoutConstraint.activate([
+                contentContainer.topAnchor.constraint(equalTo: root.topAnchor),
+                contentContainer.leadingAnchor.constraint(equalTo: root.leadingAnchor),
+                contentContainer.trailingAnchor.constraint(equalTo: root.trailingAnchor),
+                contentContainer.bottomAnchor.constraint(equalTo: root.bottomAnchor),
+                messageLabel.centerXAnchor.constraint(equalTo: contentContainer.centerXAnchor),
+                messageLabel.centerYAnchor.constraint(equalTo: contentContainer.centerYAnchor),
+            ])
+        } else {
+            let views: [NSView] = [trashBar, scopeBar, contentContainer, messageLabel, pathBar, addressField, statusLabel, sizeSlider]
+            for v in views {
+                v.translatesAutoresizingMaskIntoConstraints = false
+                root.addSubview(v)
+            }
+            let separator = NSBox()
+            separator.boxType = .separator
+            separator.translatesAutoresizingMaskIntoConstraints = false
+            root.addSubview(separator)
+
+            scopeBarCollapsed = scopeBar.heightAnchor.constraint(equalToConstant: 0)
+            trashBarHeight = trashBar.heightAnchor.constraint(equalToConstant: 0)
+            NSLayoutConstraint.activate([
+                trashBarHeight!,
+                trashBar.topAnchor.constraint(equalTo: root.safeAreaLayoutGuide.topAnchor),
+                trashBar.leadingAnchor.constraint(equalTo: root.leadingAnchor),
+                trashBar.trailingAnchor.constraint(equalTo: root.trailingAnchor),
+                scopeBar.topAnchor.constraint(equalTo: trashBar.bottomAnchor),
+                scopeBar.leadingAnchor.constraint(equalTo: root.leadingAnchor),
+                scopeBar.trailingAnchor.constraint(equalTo: root.trailingAnchor),
+                contentContainer.topAnchor.constraint(equalTo: scopeBar.bottomAnchor),
+                contentContainer.leadingAnchor.constraint(equalTo: root.leadingAnchor),
+                contentContainer.trailingAnchor.constraint(equalTo: root.trailingAnchor),
+                contentContainer.bottomAnchor.constraint(equalTo: separator.topAnchor),
+
+                messageLabel.centerXAnchor.constraint(equalTo: contentContainer.centerXAnchor),
+                messageLabel.centerYAnchor.constraint(equalTo: contentContainer.centerYAnchor),
+                messageLabel.widthAnchor.constraint(lessThanOrEqualTo: contentContainer.widthAnchor, constant: -60),
+
+                separator.leadingAnchor.constraint(equalTo: root.leadingAnchor),
+                separator.trailingAnchor.constraint(equalTo: root.trailingAnchor),
+                separator.bottomAnchor.constraint(equalTo: pathBar.topAnchor, constant: -2),
+
+                pathBar.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 8),
+                pathBar.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -8),
+                pathBar.heightAnchor.constraint(equalToConstant: 20),
+                pathBar.bottomAnchor.constraint(equalTo: statusLabel.topAnchor, constant: -2),
+
+                addressField.leadingAnchor.constraint(equalTo: pathBar.leadingAnchor),
+                addressField.trailingAnchor.constraint(equalTo: pathBar.trailingAnchor),
+                addressField.centerYAnchor.constraint(equalTo: pathBar.centerYAnchor),
+
+                statusLabel.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 120),
+                statusLabel.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -120),
+                statusLabel.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -5),
+
+                sizeSlider.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -12),
+                sizeSlider.centerYAnchor.constraint(equalTo: statusLabel.centerYAnchor),
+                sizeSlider.widthAnchor.constraint(equalToConstant: 90),
+            ])
         }
-        let separator = NSBox()
-        separator.boxType = .separator
-        separator.translatesAutoresizingMaskIntoConstraints = false
-        root.addSubview(separator)
-
-        scopeBarCollapsed = scopeBar.heightAnchor.constraint(equalToConstant: 0)
-        trashBarHeight = trashBar.heightAnchor.constraint(equalToConstant: 0)
-        NSLayoutConstraint.activate([
-            trashBarHeight!,
-            trashBar.topAnchor.constraint(equalTo: root.safeAreaLayoutGuide.topAnchor),
-            trashBar.leadingAnchor.constraint(equalTo: root.leadingAnchor),
-            trashBar.trailingAnchor.constraint(equalTo: root.trailingAnchor),
-            scopeBar.topAnchor.constraint(equalTo: trashBar.bottomAnchor),
-            scopeBar.leadingAnchor.constraint(equalTo: root.leadingAnchor),
-            scopeBar.trailingAnchor.constraint(equalTo: root.trailingAnchor),
-            contentContainer.topAnchor.constraint(equalTo: scopeBar.bottomAnchor),
-            contentContainer.leadingAnchor.constraint(equalTo: root.leadingAnchor),
-            contentContainer.trailingAnchor.constraint(equalTo: root.trailingAnchor),
-            contentContainer.bottomAnchor.constraint(equalTo: separator.topAnchor),
-
-            messageLabel.centerXAnchor.constraint(equalTo: contentContainer.centerXAnchor),
-            messageLabel.centerYAnchor.constraint(equalTo: contentContainer.centerYAnchor),
-            messageLabel.widthAnchor.constraint(lessThanOrEqualTo: contentContainer.widthAnchor, constant: -60),
-
-            separator.leadingAnchor.constraint(equalTo: root.leadingAnchor),
-            separator.trailingAnchor.constraint(equalTo: root.trailingAnchor),
-            separator.bottomAnchor.constraint(equalTo: pathBar.topAnchor, constant: -2),
-
-            pathBar.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 8),
-            pathBar.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -8),
-            pathBar.heightAnchor.constraint(equalToConstant: 20),
-            pathBar.bottomAnchor.constraint(equalTo: statusLabel.topAnchor, constant: -2),
-
-            addressField.leadingAnchor.constraint(equalTo: pathBar.leadingAnchor),
-            addressField.trailingAnchor.constraint(equalTo: pathBar.trailingAnchor),
-            addressField.centerYAnchor.constraint(equalTo: pathBar.centerYAnchor),
-
-            statusLabel.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 120),
-            statusLabel.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -120),
-            statusLabel.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -5),
-
-            sizeSlider.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -12),
-            sizeSlider.centerYAnchor.constraint(equalTo: statusLabel.centerYAnchor),
-            sizeSlider.widthAnchor.constraint(equalToConstant: 90),
-        ])
         view = root
 
         state.observe { [weak self] change in self?.stateChanged(change) }

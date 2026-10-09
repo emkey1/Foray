@@ -53,6 +53,8 @@ public enum Location: Hashable, Codable, Sendable {
 /// Settings classes: each has its own default view settings (DESIGN.md §3.3).
 public enum LocationClass: String, Codable, Sendable, CaseIterable {
     case folder, volumeRoot, computer, searchResults, recents, trash, network, tag
+    /// The desktop Foray draws when it stands in for Finder.
+    case desktop
 }
 
 /// One back/forward entry: where the tab was, and what was selected there.
