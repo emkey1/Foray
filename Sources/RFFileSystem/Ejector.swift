@@ -25,7 +25,7 @@ public enum Ejector {
     /// Network and other non-disk mounts are unmounted.
     public static func eject(_ volume: URL, force: Bool = false) throws {
         let path = volume.standardizedFileURL.path
-        guard path != "/" else { throw Failure(message: "The startup disk can't be ejected.", blockers: []) }
+        try checkEjectable(volume)
         if let device = wholeDevice(of: volume) {
             if force {
                 try run(["unmountDisk", "force", device], volume: path)
@@ -36,6 +36,32 @@ public enum Ejector {
         } else {
             try run(force ? ["unmount", "force", path] : ["unmount", path], volume: path)
         }
+    }
+
+    /// Unmounts just this volume, leaving the disk's other volumes mounted.
+    public static func unmountOnly(_ volume: URL) throws {
+        try checkEjectable(volume)
+        try run(["unmount", volume.standardizedFileURL.path], volume: volume.path)
+    }
+
+    /// Only the root of a mounted volume, and never one on the startup disk. (A folder path would
+    /// otherwise resolve to the disk holding it, which for most folders is the startup disk.)
+    static func checkEjectable(_ volume: URL) throws {
+        let isVolume = (try? volume.resourceValues(forKeys: [.isVolumeKey]))?.isVolume == true
+        guard isVolume, volume.standardizedFileURL.path != "/" else {
+            throw Failure(message: "“\(volume.lastPathComponent)” isn't a disk that can be ejected.", blockers: [])
+        }
+        let startup = Set(["/", "/System/Volumes/Data"].compactMap { wholeDevice(of: URL(fileURLWithPath: $0)) })
+        if let device = wholeDevice(of: volume), startup.contains(device) {
+            throw Failure(message: "The startup disk can't be ejected.", blockers: [])
+        }
+    }
+
+    /// Other mounted volumes on the same disk (ejecting one ejects them all).
+    public static func siblings(of volume: URL) -> [URL] {
+        guard let device = wholeDevice(of: volume) else { return [] }
+        let mounted = FileManager.default.mountedVolumeURLs(includingResourceValuesForKeys: nil, options: []) ?? []
+        return mounted.filter { $0.standardizedFileURL.path != volume.standardizedFileURL.path && wholeDevice(of: $0) == device }
     }
 
     /// `/dev/diskN` for a volume on a disk (nil for network and synthetic mounts).

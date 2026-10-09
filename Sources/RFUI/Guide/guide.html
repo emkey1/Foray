@@ -70,7 +70,7 @@
   <li><b>Recents</b> (top of the sidebar, or <kbd>⇧⌘F</kbd>) lists files you've opened in the last 30 days, newest first, with when you last opened each and where it is. Folders, apps and files in your Library are left out, like Finder. It updates as you open things.</li>
   <li><b>Cloud.</b> iCloud Drive and services such as Dropbox, Google Drive and OneDrive appear in the sidebar's Cloud section. A small cloud next to an item means it isn't downloaded yet; opening it downloads it. Right-click for <b>Download Now</b> (whole folders too) or <b>Remove Download</b>, which frees the space but keeps the item in the cloud. Previews never download anything.</li>
   <li><b>Servers.</b> <b>Go › Connect to Server…</b> <kbd>⌘K</kbd>: type an address (just “server/share” means SMB; afp://, nfs:// and https:// for WebDAV work too). macOS asks for the name and password itself and can keep them in your Keychain; Foray never sees them. Keep favorite servers with <b>+</b>; recent ones are listed too. File servers on your network appear in the sidebar's <b>Network</b> section (macOS asks once whether Foray may look on your local network); click one to connect.</li>
-  <li><b>Ejecting.</b> Click a disk's eject button, or select it (in Computer, <kbd>⇧⌘C</kbd>) and press <kbd>⌘E</kbd>. If something has files open on it, Foray says which apps, so you can quit them, or you can <b>Force Eject</b> (unsaved changes in those apps may be lost). Ejecting a disk ejects all of its volumes. Tabs that were showing it go to Computer.</li>
+  <li><b>Ejecting.</b> Click a disk's eject button, or select it (in Computer, <kbd>⇧⌘C</kbd>) and press <kbd>⌘E</kbd>. If something has files open on it, Foray says which apps, so you can quit them, or you can <b>Force Eject</b> (unsaved changes in those apps may be lost). If the disk has other volumes too, Foray asks whether to eject them all or unmount just that one. <b>Eject All</b> <kbd>⌥⌘E</kbd> (File menu, or right-click a disk in the sidebar) ejects every removable disk and network volume. Tabs that were showing a disk go to Computer.</li>
   <li><b>Back and Forward.</b> <kbd>⌘[</kbd> and <kbd>⌘]</kbd>. Going back selects the item you had selected.</li>
   <li><b>Enclosing folder.</b> <kbd>⌘↑</kbd> goes up one level and selects the folder you came from. <kbd>⌘↓</kbd> opens the selection.</li>
   <li><b>Path bar.</b> Click any folder in the path bar at the bottom to go there.</li>
@@ -267,7 +267,7 @@
 <p>macOS asks before any app reads Desktop, Documents, Downloads, external drives and network volumes; allow Foray when asked. Some places (Mail, Messages and Safari data, other users' folders, the Trash) need <b>Full Disk Access</b>: System Settings › Privacy &amp; Security › Full Disk Access, then add Foray. <b>Settings › Privacy</b> shows whether it's on and opens that page for you. If a folder won't open because of permissions, the message says so.</p>
 
 <h2 id="coming">Not yet available</h2>
-<p>Foray covers what Finder does. Smaller things still to come: Eject All, spring-loaded tabs, keeping icons snapped to the grid while you arrange them, and a criteria editor for search (the filters above cover most of it).</p>
+<p>Foray covers what Finder does. Smaller things still to come: spring-loaded tabs, keeping icons snapped to the grid while you arrange them, and a criteria editor for search (the filters above cover most of it).</p>
 
 </main>
 </body>

@@ -168,6 +168,7 @@ enum MainMenu {
         menu.addItem(item("Show in Enclosing Folder", Commands.showInEnclosingFolder, "r"))
         menu.addItem(item("Share…", Commands.share))
         menu.addItem(item("Eject", Commands.eject, "e"))
+        menu.addItem(item("Eject All", Commands.ejectAll, "e", [.command, .option]))
         menu.addItem(.separator())
         menu.addItem(item("Find", Commands.focusSearch, "f"))
         menu.addItem(item("Save Search…", Commands.saveSearch, "s"))

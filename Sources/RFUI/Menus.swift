@@ -100,6 +100,7 @@ public enum Commands {
     public static let focusSearch = #selector(BrowserWindowController.focusSearch(_:))
     public static let showInEnclosingFolder = #selector(BrowserViewController.showInEnclosingFolder(_:))
     public static let eject = #selector(BrowserViewController.ejectSelection(_:))
+    public static let ejectAll = #selector(BrowserViewController.ejectAll(_:))
     public static let emptyTrash = #selector(BrowserViewController.emptyTrash(_:))
     public static let makeAlias = #selector(BrowserViewController.makeAlias(_:))
     public static let showOriginal = #selector(BrowserViewController.showOriginal(_:))

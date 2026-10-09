@@ -145,6 +145,8 @@ final class SidebarViewController: NSViewController {
         EjectUI.eject([url], window: view.window)
     }
 
+    @objc private func ejectAll(_ sender: Any) { EjectUI.ejectAll(window: view.window) }
+
     @objc private func removeClicked(_ sender: Any) {
         guard let index = (outline.item(atRow: outline.clickedRow) as? Node)?.favoriteIndex else { return }
         AppModel.shared.removeFavorite(at: index)
@@ -164,6 +166,7 @@ final class SidebarViewController: NSViewController {
         }
         if node.ejectURL != nil {
             menu.addItem(withTitle: "Eject “\(node.title)”", action: #selector(eject(_:)), keyEquivalent: "").target = self
+            menu.addItem(withTitle: "Eject All", action: #selector(ejectAll(_:)), keyEquivalent: "").target = self
         }
         return menu
     }

@@ -15,13 +15,54 @@ public enum EjectUI {
         return v.volumeIsEjectable == true || v.volumeIsRemovable == true || v.volumeIsLocal == false
     }
 
-    static func eject(_ volumes: [URL], window: NSWindow?, force: Bool = false) {
+    /// Eject, asking first when a volume shares its disk with others that would go too.
+    static func eject(_ volumes: [URL], window: NSWindow?) {
+        var queue = volumes
+        func next() {
+            guard let volume = queue.first else { return }
+            queue.removeFirst()
+            let others = Ejector.siblings(of: volume).filter { !volumes.contains($0) }
+            guard !others.isEmpty else {
+                run([volume], window: window, force: false)
+                return next()
+            }
+            let name = FileManager.default.displayName(atPath: volume.path)
+            let names = ListFormatter.localizedString(byJoining: others.map { "“\(FileManager.default.displayName(atPath: $0.path))”" })
+            let alert = NSAlert()
+            alert.messageText = "“\(name)” is on a disk with other volumes: \(names)."
+            alert.informativeText = "Ejecting the disk unmounts all of them. To keep the others, unmount just “\(name)”."
+            alert.addButton(withTitle: "Eject All")
+            alert.addButton(withTitle: "Unmount Just “\(name)”")
+            alert.addButton(withTitle: "Cancel")
+            let handle: (NSApplication.ModalResponse) -> Void = { response in
+                switch response {
+                case .alertFirstButtonReturn: run([volume], window: window, force: false)
+                case .alertSecondButtonReturn: run([volume], window: window, force: false, unmountOnly: true)
+                default: break
+                }
+                next()
+            }
+            if let window, window.isVisible { alert.beginSheetModal(for: window, completionHandler: handle) } else { handle(alert.runModal()) }
+        }
+        next()
+    }
+
+    /// File › Eject All: every ejectable disk (and network volume).
+    static func ejectAll(window: NSWindow?) {
+        let volumes = Volumes.mounted().filter { $0.isEjectable || !$0.isLocal }.map(\.url)
+        guard !volumes.isEmpty else { return NSSound.beep() }
+        run(volumes, window: window, force: false)
+    }
+
+    static var hasEjectable: Bool { Volumes.mounted().contains { $0.isEjectable || !$0.isLocal } }
+
+    private static func run(_ volumes: [URL], window: NSWindow?, force: Bool, unmountOnly: Bool = false) {
         for volume in volumes where inFlight.insert(volume.path).inserted {
             let name = FileManager.default.displayName(atPath: volume.path)
             Task.detached(priority: .userInitiated) {
                 let failure: Ejector.Failure?
                 do {
-                    try Ejector.eject(volume, force: force)
+                    if unmountOnly { try Ejector.unmountOnly(volume) } else { try Ejector.eject(volume, force: force) }
                     failure = nil
                 } catch let f as Ejector.Failure {
                     failure = f
@@ -51,7 +92,7 @@ public enum EjectUI {
         if !wasForced { alert.addButton(withTitle: "Force Eject") }
         alert.addButton(withTitle: wasForced ? "OK" : "Cancel")
         let handle: (NSApplication.ModalResponse) -> Void = { response in
-            if !wasForced, response == .alertFirstButtonReturn { eject([volume], window: window, force: true) }
+            if !wasForced, response == .alertFirstButtonReturn { run([volume], window: window, force: true) }
         }
         if let window, window.isVisible { alert.beginSheetModal(for: window, completionHandler: handle) } else { handle(alert.runModal()) }
     }
@@ -91,4 +132,6 @@ extension BrowserViewController {
     @objc func ejectSelection(_ sender: Any?) {
         EjectUI.eject(selectedEjectableVolumes, window: view.window)
     }
+
+    @objc func ejectAll(_ sender: Any?) { EjectUI.ejectAll(window: view.window) }
 }

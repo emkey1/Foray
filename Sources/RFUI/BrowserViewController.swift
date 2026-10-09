@@ -760,6 +760,7 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
             return !state.selectedItems.isEmpty
         case #selector(toggleQuickLook(_:)): return !state.selectedItems.isEmpty || previewPanel != nil
         case #selector(ejectSelection(_:)): return !selectedEjectableVolumes.isEmpty
+        case #selector(ejectAll(_:)): return EjectUI.hasEjectable
         case #selector(cleanUp(_:)): return (content as? IconContentViewController)?.isFree == true && state.location.folderURL != nil
         case #selector(downloadNow(_:)): return !selectedCloudItems.isEmpty
         case #selector(removeDownload(_:)): return selectedCloudItems.contains { !$0.flags.contains(.dataless) }
