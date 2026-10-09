@@ -31,7 +31,7 @@ swift test                                                  # run the tests
 
 Test builds are a separate app, **Foray Dev** (its own bundle ID, settings and privacy grants, and a DEV badge on the icon), so they never get mixed up with an installed Foray. They're signed with your Apple Development certificate when you have one, which keeps permissions like Full Disk Access across rebuilds.
 
-Releases are built from `Xcode/Foray.xcodeproj` (scheme "Foray App"): Product › Archive, then Distribute App › Direct Distribution signs with Developer ID and notarizes. `scripts/make-dmg.sh <exported Foray.app>` turns the result into the DMG.
+Releases are built from `Xcode/Foray.xcodeproj` (scheme "Foray App"): Product › Archive, then Distribute App › Direct Distribution signs with Developer ID and notarizes. Then `scripts/make-dmg.sh` exports the notarized app from the newest archive and makes the installer: a window with Foray and an Applications shortcut over a background that explains what to do (`scripts/dmg-layout.swift` writes the window layout directly, so Finder isn't scripted).
 
 `DESIGN.md` describes the architecture, and the in-app guide (`Sources/RFUI/Guide/guide.html`) describes every feature.
 
