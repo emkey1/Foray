@@ -494,3 +494,33 @@ extension UISerial {
         }
     }
 }
+
+extension UISerial {
+    @MainActor
+    @Suite final class FiltersPopoverTests {
+        @Test func addsAndRemovesFilters() async throws {
+            var latest = ""
+            let model = FiltersModel(text: "beach kind:images size:>5MB modified:<7d") { latest = $0 }
+            #expect(model.items.count == 4)
+            model.draft.field = .tag
+            model.draft.text = "Work"
+            model.add()
+            #expect(latest == "beach kind:images size:>5MB modified:<7d tag:Work")
+            model.remove(at: 0)
+            #expect(latest == "kind:images size:>5MB modified:<7d tag:Work")
+
+            let host = NSHostingView(rootView: FiltersView(model: model))
+            host.frame = NSRect(x: 0, y: 0, width: 560, height: 240)
+            host.appearance = NSAppearance(named: .aqua)
+            let window = NSWindow(contentRect: host.frame, styleMask: [.titled], backing: .buffered, defer: false)
+            window.contentView = host
+            model.draft.field = .size
+            try await Task.sleep(for: .milliseconds(300))
+            host.layoutSubtreeIfNeeded()
+            if let rep = host.bitmapImageRepForCachingDisplay(in: host.bounds) {
+                host.cacheDisplay(in: host.bounds, to: rep)
+                try rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: "/tmp/claude-501/rf-filters.png"))
+            }
+        }
+    }
+}

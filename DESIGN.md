@@ -266,14 +266,14 @@ Each of these is additive or controlled by a setting, so Finder habits keep work
 | Show/hide hidden files (Cmd-Shift-.) | `Arrangement.showHidden` | P1 |
 | Show Package Contents | | P1 |
 | Window and tab state restored after relaunch | `NSWindowRestoration` + tab state | P1 |
-| Spring-loaded folders and tabs | `NSSpringLoadingDestination` | P2 ✅ (folders in list, icon and sidebar; tabs still to do) |
+| Spring-loaded folders and tabs | `NSSpringLoadingDestination` | P2 ✅ (tabs: macOS's tab buttons registered for file drags) |
 
 ### 4.2 Views
 
 | Feature | Approach | Phase |
 |---|---|---|
 | Icon view: sizes, grid, label position, item info, icon previews, groups | NSCollectionView, custom layout | P1 |
-| Icon view: manual arrangement, snap to grid, Clean Up | Free-position layout + stored positions | P2 ✅ (Sort By None; positions per folder path in `icon-positions.json`; Clean Up snaps; "keep snapped" option still to do) |
+| Icon view: manual arrangement, snap to grid, Clean Up | Free-position layout + stored positions | P2 ✅ (Sort By None; positions per folder path in `icon-positions.json`; Clean Up; Snap to grid) |
 | List view: columns, disclosure triangles, relative dates, groups | NSOutlineView | P1 |
 | Column view, including a preview column and resizable columns | Custom (§5.5) | P1 |
 | Gallery view, including metadata | QLPreviewView + thumbnail strip | P1 |
@@ -287,7 +287,7 @@ Each of these is additive or controlled by a setting, so Finder habits keep work
 | Feature | Approach | Phase |
 |---|---|---|
 | Open, Open With, Other…, Always Open With | `NSWorkspace.open(_:withApplicationAt:configuration:)`, `urlsForApplications(toOpen:)` | P1 |
-| Change All… (set the default app for a type) | `NSWorkspace.setDefaultApplication(at:toOpen:)` | P2 |
+| Change All… (set the default app for a type) | `NSWorkspace.setDefaultApplication(at:toOpen:)` | P2 ✅ (Open With › Always Open With, and Other… with "Always open") |
 | Quick Look (Space or Cmd-Y), full screen, arrow-key navigation, Markup | `QLPreviewPanel` | P1 |
 | Open in new tab or window (Cmd-double-click) | | P1 |
 | Mount disk images | Open them with the system default handler | P1 |
@@ -303,7 +303,7 @@ Each of these is additive or controlled by a setting, so Finder habits keep work
 | File promises (dragging in from Mail, Photos or Safari) | `NSFilePromiseReceiver` | P2 ✅ |
 | Duplicate | | P1 |
 | Move to Trash, Delete Immediately, Empty Trash | | P1 |
-| Put Back | Journal + Finder's records (§5.7) | P2 |
+| Put Back | Journal + Finder's records (§5.7) | P2 ✅ |
 | Make Alias, Show Original, Fix Alias | Bookmark APIs | P2 ✅ |
 | Batch rename (Finder's Replace / Add / Format, plus I9) | | P2 ✅ |
 | Compress and expand | `ditto` for zip (same output as Finder); Archive Utility or libarchive for other formats | P2 ✅ (zip; other formats open in Archive Utility) |
@@ -330,7 +330,7 @@ Each of these is additive or controlled by a setting, so Finder habits keep work
 |---|---|---|
 | Scoped search with kinds and tokens | §3.1, §3.2, §5.6 | P1 |
 | Recents | Spotlight query on `kMDItemLastUsedDate` (live; dates read from the `com.apple.lastuseddate#PS` xattr, Spotlight as fallback) | P1 ✅ |
-| Criteria editor | | P2 (replaced for now by the filter syntax and kind chips; revisit) |
+| Criteria editor | | P2 ✅ (Filters… popover: filters in words, removable, built from menus; edits the search text) |
 | Smart folders: open Finder `.savedSearch` files; create and save new ones | | P2 ✅ (Finder's run their RawQuery; ours store their search text too) |
 
 ### 4.7 Devices, network and cloud

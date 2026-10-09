@@ -1,5 +1,6 @@
 import AppKit
 import RFModel
+import SwiftUI
 
 /// Shown below the toolbar while a search is active (DESIGN.md §3.1):
 ///   Search: [ Projects | This Mac ]  [x] Subfolders  [Names v]
@@ -9,6 +10,8 @@ final class SearchScopeBar: NSView {
     var onChange: (((inout SearchQuery) -> Void) -> Void)?
     var onSave: (() -> Void)?
     private let save = NSButton(title: "Save…", target: nil, action: nil)
+    private let filters = NSButton(title: "Filters…", target: nil, action: nil)
+    private var popover: NSPopover?
 
     private let scope = NSSegmentedControl(labels: ["Folder", "This Mac"], trackingMode: .selectOne, target: nil, action: nil)
     private let subfolders = NSButton(checkboxWithTitle: "Subfolders", target: nil, action: nil)
@@ -50,7 +53,12 @@ final class SearchScopeBar: NSView {
         save.target = self
         save.action = #selector(saveClicked)
         save.toolTip = "Save this search as a smart folder (Finder can open it too)"
-        let top = NSStackView(views: [label, scope, subfolders, match, follow, save])
+        filters.controlSize = .small
+        filters.bezelStyle = .push
+        filters.target = self
+        filters.action = #selector(filtersClicked)
+        filters.toolTip = "See the search's filters in words, and add or remove them"
+        let top = NSStackView(views: [label, scope, subfolders, match, follow, filters, save])
         top.spacing = 10
         problems.textColor = .systemOrange
         problems.font = .systemFont(ofSize: NSFont.smallSystemFontSize)
@@ -98,6 +106,7 @@ final class SearchScopeBar: NSView {
         let isRaw = q.rawSpotlight != nil
         match.isEnabled = !isRaw
         chips.isEnabled = !isRaw
+        filters.isEnabled = !isRaw
         let unreadable = isRaw ? [] : QueryParser.problems(in: q.text)
         problems.isHidden = unreadable.isEmpty && !isRaw
         problems.textColor = isRaw ? .secondaryLabelColor : .systemOrange
@@ -109,6 +118,19 @@ final class SearchScopeBar: NSView {
     }
 
     @objc private func saveClicked() { onSave?() }
+
+    @objc private func filtersClicked() {
+        guard let query else { return }
+        if let popover, popover.isShown { return popover.close() }
+        let model = FiltersModel(text: query.text) { [weak self] text in
+            self?.onChange? { $0.text = text }
+        }
+        let p = NSPopover()
+        p.behavior = .transient
+        p.contentViewController = NSHostingController(rootView: FiltersView(model: model))
+        p.show(relativeTo: filters.bounds, of: filters, preferredEdge: .maxY)
+        popover = p
+    }
 
     @objc private func scopeChanged() {
         let thisMac = scope.selectedSegment == 1
