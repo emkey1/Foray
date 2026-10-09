@@ -101,6 +101,8 @@ final class Execution: @unchecked Sendable {
         case .makeAlias(let items, let dir): await makeAliases(items, in: dir)
         case .setAttributes(let list): await setAttributes(list)
         case .batchRename(let pairs): await batchRename(pairs)
+        case .rotate(let items, let cw): await rotate(items, clockwise: cw)
+        case .createPDF(let items): await createPDF(items)
         case .compress(let items): await compress(items)
         case .expand(let archives): await expand(archives)
         case .emptyTrash(let folders):

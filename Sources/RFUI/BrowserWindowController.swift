@@ -37,6 +37,9 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate, NSToo
         static let connect = NSToolbarItem.Identifier("connect")
         static let inspector = NSToolbarItem.Identifier("inspector")
         static let path = NSToolbarItem.Identifier("copyPath")
+        static let rotateLeft = NSToolbarItem.Identifier("rotateLeft")
+        static let rotateRight = NSToolbarItem.Identifier("rotateRight")
+        static let markup = NSToolbarItem.Identifier("markup")
 
         /// Simple buttons: (identifier, label, symbol, action).
         @MainActor static let buttons: [(NSToolbarItem.Identifier, String, String, Selector)] = [
@@ -48,6 +51,9 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate, NSToo
             (quickLook, "Quick Look", "eye", Commands.toggleQuickLook),
             (eject, "Eject", "eject", Commands.eject),
             (path, "Copy Path", "doc.on.clipboard", Commands.copyPath),
+            (rotateLeft, "Rotate Left", "rotate.left", Commands.rotateLeft),
+            (rotateRight, "Rotate Right", "rotate.right", Commands.rotateRight),
+            (markup, "Markup", "pencil.tip.crop.circle", Commands.markup),
         ]
     }
 

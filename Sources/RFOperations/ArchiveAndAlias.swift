@@ -160,3 +160,66 @@ enum Tool {
         return p.terminationStatus == 0 ? 0 : EIO
     }
 }
+
+// MARK: Quick Actions
+
+extension Execution {
+    func rotate(_ items: [URL], clockwise: Bool) async {
+        update {
+            $0.itemsTotal = items.count
+            $0.phase = .running
+        }
+        for item in items {
+            guard control.checkpoint() else { break }
+            update { $0.currentName = item.lastPathComponent }
+            let rc: Int32 = await blocking {
+                do {
+                    try QuickActions.rotate(item, clockwise: clockwise)
+                    return 0
+                } catch let f as QuickActions.Failure {
+                    return f.code
+                } catch {
+                    return Self.errno(of: error as NSError)
+                }
+            }
+            if rc == 0 {
+                result.record(.rotated(item, clockwise: clockwise))
+                result.changedFolders.insert(item.deletingLastPathComponent())
+            } else {
+                fail(item, rc, "rotate")
+            }
+            update { $0.itemsDone += 1 }
+        }
+    }
+
+    func createPDF(_ items: [URL]) async {
+        guard let first = items.first else { return }
+        update {
+            $0.itemsTotal = 1
+            $0.phase = .running
+            $0.currentName = first.lastPathComponent
+        }
+        let dir = first.deletingLastPathComponent()
+        let outcome: Result<URL, NSError> = await blocking {
+            let base = (first.lastPathComponent as NSString).deletingPathExtension
+            let name = FileNaming.keepBothFreeName("\(base).pdf") { FileOps.exists(dir.appendingPathComponent($0)) }
+            let target = dir.appendingPathComponent(name)
+            do {
+                try QuickActions.createPDF(from: items, at: target)
+                return .success(target)
+            } catch let f as QuickActions.Failure {
+                return .failure(NSError(domain: NSPOSIXErrorDomain, code: Int(f.code)))
+            } catch {
+                return .failure(error as NSError)
+            }
+        }
+        switch outcome {
+        case .success(let pdf):
+            result.record(.created(pdf))
+            result.changedFolders.insert(dir)
+        case .failure(let error):
+            fail(first, Self.errno(of: error), "make a PDF from")
+        }
+        update { $0.itemsDone = 1 }
+    }
+}

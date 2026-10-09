@@ -415,6 +415,7 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
         }
         menu.addItem(.separator())
         menu.addItem(withTitle: "Quick Look", action: #selector(toggleQuickLook(_:)), keyEquivalent: "")
+        if let quick = quickActionsMenuItem() { menu.addItem(quick) }
         menu.addItem(withTitle: "Share…", action: #selector(shareSelection(_:)), keyEquivalent: "")
         menu.addItem(withTitle: "Copy Path", action: #selector(copyPath(_:)), keyEquivalent: "")
         if items.allSatisfy(\.isNavigableFolder) {
@@ -751,6 +752,9 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
         case #selector(showOriginal(_:)): return state.selectedItems.count == 1 && !selectedAliases.isEmpty
         case #selector(expandSelection(_:)): return !selectedArchives.isEmpty
         case #selector(shareSelection(_:)): return !state.selectedItems.isEmpty
+        case #selector(rotateLeft(_:)), #selector(rotateRight(_:)): return !selectedRotatable.isEmpty
+        case #selector(createPDF(_:)): return !selectedForPDF.isEmpty
+        case #selector(markup(_:)): return markupTarget != nil && MarkupSession.isAvailable
         case #selector(saveSearch(_:)): return state.location.searchQuery.map { !$0.isEmpty } ?? false
         case #selector(makeAlias(_:)), #selector(compressSelection(_:)):
             if item.action == #selector(compressSelection(_:)) { item.title = state.selectedItems.isEmpty ? "Compress" : compressTitle }

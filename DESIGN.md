@@ -277,7 +277,7 @@ Each of these is additive or controlled by a setting, so Finder habits keep work
 | List view: columns, disclosure triangles, relative dates, groups | NSOutlineView | P1 |
 | Column view, including a preview column and resizable columns | Custom (§5.5) | P1 |
 | Gallery view, including metadata | QLPreviewView + thumbnail strip | P1 |
-| Gallery and preview-pane Quick Actions (rotate, markup, create PDF) | | P2 |
+| Gallery and preview-pane Quick Actions (rotate, markup, create PDF) | | P2 ✅ (lossless rotation via the orientation tag; Markup through the system `com.apple.MarkupUI.Markup` sharing service) |
 | View Options panel (Cmd-J) | SwiftUI | P1 |
 | Thumbnail icon previews | `QLThumbnailGenerator` | P1 |
 | Icon view window backgrounds (color or picture) | | P3 |

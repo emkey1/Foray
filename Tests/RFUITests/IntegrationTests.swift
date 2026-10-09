@@ -5,6 +5,7 @@ import Testing
 
 @testable import RFFileSystem
 @testable import RFModel
+@testable import RFOperations
 @testable import RFUI
 
 extension UISerial {
@@ -291,5 +292,45 @@ extension UISerial {
         LegacyMigration.run(defaults: defaults)
         #expect(defaults.bool(forKey: LegacyMigration.doneKey))
         #expect(defaults.string(forKey: "ReturnOpens") == "mine")
+    }
+}
+
+extension UISerial {
+    @MainActor
+    @Suite(.serialized) final class QuickActionUITests {
+        let base = TestDirs.make("quickui")
+        isolated deinit { try? FileManager.default.removeItem(at: base) }
+
+        @Test func menuOffersActionsForImagesOnly() async throws {
+            AppModel.shared = AppModel(store: AppSupportStore(directory: base.appendingPathComponent("store")))
+            let w = base.appendingPathComponent("W", isDirectory: true)
+            try FileManager.default.createDirectory(at: w, withIntermediateDirectories: true)
+            let png = w.appendingPathComponent("pic.png")
+            let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: 8, pixelsHigh: 8, bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true,
+                                       isPlanar: false, colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
+            try rep.representation(using: .png, properties: [:])!.write(to: png)
+            FileManager.default.createFile(atPath: w.appendingPathComponent("notes.txt").path, contents: Data("x".utf8))
+            let vc = BrowserViewController(location: .folder(w))
+            let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 900, height: 500), styleMask: [.titled], backing: .buffered, defer: false)
+            window.contentViewController = vc
+            defer { vc.state.invalidate() }
+            let deadline = Date().addingTimeInterval(15)
+            while vc.state.snapshot.items.count < 2 && Date() < deadline { try await Task.sleep(for: .milliseconds(20)) }
+
+            vc.state.select(names: ["pic.png"])
+            let quick = try #require(vc.contentMenu(clicked: vc.state.selectedItems.first?.id)?.items.first { $0.title == "Quick Actions" })
+            #expect(quick.submenu?.items.map(\.title) == ["Rotate Left", "Rotate Right", "Markup", "Create PDF"])
+            #expect(vc.validateMenuItem(NSMenuItem(title: "", action: Commands.rotateRight, keyEquivalent: "")))
+
+            vc.state.select(names: ["notes.txt"])
+            #expect(vc.contentMenu(clicked: vc.state.selectedItems.first?.id)?.items.contains { $0.title == "Quick Actions" } == false)
+            #expect(!vc.validateMenuItem(NSMenuItem(title: "", action: Commands.createPDF, keyEquivalent: "")))
+
+            // Rotating from the browser goes through the engine (undoable).
+            vc.state.select(names: ["pic.png"])
+            vc.rotateRight(nil)
+            while OperationCenter.shared.isBusy && Date() < deadline { try await Task.sleep(for: .milliseconds(20)) }
+            #expect(OperationCenter.shared.undoManager.undoActionName == "Rotate Right")
+        }
     }
 }

@@ -109,4 +109,8 @@ public enum Commands {
     public static let saveSearch = #selector(BrowserViewController.saveSearch(_:))
     public static let showInspector = #selector(BrowserViewController.showInspector(_:))
     public static let cleanUp = #selector(BrowserViewController.cleanUp(_:))
+    public static let rotateLeft = #selector(BrowserViewController.rotateLeft(_:))
+    public static let rotateRight = #selector(BrowserViewController.rotateRight(_:))
+    public static let markup = #selector(BrowserViewController.markup(_:))
+    public static let createPDF = #selector(BrowserViewController.createPDF(_:))
 }

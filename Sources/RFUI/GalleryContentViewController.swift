@@ -1,5 +1,6 @@
 import AppKit
 import Quartz
+import RFFileSystem
 import RFModel
 
 /// Gallery view (DESIGN.md §5.5): a large preview of the selected item, a filmstrip of
@@ -20,6 +21,15 @@ final class GalleryContentViewController: NSViewController, ContentView {
     private var settings = ViewSettings()
     private var isApplying = false
     private var shownURL: URL?
+    private var shownModified: Date?
+    /// Quick Actions under the info, like Finder's gallery: they go to the browser through the responder chain.
+    private let actions = NSStackView()
+    private let rotateButton = NSButton(title: "Rotate Left", image: NSImage(systemSymbolName: "rotate.left", accessibilityDescription: nil)!,
+                                        target: nil, action: #selector(BrowserViewController.rotateLeft(_:)))
+    private let markupButton = NSButton(title: "Markup", image: NSImage(systemSymbolName: "pencil.tip.crop.circle", accessibilityDescription: nil)!,
+                                        target: nil, action: #selector(BrowserViewController.markup(_:)))
+    private let pdfButton = NSButton(title: "Create PDF", image: NSImage(systemSymbolName: "doc.richtext", accessibilityDescription: nil)!,
+                                     target: nil, action: #selector(BrowserViewController.createPDF(_:)))
 
     var firstResponderView: NSView { strip }
 
@@ -43,7 +53,16 @@ final class GalleryContentViewController: NSViewController, ContentView {
         infoTitle.font = .boldSystemFont(ofSize: NSFont.systemFontSize + 1)
         info.font = .systemFont(ofSize: NSFont.smallSystemFontSize)
         info.textColor = .secondaryLabelColor
-        let infoStack = NSStackView(views: [infoTitle, info])
+        for b in [rotateButton, markupButton, pdfButton] {
+            b.controlSize = .small
+            b.bezelStyle = .push
+            b.imagePosition = .imageLeading
+        }
+        actions.setViews([rotateButton, markupButton, pdfButton], in: .leading)
+        actions.orientation = .vertical
+        actions.alignment = .leading
+        actions.spacing = 4
+        let infoStack = NSStackView(views: [infoTitle, info, actions])
         infoStack.orientation = .vertical
         infoStack.alignment = .leading
         infoStack.spacing = 8
@@ -134,7 +153,16 @@ final class GalleryContentViewController: NSViewController, ContentView {
         if url != shownURL, view.window != nil {
             preview.previewItem = url as NSURL?
             shownURL = url
+            shownModified = item?.modified
+        } else if url != nil, item?.modified != shownModified {
+            preview.refreshPreviewItem()   // the file changed (e.g. rotated)
+            shownModified = item?.modified
         }
+        let selected = host?.state.selectedItems ?? []
+        let rotatable = !selected.isEmpty && selected.allSatisfy { QuickActions.canRotate($0.contentType) && !$0.flags.contains(.dataless) }
+        rotateButton.isHidden = !rotatable
+        markupButton.isHidden = !(rotatable && selected.count == 1 && MarkupSession.isAvailable)
+        pdfButton.isHidden = !(!selected.isEmpty && selected.allSatisfy { QuickActions.canCombineIntoPDF($0.contentType) })
         infoTitle.stringValue = item?.displayName ?? ""
         guard let item else {
             info.stringValue = ""

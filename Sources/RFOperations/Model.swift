@@ -34,6 +34,10 @@ public enum OperationRequest: Sendable, Equatable {
     /// Renames many items at once (each pair: current URL → new URL in the same folder). Swaps
     /// and cycles work; the whole batch undoes in one step.
     case batchRename([Pair])
+    /// Quick Action: a quarter turn for each image or PDF.
+    case rotate([URL], clockwise: Bool)
+    /// Quick Action: images and PDFs, in order, combined into one new PDF beside the first.
+    case createPDF([URL])
 
     public struct AttributeAssignment: Sendable, Equatable, Hashable {
         public var url: URL
@@ -82,6 +86,8 @@ public enum OperationRequest: Sendable, Equatable {
         case .setTags(let list): return list.count == 1 ? "Tagging “\(list[0].url.lastPathComponent)”" : "Tagging \(list.count) items"
         case .setAttributes(let list): return list.count == 1 ? "Changing “\(list[0].url.lastPathComponent)”" : "Changing \(list.count) items"
         case .batchRename(let pairs): return "Renaming \(pairs.count) items"
+        case .rotate(let items, _): return "Rotating \(n(items))"
+        case .createPDF(let items): return "Making a PDF from \(n(items))"
         }
     }
 
@@ -94,6 +100,8 @@ public enum OperationRequest: Sendable, Equatable {
         case .trash: "Move to Trash"
         case .delete: "Delete"
         case .rename, .batchRename: "Rename"
+        case .rotate(_, let cw): cw ? "Rotate Right" : "Rotate Left"
+        case .createPDF: "Create PDF"
         case .newFolder: "New Folder"
         case .restore: "Restore"
         case .putBack: "Put Back"
@@ -204,6 +212,8 @@ public struct OperationResult: Sendable {
         case tagged(URL, before: [String], after: [String])
         /// Get Info attributes changed (only the fields that were set).
         case attributes(URL, before: ItemAttributes, after: ItemAttributes)
+        /// An image or PDF was turned a quarter turn.
+        case rotated(URL, clockwise: Bool)
     }
 
     /// In the order things happened.
@@ -237,6 +247,8 @@ public struct OperationResult: Sendable {
             case .moved(let p), .trashed(let p):
                 let back = OperationRequest.Pair(from: p.to, to: p.from)
                 if case .restore(let pairs) = steps.last { steps[steps.count - 1] = .restore(pairs + [back]) } else { steps.append(.restore([back])) }
+            case .rotated(let url, let cw):
+                if case .rotate(let urls, let c) = steps.last, c == !cw { steps[steps.count - 1] = .rotate(urls + [url], clockwise: !cw) } else { steps.append(.rotate([url], clockwise: !cw)) }
             case .attributes(let url, let before, _):
                 let back = OperationRequest.AttributeAssignment(url: url, attributes: before)
                 if case .setAttributes(let list) = steps.last { steps[steps.count - 1] = .setAttributes(list + [back]) } else { steps.append(.setAttributes([back])) }
