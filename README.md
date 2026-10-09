@@ -14,11 +14,11 @@ Foray runs alongside Finder; it doesn't replace the desktop or change any system
 
 ## Install
 
-1. Download the latest `Foray-x.y.z.dmg` from [Releases](../../releases).
+1. Download `Foray-x.y.z.dmg` from the [latest release](https://github.com/emkey1/Foray/releases/latest).
 2. Open it and drag **Foray** to **Applications**.
 3. Open Foray. macOS asks before it can see Desktop, Documents, Downloads and external drives; allow those. For the Trash, Mail data and other protected places, add Foray in **System Settings › Privacy & Security › Full Disk Access** (Foray › Settings › Privacy has a button for it).
 
-Requires macOS 26 or later (Apple silicon or Intel).
+Requires macOS 26 or later (Apple silicon or Intel). From 0.9.1 on, Foray offers new versions itself (Foray › Check for Updates…); if you have 0.9.0, download the latest release once.
 
 ## Build from source
 
