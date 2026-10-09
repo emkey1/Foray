@@ -129,6 +129,16 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate, NSToo
 
     func windowDidBecomeKey(_ notification: Notification) { WindowManager.shared.sessionChanged() }
 
+    /// Spring-loaded tabs: when the tabs change, let the tab buttons take part in file drags.
+    private var tabSignature = ""
+    func windowDidUpdate(_ notification: Notification) {
+        let group = window?.tabGroup
+        let signature = "\(group?.windows.count ?? 0)/\(group?.isTabBarVisible ?? false)"
+        guard signature != tabSignature else { return }
+        tabSignature = signature
+        SpringLoadedTabs.enable(in: window)
+    }
+
     /// One app-wide undo stack for file operations, like Finder.
     func windowWillReturnUndoManager(_ window: NSWindow) -> UndoManager? { OperationCenter.shared.undoManager }
 

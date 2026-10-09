@@ -131,3 +131,21 @@ enum SpringLoading {
         target = nil
     }
 }
+
+/// Spring-loaded tabs (DESIGN.md §4.1): hovering a drag over a window tab switches to it. macOS's
+/// tab buttons already know how (they implement spring-loading and select their tab), but aren't
+/// registered for file drags; registering them turns it on. They're private views found by class
+/// name, so if a future macOS renames them this simply does nothing.
+@MainActor
+enum SpringLoadedTabs {
+    static func enable(in window: NSWindow?) {
+        guard let frame = window?.contentView?.superview else { return }
+        for button in tabButtons(in: frame) where button.registeredDraggedTypes.isEmpty {
+            button.registerForDraggedTypes(DragAndDrop.acceptedTypes)
+        }
+    }
+
+    static func tabButtons(in view: NSView) -> [NSView] {
+        (String(describing: type(of: view)) == "NSTabButton" ? [view] : []) + view.subviews.flatMap(tabButtons)
+    }
+}

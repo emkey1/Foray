@@ -469,3 +469,28 @@ extension UISerial {
         }
     }
 }
+
+extension UISerial {
+    @MainActor
+    @Suite(.serialized) final class SpringLoadedTabTests {
+        let base = TestDirs.make("springtabs")
+        isolated deinit { try? FileManager.default.removeItem(at: base) }
+
+        @Test func tabButtonsAcceptFileDrags() async throws {
+            AppModel.shared = AppModel(store: AppSupportStore(directory: base.appendingPathComponent("store")))
+            try FileManager.default.createDirectory(at: base.appendingPathComponent("A"), withIntermediateDirectories: true)
+            let a = BrowserWindowController(location: .folder(base), pendingSearch: nil)
+            let b = BrowserWindowController(location: .folder(base.appendingPathComponent("A")), pendingSearch: nil)
+            defer { for c in [a, b] { c.browser.state.invalidate(); c.window?.close() } }
+            a.window?.tabbingMode = .preferred
+            a.showWindow(nil)
+            a.window?.addTabbedWindow(b.window!, ordered: .above)
+            try await Task.sleep(for: .milliseconds(300))
+            a.windowDidUpdate(Notification(name: NSWindow.didUpdateNotification))
+            b.windowDidUpdate(Notification(name: NSWindow.didUpdateNotification))
+            let buttons = [a, b].flatMap { SpringLoadedTabs.tabButtons(in: $0.window!.contentView!.superview!) }
+            #expect(buttons.count >= 2, "found \(buttons.count) tab buttons")
+            #expect(buttons.allSatisfy { $0.registeredDraggedTypes.contains(.fileURL) })
+        }
+    }
+}
