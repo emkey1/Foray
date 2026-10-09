@@ -173,7 +173,10 @@ final class ListContentViewController: NSViewController, ContentView {
         outline.scrollRowToVisible(row)
         guard let cell = outline.view(atColumn: column, row: row, makeIfNecessary: true) as? NSTableCellView,
               let text = cell.textField else { return nil }
-        return text.convert(text.bounds, to: nil)
+        // The name itself, not the whole (column-wide) field.
+        var bounds = text.bounds
+        bounds.size.width = min(bounds.width, ceil(text.attributedStringValue.size().width) + 6)
+        return text.convert(bounds, to: nil)
     }
 
     // MARK: Building
@@ -490,16 +493,28 @@ private final class NameCell: NSTableCellView {
 
     required init?(coder: NSCoder) { fatalError() }
 
+    override func setFrameSize(_ newSize: NSSize) {
+        super.setFrameSize(newSize)
+        needsLayout = true   // column resized: give the name the new room
+    }
+
     override func layout() {
         super.layout()
         let h = bounds.height
         imageView?.frame = NSRect(x: 2, y: (h - 16) / 2, width: 16, height: 16)
-        let textSize = textField?.intrinsicContentSize ?? .zero
+        guard let field = textField else { return }
+        let height = field.intrinsicContentSize.height
         let dotsWidth = dots.isHidden ? 0 : dots.dotsWidth + 6
         let cloudWidth = cloud.isHidden ? 0 : CloudBadgeView.size + 6
         let available = max(0, bounds.width - 26 - dotsWidth - cloudWidth)
-        let textWidth = min(textSize.width, available)
-        textField?.frame = NSRect(x: 24, y: (h - textSize.height) / 2, width: textWidth, height: textSize.height)
+        // Measured now, in whatever font the table has given the field (it can change after the
+        // cell is configured, e.g. with a larger text size setting).
+        let textWidth = min(ceil(field.attributedStringValue.size().width) + 6, available)
+        // The field gets all the room the column gives it, so a name is only shortened when the
+        // column really is too narrow. (Sizing it to a measurement cut names short when the font
+        // changed afterwards.) With tag dots, it ends where the dots begin.
+        let fieldWidth = dots.isHidden ? available : textWidth
+        field.frame = NSRect(x: 24, y: (h - height) / 2, width: fieldWidth, height: height)
         // Tag dots right after the name, like Finder.
         dots.frame = NSRect(x: 24 + textWidth + 4, y: (h - TagDotsView.diameter) / 2, width: dots.dotsWidth, height: TagDotsView.diameter)
         // Not downloaded: a cloud at the right edge of the name column, like Finder.

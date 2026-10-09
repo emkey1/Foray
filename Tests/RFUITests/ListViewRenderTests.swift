@@ -163,3 +163,99 @@ extension UISerial {
         }
     }
 }
+
+extension UISerial {
+    @MainActor
+    @Suite(.serialized) struct ListColumnResizeTests {
+        /// Regression: widening the Name column didn't give names more room (they stayed truncated
+        /// at the width they first had).
+        @Test func wideningTheNameColumnShowsMoreOfTheName() async throws {
+            let base = TestDirs.make("colresize")
+            defer { try? FileManager.default.removeItem(at: base) }
+            let folder = base.appendingPathComponent("folder")
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            let long = "drawer_organizer_3_compartments_scale_0.25_final_version.stl"
+            FileManager.default.createFile(atPath: folder.appendingPathComponent(long).path, contents: Data("x".utf8))
+            AppModel.shared = AppModel(store: AppSupportStore(directory: base.appendingPathComponent("store")))
+            let browser = BrowserViewController(location: .folder(folder))
+            let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1000, height: 400), styleMask: [.titled], backing: .buffered, defer: false)
+            window.contentViewController = browser
+            window.setContentSize(NSSize(width: 1000, height: 400))
+            defer { browser.state.invalidate() }
+            let deadline = Date().addingTimeInterval(15)
+            while browser.state.snapshot.items.isEmpty && Date() < deadline { try await Task.sleep(for: .milliseconds(20)) }
+            browser.state.updatePresentation { $0.mode = .list }
+            try await Task.sleep(for: .milliseconds(100))
+            let list = try #require(browser.children.compactMap { $0 as? ListContentViewController }.first)
+            let table = try #require(list.firstResponderView as? NSTableView)
+            let name = try #require(table.tableColumns.first)
+
+            func textWidth() -> CGFloat {
+                window.layoutIfNeeded()
+                table.layoutSubtreeIfNeeded()
+                window.displayIfNeeded()
+                let cell = table.view(atColumn: 0, row: 0, makeIfNecessary: true) as? NSTableCellView
+                cell?.layoutSubtreeIfNeeded()
+                return cell?.textField?.frame.width ?? 0
+            }
+            name.width = 150
+            let narrow = textWidth()
+            name.width = 600
+            let wide = textWidth()
+            #expect(narrow < 150)
+            #expect(wide > 300, "narrow \(narrow) → wide \(wide)")
+        }
+    }
+
+    @MainActor
+    @Suite(.serialized) struct ListCellReuseTests {
+        /// Regression: a reused name cell kept the width it had for its previous file, so names were
+        /// cut short in a wide column (seen after re-sorting).
+        @Test func reusedCellsFitTheirNewNames() async throws {
+            let base = TestDirs.make("cellreuse")
+            defer { try? FileManager.default.removeItem(at: base) }
+            let folder = base.appendingPathComponent("folder")
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            let names = ["LICENSE", "README.md", "requirements.txt", "drawer_organizer_3_compartments_scale_0.25.stl",
+                         "a.txt", "4_Side_Pyramid_with_a_much_longer_name_than_most", "Chess_Set_01", "pr_lib"]
+            for n in names { FileManager.default.createFile(atPath: folder.appendingPathComponent(n).path, contents: Data(count: n.count * 100)) }
+            AppModel.shared = AppModel(store: AppSupportStore(directory: base.appendingPathComponent("store")))
+            let browser = BrowserViewController(location: .folder(folder))
+            let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1100, height: 500), styleMask: [.titled], backing: .buffered, defer: false)
+            window.contentViewController = browser
+            window.setContentSize(NSSize(width: 1100, height: 500))
+            defer { browser.state.invalidate() }
+            let deadline = Date().addingTimeInterval(15)
+            while browser.state.snapshot.items.count < names.count && Date() < deadline { try await Task.sleep(for: .milliseconds(20)) }
+            browser.state.updatePresentation { $0.mode = .list }
+            try await Task.sleep(for: .milliseconds(100))
+            let list = try #require(browser.children.compactMap { $0 as? ListContentViewController }.first)
+            let table = try #require(list.firstResponderView as? NSTableView)
+            table.tableColumns.first?.width = 520
+
+            func check(_ label: String) {
+                window.layoutIfNeeded()
+                window.displayIfNeeded()
+                for row in 0..<table.numberOfRows {
+                    guard let cell = table.view(atColumn: 0, row: row, makeIfNecessary: false) as? NSTableCellView,
+                          let field = cell.textField else { continue }
+                    let needed = field.attributedStringValue.size().width
+                    #expect(field.frame.width >= needed, "\(label): “\(field.stringValue)” has \(field.frame.width) of \(needed)")
+                }
+            }
+            check("first")
+            // The table can change the font after a cell is laid out (larger text sizes): names
+            // must still fit.
+            for row in 0..<table.numberOfRows {
+                (table.view(atColumn: 0, row: row, makeIfNecessary: false) as? NSTableCellView)?.textField?.font = .systemFont(ofSize: 15)
+            }
+            check("larger font")
+            // Re-sort a few ways: each one hands cells to different files.
+            for sort in [SortDescriptor(.size, ascending: false), SortDescriptor(.name, ascending: false), SortDescriptor(.kind)] {
+                browser.state.updateArrangement { $0.sort = [sort] }
+                try await Task.sleep(for: .milliseconds(150))
+                check("\(sort.key)")
+            }
+        }
+    }
+}
