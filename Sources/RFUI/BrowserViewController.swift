@@ -22,6 +22,12 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
     private let statusLabel = NSTextField(labelWithString: "")
     private let sizeSlider = NSSlider(value: 64, minValue: 16, maxValue: 256, target: nil, action: nil)
     var content: ContentView?
+    /// Dual-pane mode marks the active pane with an accent line along its top.
+    enum PaneRole { case single, active, inactive }
+    var paneRole = PaneRole.single {
+        didSet { activeMarker.isHidden = paneRole != .active }
+    }
+    private let activeMarker = NSBox()
     /// In-place rename field, laid over the item's name.
     let renameField = RenameField()
     private var renaming: FileItem?
@@ -109,11 +115,21 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
             separator.boxType = .separator
             separator.translatesAutoresizingMaskIntoConstraints = false
             root.addSubview(separator)
+            activeMarker.boxType = .custom
+            activeMarker.borderWidth = 0
+            activeMarker.fillColor = .controlAccentColor
+            activeMarker.isHidden = paneRole != .active
+            activeMarker.translatesAutoresizingMaskIntoConstraints = false
+            root.addSubview(activeMarker)
 
             scopeBarCollapsed = scopeBar.heightAnchor.constraint(equalToConstant: 0)
             trashBarHeight = trashBar.heightAnchor.constraint(equalToConstant: 0)
             NSLayoutConstraint.activate([
                 trashBarHeight!,
+                activeMarker.topAnchor.constraint(equalTo: root.safeAreaLayoutGuide.topAnchor),
+                activeMarker.leadingAnchor.constraint(equalTo: root.leadingAnchor),
+                activeMarker.trailingAnchor.constraint(equalTo: root.trailingAnchor),
+                activeMarker.heightAnchor.constraint(equalToConstant: 2),
                 trashBar.topAnchor.constraint(equalTo: root.safeAreaLayoutGuide.topAnchor),
                 trashBar.leadingAnchor.constraint(equalTo: root.leadingAnchor),
                 trashBar.trailingAnchor.constraint(equalTo: root.trailingAnchor),

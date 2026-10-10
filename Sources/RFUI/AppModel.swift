@@ -239,6 +239,8 @@ public final class AppModel {
             public var tabs: [Location]
             public var selectedTab: Int
             public var frame: String?
+            /// Dual-pane mode: each tab's second pane (nil for a tab with one pane).
+            public var otherPanes: [Location?]?
         }
         public var windows: [Window]
     }

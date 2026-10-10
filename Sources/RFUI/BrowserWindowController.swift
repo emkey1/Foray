@@ -2,10 +2,27 @@ import AppKit
 import RFModel
 import RFOperations
 
-/// One browser window (= one native tab): sidebar + browser, toolbar, title.
+/// One browser window (= one native tab): sidebar + browser, toolbar, title. In dual-pane mode
+/// (DESIGN.md I12) there are two browsers side by side; the sidebar, toolbar and menus act on the
+/// active one.
 @MainActor
-final class BrowserWindowController: NSWindowController, NSWindowDelegate, NSToolbarDelegate, NSSearchFieldDelegate {
-    let browser: BrowserViewController
+final class BrowserWindowController: NSWindowController, NSWindowDelegate, NSToolbarDelegate, NSSearchFieldDelegate, NSMenuItemValidation {
+    /// One pane, or two in dual-pane mode (left, right).
+    private(set) var panes: [BrowserViewController]
+    private(set) var activePaneIndex = 0
+    /// The active pane: the one with the focus, which commands act on.
+    var browser: BrowserViewController { panes[activePaneIndex] }
+    var isDualPane: Bool { panes.count > 1 }
+    /// The pane that isn't active (dual-pane mode only).
+    var otherPane: BrowserViewController? { isDualPane ? panes[1 - activePaneIndex] : nil }
+    /// Asks the window layer to open a location in a new tab (set by WindowManager).
+    var openInNewTab: ((Location) -> Void)? {
+        didSet { panes.forEach { $0.openInNewTab = openInNewTab } }
+    }
+    /// Posted (object: the controller) when the active pane changes, so panels can follow it.
+    static let activePaneChanged = Notification.Name("ForayActivePaneChanged")
+    private var focusObservation: NSKeyValueObservation?
+    private var tabKeyMonitor: Any?
     private let sidebar = SidebarViewController()
     private let splitController = NSSplitViewController()
     private var navigationGroup: NSToolbarItemGroup?
@@ -59,7 +76,7 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate, NSToo
 
     init(location: Location, pendingSearch: SearchQuery? = nil) {
         self.pendingSearch = pendingSearch
-        browser = BrowserViewController(location: location)
+        panes = [BrowserViewController(location: location)]
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1000, height: 620),
                               styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
                               backing: .buffered, defer: false)
@@ -75,7 +92,9 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate, NSToo
         sidebarItem.minimumThickness = 150
         sidebarItem.maximumThickness = 320
         splitController.addSplitViewItem(sidebarItem)
-        splitController.addSplitViewItem(NSSplitViewItem(viewController: browser))
+        let paneItem = NSSplitViewItem(viewController: panes[0])
+        paneItem.minimumThickness = 240
+        splitController.addSplitViewItem(paneItem)
         window.contentViewController = splitController
         window.setContentSize(NSSize(width: 1000, height: 620))
         window.delegate = self
@@ -90,13 +109,30 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate, NSToo
 
         sidebar.onNavigate = { [weak self] location in self?.browser.state.jump(to: location) }
         sidebar.onOpenInNewTab = { [weak self] location in WindowManager.shared.openTab(location, nextTo: self) }
-        browser.state.observe { [weak self] change in
+        adopt(panes[0])
+        // The pane holding the focus is the active one.
+        focusObservation = window.observe(\.firstResponder) { [weak self] _, _ in
+            MainActor.assumeIsolated { self?.focusChanged() }
+        }
+        syncChrome()
+    }
+
+    deinit {
+        MainActor.assumeIsolated {
+            if let tabKeyMonitor { NSEvent.removeMonitor(tabKeyMonitor) }
+        }
+    }
+
+    /// The window's chrome follows whichever pane is active.
+    private func adopt(_ pane: BrowserViewController) {
+        pane.openInNewTab = openInNewTab
+        pane.state.observe { [weak self, weak pane] change in
+            guard let self, pane === self.browser else { return }
             switch change {
-            case .location, .details, .settings: self?.syncChrome()
+            case .location, .details, .settings: self.syncChrome()
             default: break
             }
         }
-        syncChrome()
     }
 
     required init?(coder: NSCoder) { fatalError() }
@@ -116,6 +152,148 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate, NSToo
         WindowManager.shared.sessionChanged()
     }
 
+    // MARK: Dual-pane mode (DESIGN.md I12)
+
+    /// Where the second pane starts, for the session.
+    var otherPaneLocation: Location? { isDualPane ? panes[1].state.location : nil }
+
+    /// Shows or hides the second pane. It opens on `location`, or the folder the first is showing.
+    /// Hiding keeps the active pane.
+    func setDualPane(_ on: Bool, location: Location? = nil) {
+        guard on != isDualPane else { return }
+        if on {
+            let current = browser.state.location
+            let start = location ?? (current.searchQuery == nil ? current : .folder(FileManager.default.homeDirectoryForCurrentUser))
+            let second = BrowserViewController(location: start)
+            panes.append(second)
+            adopt(second)
+            let item = NSSplitViewItem(viewController: second)
+            item.minimumThickness = 240
+            splitController.addSplitViewItem(item)
+            window?.minSize = NSSize(width: 700, height: 300)
+            equalizePanes()
+            installTabKeyMonitor()
+        } else {
+            let closing = panes[1 - activePaneIndex]
+            if let item = splitController.splitViewItem(for: closing) { splitController.removeSplitViewItem(item) }
+            closing.state.invalidate()
+            panes = [browser]
+            activePaneIndex = 0
+            window?.minSize = NSSize(width: 520, height: 300)
+            if let tabKeyMonitor { NSEvent.removeMonitor(tabKeyMonitor) }
+            tabKeyMonitor = nil
+            window?.makeFirstResponder(browser.content?.firstResponderView)
+        }
+        activePaneDidChange()
+    }
+
+    /// Gives the two panes the same width.
+    private func equalizePanes() {
+        guard isDualPane else { return }
+        let split = splitController.splitView
+        split.layoutSubtreeIfNeeded()
+        let left = panes[0].view.frame, right = panes[1].view.frame
+        guard left.width + right.width > 0 else { return }
+        split.setPosition(left.minX + (right.maxX - left.minX - split.dividerThickness) / 2, ofDividerAt: split.arrangedSubviews.count - 2)
+    }
+
+    func setActivePane(_ index: Int, focus: Bool = true) {
+        guard panes.indices.contains(index) else { return }
+        let changed = index != activePaneIndex
+        activePaneIndex = index
+        if focus { window?.makeFirstResponder(browser.content?.firstResponderView) }
+        if changed { activePaneDidChange() }
+    }
+
+    private func activePaneDidChange() {
+        for (i, pane) in panes.enumerated() {
+            pane.paneRole = !isDualPane ? .single : (i == activePaneIndex ? .active : .inactive)
+        }
+        syncChrome()
+        NotificationCenter.default.post(name: Self.activePaneChanged, object: self)
+    }
+
+    /// The first responder moved: if it's now inside the other pane, that pane becomes active.
+    private func focusChanged() {
+        guard isDualPane, let responder = window?.firstResponder else { return }
+        var view = responder as? NSView
+        if let editor = responder as? NSTextView, editor.isFieldEditor { view = editor.delegate as? NSView }
+        guard let view, let index = panes.firstIndex(where: { view.isDescendant(of: $0.view) }) else { return }
+        setActivePane(index, focus: false)
+    }
+
+    /// Tab moves between the panes, as in other two-pane file managers (only while the focus is
+    /// in the file list, so text fields keep their own Tab).
+    private func installTabKeyMonitor() {
+        guard tabKeyMonitor == nil else { return }
+        tabKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            nonisolated(unsafe) let event = event   // local monitors run on the main thread
+            let handled = MainActor.assumeIsolated {
+                guard let self, self.handlesTabKey(event) else { return false }
+                self.switchPane(nil)
+                return true
+            }
+            return handled ? nil : event
+        }
+    }
+
+    func handlesTabKey(_ event: NSEvent) -> Bool {
+        guard isDualPane, event.keyCode == 48, event.window === window, window?.attachedSheet == nil,
+              event.modifierFlags.intersection([.command, .option, .control]).isEmpty,
+              let responder = window?.firstResponder as? NSView, !(responder is NSText) else { return false }
+        return panes.contains { responder.isDescendant(of: $0.view) }
+    }
+
+    @objc func toggleDualPane(_ sender: Any?) {
+        setDualPane(!isDualPane)
+        WindowManager.shared.sessionChanged()
+    }
+
+    @objc func switchPane(_ sender: Any?) {
+        guard isDualPane else { return }
+        setActivePane(1 - activePaneIndex)
+    }
+
+    /// The active pane's selection goes into the folder the other pane shows.
+    @objc func copyToOtherPane(_ sender: Any?) { transferToOtherPane(move: false) }
+    @objc func moveToOtherPane(_ sender: Any?) { transferToOtherPane(move: true) }
+
+    private func transferToOtherPane(move: Bool) {
+        guard let other = otherPane, let folder = other.state.location.folderURL else { return }
+        let urls = browser.state.selectedItems.map(\.url)
+        guard !urls.isEmpty else { return }
+        // The other pane started it as far as results go: the new items are selected there.
+        FileOperationsUI.shared.submit(move ? .move(urls, to: folder) : .copy(urls, to: folder), from: other.state)
+    }
+
+    /// Shows the selected folder (or, with nothing selected, this pane's folder) in the other pane.
+    @objc func openInOtherPane(_ sender: Any?) {
+        guard let other = otherPane else { return }
+        let selected = browser.state.selectedItems
+        if selected.count == 1, selected[0].isNavigableFolder {
+            other.state.jump(to: .folder(selected[0].url))
+        } else if selected.isEmpty {
+            other.state.jump(to: browser.state.location)
+        }
+    }
+
+    func validateMenuItem(_ item: NSMenuItem) -> Bool {
+        switch item.action {
+        case #selector(toggleDualPane(_:)):
+            item.title = isDualPane ? "Hide Second Pane" : "Show Second Pane"
+            return true
+        case #selector(switchPane(_:)):
+            return isDualPane
+        case #selector(copyToOtherPane(_:)), #selector(moveToOtherPane(_:)):
+            return otherPane?.state.location.folderURL != nil && !browser.state.selectedItems.isEmpty
+        case #selector(openInOtherPane(_:)):
+            let selected = browser.state.selectedItems
+            return isDualPane && (selected.isEmpty || (selected.count == 1 && selected[0].isNavigableFolder))
+        default:
+            return true
+        }
+    }
+
     // MARK: Tabs
 
     override func newWindowForTab(_ sender: Any?) {
@@ -123,7 +301,7 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate, NSToo
     }
 
     func windowWillClose(_ notification: Notification) {
-        browser.state.invalidate()
+        panes.forEach { $0.state.invalidate() }
         WindowManager.shared.closed(self)
     }
 
@@ -452,7 +630,7 @@ public final class WindowManager {
             AppModel.shared.recordSearch(q)   // and keep it in Recent Searches
         }
         let controller = BrowserWindowController(location: start, pendingSearch: pending)
-        controller.browser.openInNewTab = { [weak self, weak controller] location in
+        controller.openInNewTab = { [weak self, weak controller] location in
             if AppSettings.openFoldersInTabs { self?.openTab(location, nextTo: controller) } else { self?.openWindow(location) }
         }
         controllers.append(controller)
@@ -495,11 +673,14 @@ public final class WindowManager {
             // A tab with a search waiting in its field saves the search, so it waits again next launch.
             let tabs = group.compactMap { w -> Location? in
                 guard let c = controllers.first(where: { $0.window === w }) else { return nil }
-                if let pending = c.pendingSearch, c.browser.state.location.searchQuery == nil { return .search(pending) }
-                return c.browser.state.location
+                // The tab is its first (left) pane; a second pane is saved alongside.
+                if let pending = c.pendingSearch, c.browser.state.location.searchQuery == nil, !c.isDualPane { return .search(pending) }
+                return c.panes[0].state.location
             }
             let selected = group.firstIndex { $0 == window.tabGroup?.selectedWindow } ?? 0
-            windows.append(.init(tabs: tabs, selectedTab: selected, frame: NSStringFromRect(window.frame)))
+            let second = group.compactMap { w in controllers.first { $0.window === w } }.map(\.otherPaneLocation)
+            windows.append(.init(tabs: tabs, selectedTab: selected, frame: NSStringFromRect(window.frame),
+                                 otherPanes: second.contains { $0 != nil } ? second : nil))
         }
         AppModel.shared.saveSession(AppModel.Session(windows: windows))
     }
@@ -509,13 +690,20 @@ public final class WindowManager {
         FileOperationsUI.shared.install()
         guard let session = AppModel.shared.loadSession(), !session.windows.isEmpty else { return false }
         for saved in session.windows where !saved.tabs.isEmpty {
+            // The second pane of tab `i`, if it had one (a search there comes back as its folder).
+            func restorePanes(_ c: BrowserWindowController, _ i: Int) {
+                guard let other = saved.otherPanes?[safe: i], let location = other else { return }
+                c.setDualPane(true, location: location.searchQuery.map { $0.origin.map(Location.folder) ?? .computer } ?? location)
+            }
             let first = make(saved.tabs[0])
             if let frame = saved.frame { first.window?.setFrame(NSRectFromString(frame), display: false) }
             showAsSeparateWindow(first)
+            restorePanes(first, 0)
             var tabWindows = [first.window!]
-            for location in saved.tabs.dropFirst() {
+            for (i, location) in saved.tabs.enumerated().dropFirst() {
                 let c = make(location)
                 first.window?.addTabbedWindow(c.window!, ordered: .above)
+                restorePanes(c, i)
                 tabWindows.append(c.window!)
             }
             tabWindows[safe: saved.selectedTab]?.makeKeyAndOrderFront(nil)

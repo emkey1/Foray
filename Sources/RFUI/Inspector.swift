@@ -72,10 +72,17 @@ final class InspectorPanel: NSPanel {
         becomesKeyOnlyIfNeeded = true
         setFrameAutosaveName("ForayInspector")
         NotificationCenter.default.addObserver(self, selector: #selector(windowBecameKey(_:)), name: NSWindow.didBecomeKeyNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(activePaneChanged(_:)), name: BrowserWindowController.activePaneChanged, object: nil)
     }
 
     @objc private func windowBecameKey(_ note: Notification) {
         guard let window = note.object as? NSWindow, let controller = window.windowController as? BrowserWindowController else { return }
+        attach(controller.browser.state)
+    }
+
+    /// Dual-pane mode: follow the pane that has the focus.
+    @objc private func activePaneChanged(_ note: Notification) {
+        guard let controller = note.object as? BrowserWindowController, controller.window?.isMainWindow == true else { return }
         attach(controller.browser.state)
     }
 

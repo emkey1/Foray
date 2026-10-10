@@ -114,4 +114,9 @@ public enum Commands {
     public static let rotateRight = #selector(BrowserViewController.rotateRight(_:))
     public static let markup = #selector(BrowserViewController.markup(_:))
     public static let createPDF = #selector(BrowserViewController.createPDF(_:))
+    public static let toggleDualPane = #selector(BrowserWindowController.toggleDualPane(_:))
+    public static let switchPane = #selector(BrowserWindowController.switchPane(_:))
+    public static let copyToOtherPane = #selector(BrowserWindowController.copyToOtherPane(_:))
+    public static let moveToOtherPane = #selector(BrowserWindowController.moveToOtherPane(_:))
+    public static let openInOtherPane = #selector(BrowserWindowController.openInOtherPane(_:))
 }
