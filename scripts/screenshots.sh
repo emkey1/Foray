@@ -7,8 +7,30 @@
 # and photographing one window after another, then quits. Leave the Mac alone while it runs.
 # The pictures are set up in Sources/RFUI/ScreenshotStudio.swift (debug builds only).
 # Needs Screen Recording permission for the terminal you run it from.
+#
+# The PNGs it takes stay on this Mac (they're a megabyte each). What goes in the repository are
+# WebP copies: full size in Screenshots/ for the README, and smaller ones in the Guide's images
+# folder for the pictures in the built-in guide. `scripts/screenshots.sh --convert` redoes just
+# that step from the PNGs already there. Converting needs cwebp (brew install webp).
 set -euo pipefail
 cd "${0:A:h}/.."
+
+# PNG → WebP, for the README (full size) and the Guide (the four it shows, 1500 pixels wide).
+convert() {
+  command -v cwebp >/dev/null || { print -u2 "cwebp isn't installed (brew install webp); the WebP copies weren't updated."; return 1; }
+  local png name guide=Sources/RFUI/Guide/images
+  mkdir -p "$guide"
+  for png in Screenshots/*.png(N); do
+    name=${png:t:r}
+    cwebp -quiet -q 88 -alpha_q 90 "$png" -o "Screenshots/$name.webp" 2>/dev/null
+    case $name in
+      1-icons-*|3-search-*|4-two-panes-*|5-gallery-*) cwebp -quiet -q 82 -alpha_q 90 -resize 1500 0 "$png" -o "$guide/$name.webp" 2>/dev/null ;;
+    esac
+  done
+  print "WebP copies are in Screenshots/ and $guide/"
+}
+if [[ ${1:-} == --convert ]]; then convert; exit; fi
+
 out=${1:-Screenshots}
 mkdir -p "$out"
 out=${out:A}
@@ -38,4 +60,5 @@ done
 [[ -e $out/.done ]] || { print -u2 "Foray Dev didn't finish; some pictures may be missing."; tail -5 "$scratch/log" >&2 2>/dev/null || true; }
 rm -f "$out/.request" "$out/.done"
 print "Screenshots are in $out"
-ls "$out"
+ls "$out"/*.png
+[[ $out == ${PWD:A}/Screenshots ]] && convert || true

@@ -32,6 +32,8 @@
   kbd { font: 12px ui-monospace, SFMono-Regular, monospace; background: var(--code-bg); border: 1px solid var(--rule);
         border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; white-space: nowrap; }
   code { font: 12.5px ui-monospace, SFMono-Regular, monospace; background: var(--code-bg); padding: 1px 4px; border-radius: 4px; }
+  /* Screenshots carry their own window shadow, so they sit a little outside the text column. */
+  .shot { display: block; width: 104%; max-width: 860px; height: auto; margin: 2px 0 6px -3%; }
   pre { background: var(--code-bg); padding: 10px 14px; border-radius: 6px; overflow-x: auto; max-width: 760px; }
   pre code { background: none; padding: 0; }
   table { border-collapse: collapse; margin: 10px 0 16px; width: 100%; max-width: 760px; }
@@ -68,6 +70,10 @@
 
 <h1>Foray Guide</h1>
 <p class="lede">A file browser for macOS that keeps Finder's habits and fixes its annoyances.</p>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="images/1-icons-dark.webp">
+  <img class="shot" src="images/1-icons-light.webp" alt="A Foray window in icon view: the sidebar, a folder of pictures with tag dots, the path bar and the status bar.">
+</picture>
 
 <h2 id="start">Getting around</h2>
 <ul>
@@ -88,6 +94,10 @@
 
 <h2 id="views">Views</h2>
 <p><b>Icons</b> (<kbd>⌘1</kbd>), <b>List</b> (<kbd>⌘2</kbd>), <b>Columns</b> (<kbd>⌘3</kbd>) and <b>Gallery</b> (<kbd>⌘4</kbd>), from the View menu or the toolbar. The slider in the status bar sets the icon size.</p>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="images/5-gallery-dark.webp">
+  <img class="shot" src="images/5-gallery-light.webp" alt="Gallery view: a large preview of the selected picture, its details and Quick Actions, and a strip of thumbnails.">
+</picture>
 <ul>
   <li><b>Switching views never changes the order.</b> Both views show the same sorted list, and your selection stays put.</li>
   <li><b>List view.</b> Click a folder's disclosure triangle (or press <kbd>→</kbd> / <kbd>←</kbd>) to expand it in place; <kbd>⌥</kbd>-click expands everything inside. Right-click the column headers to choose columns. Drag headers to reorder them, drag their edges to resize.</li>
@@ -132,6 +142,10 @@
 <p>View options for the front window (icon size, columns, grouping and so on) are in <b>View › Show View Options</b> (<kbd>⌘J</kbd>). In list view, <b>Calculate all sizes</b> totals folders in the background so they show a size and sort by it.</p>
 
 <h2 id="search">Searching</h2>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="images/3-search-dark.webp">
+  <img class="shot" src="images/3-search-light.webp" alt="Search results for “report kind:pdf” in a folder, with the scope bar and kind chips above the list.">
+</picture>
 <p>Press <kbd>⌘F</kbd> or click the search field. <b>Searches start in the current folder and its subfolders</b>; the field says where (“Search “Projects””). From Computer, searches cover the whole Mac.</p>
 <p>While searching, a bar below the toolbar lets you change:</p>
 <ul>
@@ -235,6 +249,10 @@
 
 <h2 id="panes">Two panes</h2>
 <p><b>View › Show Second Pane</b> (<kbd>⌘U</kbd>) splits the window into two file lists side by side, each with its own folder, view, path bar and history. Each tab can have its own second pane, and they come back when you relaunch.</p>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="images/4-two-panes-dark.webp">
+  <img class="shot" src="images/4-two-panes-light.webp" alt="A window with two panes: a list of a Projects folder on the left and icons of a Photos folder on the right.">
+</picture>
 <ul>
   <li><b>The active pane</b> is the one you last clicked in; it has a colored line along its top. The sidebar, toolbar, search field and menus act on it.</li>
   <li><b>Switch panes</b> with <kbd>Tab</kbd> (while the file list has the focus) or <kbd>⌥⌘U</kbd>.</li>

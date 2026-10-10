@@ -4,6 +4,13 @@
 
 A file browser for macOS that does what Finder does, minus the parts that get in the way.
 
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="Screenshots/4-two-panes-dark.webp">
+    <img src="Screenshots/4-two-panes-light.webp" width="860" alt="Foray with two panes: a list of a Projects folder on the left, icons of a Photos folder on the right.">
+  </picture>
+</p>
+
 - **Search starts where you are.** ⌘F searches the current folder and its subfolders, by name, not the whole Mac by contents. Filter with plain words: `kind:images size:>5MB modified:<7d`. Finds files Spotlight hasn't indexed, too.
 - **Sort order survives view changes.** Icon, list, column and gallery views share one sort, so switching views never reshuffles your files.
 - **Search by kind:** documents, images, video, audio, programs, archives, code, PDFs, fonts.
@@ -13,6 +20,46 @@ A file browser for macOS that does what Finder does, minus the parts that get in
 - **Scriptable:** a `foray` command for Terminal (`foray search report kind:pdf`), Shortcuts actions, and an AppleScript dictionary.
 
 Out of the box Foray runs alongside Finder and changes no system settings. Two switches in Settings, both off until you turn them on, go further: **Use Foray instead of Finder** (Foray shows the desktop and opens folders from other apps) and **administrator access** (a small helper so that changes in places like `/Library` ask for an administrator's password, as they do in Finder, instead of failing). Turning either off puts things back.
+
+## Screenshots
+
+Search that starts in the folder you're in, with kinds one click away:
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="Screenshots/3-search-dark.webp">
+    <img src="Screenshots/3-search-light.webp" width="760" alt="Search results for “report kind:pdf” in a folder, with the scope bar and kind chips above the list.">
+  </picture>
+</p>
+
+Icon, list, column and gallery views share one sort order:
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="Screenshots/1-icons-dark.webp">
+    <img src="Screenshots/1-icons-light.webp" width="760" alt="Icon view of a folder of pictures, with tag dots, the path bar and the status bar.">
+  </picture>
+</p>
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="Screenshots/2-list-dark.webp">
+    <img src="Screenshots/2-list-light.webp" width="760" alt="List view with a folder expanded in place and two files selected.">
+  </picture>
+</p>
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="Screenshots/5-gallery-dark.webp">
+    <img src="Screenshots/5-gallery-light.webp" width="760" alt="Gallery view: a large preview, the file's details and Quick Actions, and a strip of thumbnails.">
+  </picture>
+</p>
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="Screenshots/6-columns-dark.webp">
+    <img src="Screenshots/6-columns-light.webp" width="760" alt="Column view with a preview of the selected file.">
+  </picture>
+</p>
+
+The files in these pictures are invented; `scripts/screenshots.sh` makes them.
 
 ## Install
 
