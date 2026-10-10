@@ -68,8 +68,14 @@ final class Execution: @unchecked Sendable {
     var result = OperationResult()
     private var applyToAll: ConflictResolution?
 
+    /// The file primitives. With administrator access turned on, one that fails for lack of
+    /// permission is tried again through the privileged helper (Privileged.swift).
+    let ops: ElevatingFileOps
+
     init(_ request: OperationRequest, control: JobControl, progress: ProgressBox, journal: OperationJournal,
-         trash: @escaping TrashFunction, ask: @escaping @Sendable (ConflictQuestion) async -> ConflictAnswer) {
+         trash: @escaping TrashFunction, elevation: ElevationProvider? = nil,
+         ask: @escaping @Sendable (ConflictQuestion) async -> ConflictAnswer) {
+        self.ops = ElevatingFileOps(provider: elevation, jobTitle: request.title)
         self.trashItem = trash
         self.request = request
         self.control = control
@@ -167,7 +173,7 @@ final class Execution: @unchecked Sendable {
             }
             let target = dir.appendingPathComponent(name)
             if moving && FileOps.sameVolume(item, dir) {
-                let rc = await blocking { FileOps.rename(item, to: target) }
+                let rc = await blocking { self.ops.rename(item, to: target) }
                 if rc == 0 {
                     result.record(.moved(.init(from: item, to: target)))
                     result.changedFolders.formUnion([item.deletingLastPathComponent(), dir])
@@ -183,7 +189,7 @@ final class Execution: @unchecked Sendable {
                 if moving {
                     // Remove the original only if every part of it was copied.
                     if result.errors.count == errorsBefore {
-                        let rc = await blocking { FileOps.remove(item) }
+                        let rc = await blocking { self.ops.remove(item) }
                         if rc == 0 {
                             result.record(.moved(.init(from: item, to: copied)))
                             result.changedFolders.insert(item.deletingLastPathComponent())
@@ -247,9 +253,9 @@ final class Execution: @unchecked Sendable {
                 return nil
             }
             // The existing item goes to the Trash, so Replace can be undone.
-            let trashItem = self.trashItem
+            let trashItem = self.trashItem, ops = self.ops
             let outcome: Result<URL, NSError> = await blocking {
-                do { return .success(try trashItem(target)) } catch { return .failure(error as NSError) }
+                do { return .success(try ops.trash(target, with: trashItem)) } catch { return .failure(error as NSError) }
             }
             switch outcome {
             case .success(let trashedAt):
@@ -280,33 +286,33 @@ final class Execution: @unchecked Sendable {
             }
         } else {
             rc = await blocking {
-                if FileOps.exists(temp) { FileOps.removeTree(temp) }  // never build on a partial clone
+                if FileOps.exists(temp) { self.ops.removeTree(temp) }  // never build on a partial clone
                 return self.copyTree(item, to: temp)
             }
         }
         if !control.checkpoint() || rc == ECANCELED {
-            await blocking { FileOps.removeTree(temp) }
+            await blocking { self.ops.removeTree(temp) }
             return nil
         }
         if rc != 0 {
             fail(item, rc, "copy")
-            await blocking { FileOps.removeTree(temp) }
+            await blocking { self.ops.removeTree(temp) }
             return nil
         }
         // Into place. If the name was taken meanwhile, keep both rather than overwrite.
         var final = target
-        var renameRC = await blocking { FileOps.rename(temp, to: target) }
+        var renameRC = await blocking { self.ops.rename(temp, to: target) }
         if renameRC == EEXIST {
             let dir = target.deletingLastPathComponent()
             let other = dir.appendingPathComponent(FileNaming.keepBothName(for: target.lastPathComponent) {
                 FileOps.exists(dir.appendingPathComponent($0))
             })
             final = other
-            renameRC = await blocking { FileOps.rename(temp, to: other) }
+            renameRC = await blocking { self.ops.rename(temp, to: other) }
         }
         if renameRC != 0 {
             fail(item, renameRC, "copy")
-            await blocking { FileOps.removeTree(temp) }
+            await blocking { self.ops.removeTree(temp) }
             return nil
         }
         return final
@@ -318,7 +324,7 @@ final class Execution: @unchecked Sendable {
         guard control.checkpoint() else { return ECANCELED }
         guard let st = FileOps.lstat(src) else { return Darwin.errno }
         if FileOps.isDirectory(st) {
-            let rc = FileOps.makeDirectory(dst, mode: 0o700)
+            let rc = ops.makeDirectory(dst, mode: 0o700)
             guard rc == 0 else { return rc }
             update { $0.itemsDone += 1 }
             let children = (try? FileManager.default.contentsOfDirectory(atPath: src.path)) ?? []
@@ -327,11 +333,11 @@ final class Execution: @unchecked Sendable {
                 if crc == ECANCELED { return ECANCELED }
                 if crc != 0 { fail(src.appendingPathComponent(child), crc, "copy") }
             }
-            _ = FileOps.copyDirectoryMetadata(src, to: dst)  // after contents, so dates stick
+            _ = ops.copyDirectoryMetadata(src, to: dst)  // after contents, so dates stick
             return 0
         }
         var reported: Int64 = 0
-        let rc = FileOps.copyFile(src, to: dst) { copied in
+        let rc = ops.copyFile(src, to: dst) { copied in
             if TestHooks.slowCopy { usleep(20_000) }
             self.update { $0.bytesDone += copied - reported }
             reported = copied
@@ -374,9 +380,9 @@ final class Execution: @unchecked Sendable {
         for item in items {
             guard control.checkpoint() else { break }
             update { $0.currentName = item.lastPathComponent }
-            let trashItem = self.trashItem
+            let trashItem = self.trashItem, ops = self.ops
             let outcome: Result<URL, NSError> = await blocking {
-                do { return .success(try trashItem(item)) } catch { return .failure(error as NSError) }
+                do { return .success(try ops.trash(item, with: trashItem)) } catch { return .failure(error as NSError) }
             }
             switch outcome {
             case .success(let at):
@@ -397,7 +403,7 @@ final class Execution: @unchecked Sendable {
         for item in items {
             guard control.checkpoint() else { break }
             update { $0.currentName = item.lastPathComponent }
-            let rc = await blocking { FileOps.remove(item) }
+            let rc = await blocking { self.ops.remove(item) }
             if rc == 0 {
                 result.deleted.append(item)
                 result.changedFolders.insert(item.deletingLastPathComponent())
@@ -416,7 +422,7 @@ final class Execution: @unchecked Sendable {
         }
         let target = item.deletingLastPathComponent().appendingPathComponent(name)
         guard target.lastPathComponent != item.lastPathComponent else { return }
-        let rc = await blocking { FileOps.rename(item, to: target) }
+        let rc = await blocking { self.ops.rename(item, to: target) }
         if rc == 0 {
             result.record(.moved(.init(from: item, to: target)))
             result.changedFolders.insert(item.deletingLastPathComponent())
@@ -431,13 +437,13 @@ final class Execution: @unchecked Sendable {
             FileNaming.newFolderName(base: name ?? "untitled folder") { FileOps.exists(dir.appendingPathComponent($0)) }
         }
         let folder = dir.appendingPathComponent(folderName, isDirectory: true)
-        let rc = await blocking { FileOps.makeDirectory(folder) }
+        let rc = await blocking { self.ops.makeDirectory(folder) }
         guard rc == 0 else { return fail(folder, rc, "create") }
         result.record(.created(folder))
         result.changedFolders.insert(dir)
         for item in moving {
             let target = folder.appendingPathComponent(item.lastPathComponent)
-            let mrc = await blocking { FileOps.rename(item, to: target) }
+            let mrc = await blocking { self.ops.rename(item, to: target) }
             if mrc == 0 { result.record(.moved(.init(from: item, to: target))) } else { fail(item, mrc, "move") }
         }
     }
@@ -480,7 +486,7 @@ final class Execution: @unchecked Sendable {
         var staged: [(pair: OperationRequest.Pair, temp: URL)] = []
         for pair in pairs where pair.from.standardizedFileURL != pair.to.standardizedFileURL {
             let temp = pair.from.deletingLastPathComponent().appendingPathComponent(".rfrename-\(UUID().uuidString.prefix(8))-\(pair.from.lastPathComponent)")
-            let rc = await blocking { FileOps.rename(pair.from, to: temp) }
+            let rc = await blocking { self.ops.rename(pair.from, to: temp) }
             if rc == 0 {
                 result.record(.moved(.init(from: pair.from, to: temp)))
                 staged.append((pair, temp))
@@ -490,12 +496,12 @@ final class Execution: @unchecked Sendable {
         }
         for (pair, temp) in staged {
             update { $0.currentName = pair.to.lastPathComponent }
-            let rc = await blocking { FileOps.rename(temp, to: pair.to) }
+            let rc = await blocking { self.ops.rename(temp, to: pair.to) }
             if rc == 0 {
                 result.record(.moved(.init(from: temp, to: pair.to)))
             } else {
                 // Taken after all (e.g. by an item outside the batch): put it back as it was.
-                let back = await blocking { FileOps.rename(temp, to: pair.from) }
+                let back = await blocking { self.ops.rename(temp, to: pair.from) }
                 if back == 0 { result.record(.moved(.init(from: temp, to: pair.from))) }
                 fail(pair.from, rc, "rename")
             }
@@ -540,15 +546,10 @@ final class Execution: @unchecked Sendable {
             guard control.checkpoint() else { break }
             update { $0.currentName = item.lastPathComponent }
             guard let ist = FileOps.lstat(item), !FileOps.isSymlink(ist) else { update { $0.itemsDone += 1 }; continue }
-            if ist.st_uid != getuid() {
-                fail(item, EPERM, "change permissions of")
-                update { $0.itemsDone += 1 }
-                continue
-            }
             let target = Self.enclosedAccess(folderMode: folderMode, folderACL: folderACL, itemMode: UInt16(ist.st_mode & 0o777),
                                              isDirectory: FileOps.isDirectory(ist))
             let (before, rc) = await blocking {
-                (ItemAttributes.read(item, fields: target), ItemAttributes.write(target, to: item))
+                (ItemAttributes.read(item, fields: target), self.ops.writeAttributes(target, to: item))
             }
             if rc == 0 {
                 if before != target { result.record(.attributes(item, before: before, after: target)) }
@@ -570,7 +571,7 @@ final class Execution: @unchecked Sendable {
             update { $0.currentName = change.url.lastPathComponent }
             let (before, rc) = await blocking {
                 let before = ItemAttributes.read(change.url, fields: change.attributes)
-                return (before, ItemAttributes.write(change.attributes, to: change.url))
+                return (before, self.ops.writeAttributes(change.attributes, to: change.url))
             }
             if rc == 0 {
                 if before != change.attributes {
@@ -604,10 +605,10 @@ final class Execution: @unchecked Sendable {
             // Put Back recreates a deleted parent folder, like Finder.
             _ = await blocking { try? FileManager.default.createDirectory(at: parent, withIntermediateDirectories: true) }
             if await blocking({ FileOps.sameVolume(pair.from, parent) }) {
-                let rc = await blocking { FileOps.rename(pair.from, to: pair.to) }
+                let rc = await blocking { self.ops.rename(pair.from, to: pair.to) }
                 if rc == 0 { result.record(.moved(pair)) } else { fail(pair.from, rc, "restore") }
             } else if let copied = await copyItem(pair.from, to: pair.to) {
-                let rc = await blocking { FileOps.remove(pair.from) }
+                let rc = await blocking { self.ops.remove(pair.from) }
                 if rc == 0 { result.record(.moved(.init(from: pair.from, to: copied))) } else { result.record(.created(copied)) }
             }
             result.changedFolders.formUnion([pair.from.deletingLastPathComponent(), parent])

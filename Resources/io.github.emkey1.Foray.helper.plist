@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Foray's privileged helper (DESIGN.md §5.11). macOS only learns about this file when the
+	     user turns on administrator access in Foray's Settings › Advanced; turning it off
+	     unregisters it. launchd starts the helper on demand and it quits when idle. -->
+	<key>Label</key>
+	<string>io.github.emkey1.Foray.helper</string>
+	<key>BundleProgram</key>
+	<string>Contents/Helpers/foray-helper</string>
+	<key>MachServices</key>
+	<dict>
+		<key>io.github.emkey1.Foray.helper</key>
+		<true/>
+	</dict>
+	<key>AssociatedBundleIdentifiers</key>
+	<array>
+		<string>io.github.emkey1.Foray</string>
+	</array>
+</dict>
+</plist>

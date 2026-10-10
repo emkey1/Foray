@@ -80,6 +80,7 @@ final class FileOperationsUI {
             guard case .finished(let job, let result) = event else { return }
             self?.finished(job, result)
         }
+        AdministratorAccess.apply(to: center)   // nothing unless the user turned it on in Settings
         center.recoverInterruptedOperations()
     }
 
@@ -148,6 +149,7 @@ final class FileOperationsUI {
         alert.messageText = n == 1 ? "1 item couldn't be processed" : "\(n) items couldn't be processed"
         let lines = result.errors.prefix(10).map(\.message)
         alert.informativeText = job.title + ".\n\n" + lines.joined(separator: "\n") + (n > 10 ? "\n…and \(n - 10) more." : "")
+            + (AdministratorAccess.hint(for: result).map { "\n\n" + $0 } ?? "")
         if let window = NSApp.keyWindow ?? NSApp.mainWindow {
             alert.beginSheetModal(for: window)
         } else {

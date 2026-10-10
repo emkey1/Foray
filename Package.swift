@@ -12,7 +12,10 @@ let package = Package(
         // The `foray` command-line tool. (Its SwiftPM product is "foray-cli": "foray" would
         // collide with "Foray" on a case-insensitive disk. It's installed in the app as "foray".)
         .executable(name: "foray-cli", targets: ["foray-cli"]),
-        .library(name: "ForayCLIKit", targets: ["ForayCLI"]),
+        .library(name: "ForayCLIKit", targets: ["ForayCLI", "RFOperations"]),
+        // The privileged helper (a root launchd daemon inside the app; DESIGN.md §5.11).
+        .executable(name: "foray-helper", targets: ["foray-helper"]),
+        .library(name: "ForayOperations", targets: ["RFOperations"]),
     ],
     targets: [
         // getattrlistbulk(2) parsing and copyfile(3) helpers. Only RFFileSystem and RFOperations
@@ -33,6 +36,8 @@ let package = Package(
         // The `foray` command-line tool: its logic (testable) and the thin executable.
         .target(name: "ForayCLI", dependencies: ["RFModel", "RFFileSystem", "RFSearch", "RFOperations"]),
         .executableTarget(name: "foray-cli", dependencies: ["ForayCLI", "RFOperations"]),
+        // The privileged helper: a thin XPC listener over RFOperations' PrivilegedExecutor.
+        .executableTarget(name: "foray-helper", dependencies: ["RFOperations"]),
         // Test helper: runs one copy so a test can kill it mid-way (DESIGN.md §9, M2 exit criteria).
         .executableTarget(name: "rf-crash-probe", dependencies: ["RFOperations", "RFFileSystem"]),
 

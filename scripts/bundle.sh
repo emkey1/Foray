@@ -14,7 +14,7 @@ cd "${0:A:h}/.."
 config=${1:-debug}
 arch=()
 [[ -n ${RF_UNIVERSAL:-} ]] && arch=(--arch arm64 --arch x86_64)
-swift build -c "$config" $arch --product Foray
+for product in Foray foray-cli foray-helper; do swift build -c "$config" $arch --product $product; done
 bin=$(swift build -c "$config" $arch --show-bin-path)/Foray
 
 if [[ -n ${RF_RELEASE:-} ]]; then
@@ -36,7 +36,17 @@ for b in "${bin:h}"/Foray_*.bundle(N); do cp -R "$b" "$app/Contents/Resources/";
 plist="$app/Contents/Info.plist"
 cp Resources/Info.plist "$plist"
 cp "Resources/$icon" "$app/Contents/Resources/Foray.icns"
+cp Resources/Foray.sdef "$app/Contents/Resources/"
+# The `foray` command-line tool and the privileged helper, with the helper's launchd plist. (The
+# helper does nothing until the user turns on administrator access in Settings › Advanced.)
+mkdir -p "$app/Contents/Helpers" "$app/Contents/Library/LaunchDaemons"
+cp "${bin:h}/foray-cli" "$app/Contents/Helpers/foray"
+cp "${bin:h}/foray-helper" "$app/Contents/Helpers/foray-helper"
+sed "s/io\.github\.emkey1\.Foray/$id/g" Resources/io.github.emkey1.Foray.helper.plist > "$app/Contents/Library/LaunchDaemons/$id.helper.plist"
 /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $id" -c "Set :CFBundleName $name" -c "Set :CFBundleDisplayName $name" \
   -c "Set :CFBundleURLTypes:0:CFBundleURLSchemes:0 $scheme" "$plist"
+# Nested code first; each tool's signing identifier is how the app and helper recognize each other.
+codesign --force --sign "$identity" --timestamp=none --identifier "$id.cli" "$app/Contents/Helpers/foray" >/dev/null
+codesign --force --sign "$identity" --timestamp=none --identifier "$id.helper" "$app/Contents/Helpers/foray-helper" >/dev/null
 codesign --force --sign "$identity" --timestamp=none "$app" >/dev/null
 echo "$app"

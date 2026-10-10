@@ -9,8 +9,10 @@ A file browser for macOS that does what Finder does, minus the parts that get in
 - **Search by kind:** documents, images, video, audio, programs, archives, code, PDFs, fonts.
 - **Everything else you use Finder for:** tabs, sidebar, Quick Look, tags, Get Info, copy and move with undo, Trash with Put Back, aliases, compress, smart folders, iCloud Drive and Dropbox-style folders, network servers, AirDrop and Share.
 - **Plus:** batch rename with regular expressions and a preview, Recents, an Inspector, folder sizes in list view, `foray://` links, and a built-in guide (⌘?).
+- **Two panes** (⌘U): two folders side by side in one window, with F5 and F6 to copy or move between them.
+- **Scriptable:** a `foray` command for Terminal (`foray search report kind:pdf`), Shortcuts actions, and an AppleScript dictionary.
 
-Foray runs alongside Finder; it doesn't replace the desktop or change any system settings.
+Out of the box Foray runs alongside Finder and changes no system settings. Two switches in Settings, both off until you turn them on, go further: **Use Foray instead of Finder** (Foray shows the desktop and opens folders from other apps) and **administrator access** (a small helper so that changes in places like `/Library` ask for an administrator's password, as they do in Finder, instead of failing). Turning either off puts things back.
 
 ## Install
 
@@ -40,6 +42,8 @@ swift test                                                  # run the tests
 Test builds are a separate app, **Foray Dev** (its own bundle ID, settings and privacy grants, and a DEV badge on the icon), so they never get mixed up with an installed Foray. They're signed with your Apple Development certificate when you have one, which keeps permissions like Full Disk Access across rebuilds.
 
 Releases are built from `Xcode/Foray.xcodeproj` (scheme "Foray App"): Product › Archive, then Distribute App › Direct Distribution signs with Developer ID and notarizes. Then `scripts/make-dmg.sh` exports the notarized app from the newest archive and makes the installer: a window with Foray and an Applications shortcut over a background that explains what to do (`scripts/dmg-layout.swift` writes the window layout directly, so Finder isn't scripted). After publishing the GitHub release, `scripts/update-cask.sh` points the Homebrew cask ([emkey1/homebrew-tap](https://github.com/emkey1/homebrew-tap)) at it.
+
+The app bundle also carries the `foray` command-line tool and the privileged helper (`Contents/Helpers`), built from `Sources/foray-cli` and `Sources/foray-helper`. The helper is a root launchd daemon that macOS learns about only when the user turns on administrator access; `Sources/RFOperations/Privileged.swift` lists the handful of file operations it will do, and `PrivilegedHelper.swift` how callers are checked (Foray's code signature, plus an administrator's authorization for each job).
 
 `DESIGN.md` describes the architecture, and the in-app guide (`Sources/RFUI/Guide/guide.html`) describes every feature.
 

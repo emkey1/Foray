@@ -10,7 +10,59 @@
 		F0A000000000000000000101 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0A000000000000000000201 /* main.swift */; };
 		F0A000000000000000000102 /* Foray.icon in Resources */ = {isa = PBXBuildFile; fileRef = F0A000000000000000000202 /* Foray.icon */; };
 		F0A000000000000000000103 /* ForayKit in Frameworks */ = {isa = PBXBuildFile; productRef = F0A000000000000000000901 /* ForayKit */; };
+		F0A000000000000000000104 /* Foray.sdef in Resources */ = {isa = PBXBuildFile; fileRef = F0A000000000000000000206 /* Foray.sdef */; };
+		F0A000000000000000000105 /* Intents.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0A000000000000000000207 /* Intents.swift */; };
+		F0A000000000000000000106 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0A000000000000000000208 /* foray-cli/main.swift */; };
+		F0A000000000000000000107 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0A000000000000000000209 /* foray-helper/main.swift */; };
+		F0A000000000000000000108 /* ForayCLIKit in Frameworks */ = {isa = PBXBuildFile; productRef = F0A000000000000000000902 /* ForayCLIKit */; };
+		F0A000000000000000000109 /* ForayOperations in Frameworks */ = {isa = PBXBuildFile; productRef = F0A000000000000000000903 /* ForayOperations */; };
+		F0A00000000000000000010A /* foray in Copy Helpers */ = {isa = PBXBuildFile; fileRef = F0A00000000000000000020B /* foray */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		F0A00000000000000000010B /* foray-helper in Copy Helpers */ = {isa = PBXBuildFile; fileRef = F0A00000000000000000020C /* foray-helper */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		F0A00000000000000000010C /* io.github.emkey1.Foray.helper.plist in Copy Launch Daemons */ = {isa = PBXBuildFile; fileRef = F0A00000000000000000020A /* io.github.emkey1.Foray.helper.plist */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		F0A000000000000000000C01 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F0A000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = F0A000000000000000000502;
+			remoteInfo = foray;
+		};
+		F0A000000000000000000C02 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F0A000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = F0A000000000000000000503;
+			remoteInfo = "foray-helper";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		F0A000000000000000000605 /* Copy Helpers */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = Contents/Helpers;
+			dstSubfolderSpec = 1;
+			files = (
+				F0A00000000000000000010A /* foray in Copy Helpers */,
+				F0A00000000000000000010B /* foray-helper in Copy Helpers */,
+			);
+			name = "Copy Helpers";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F0A000000000000000000606 /* Copy Launch Daemons */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = Contents/Library/LaunchDaemons;
+			dstSubfolderSpec = 1;
+			files = (
+				F0A00000000000000000010C /* io.github.emkey1.Foray.helper.plist in Copy Launch Daemons */,
+			);
+			name = "Copy Launch Daemons";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		F0A000000000000000000201 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = main.swift; path = ../Sources/Foray/main.swift; sourceTree = SOURCE_ROOT; };
@@ -18,6 +70,13 @@
 		F0A000000000000000000203 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = ../Resources/Info.plist; sourceTree = SOURCE_ROOT; };
 		F0A000000000000000000204 /* Foray.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = Foray.entitlements; path = ../Resources/Foray.entitlements; sourceTree = SOURCE_ROOT; };
 		F0A000000000000000000205 /* Foray.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Foray.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		F0A000000000000000000206 /* Foray.sdef */ = {isa = PBXFileReference; lastKnownFileType = text.xml; name = Foray.sdef; path = ../Resources/Foray.sdef; sourceTree = SOURCE_ROOT; };
+		F0A000000000000000000207 /* Intents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = Intents.swift; path = ../Sources/Foray/Intents.swift; sourceTree = SOURCE_ROOT; };
+		F0A000000000000000000208 /* foray-cli/main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "foray-cli/main.swift"; path = "../Sources/foray-cli/main.swift"; sourceTree = SOURCE_ROOT; };
+		F0A000000000000000000209 /* foray-helper/main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "foray-helper/main.swift"; path = "../Sources/foray-helper/main.swift"; sourceTree = SOURCE_ROOT; };
+		F0A00000000000000000020A /* io.github.emkey1.Foray.helper.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = io.github.emkey1.Foray.helper.plist; path = ../Resources/io.github.emkey1.Foray.helper.plist; sourceTree = SOURCE_ROOT; };
+		F0A00000000000000000020B /* foray */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = foray; sourceTree = BUILT_PRODUCTS_DIR; };
+		F0A00000000000000000020C /* foray-helper */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "foray-helper"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -29,6 +88,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		F0A000000000000000000302 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F0A000000000000000000108 /* ForayCLIKit in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F0A000000000000000000303 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F0A000000000000000000109 /* ForayOperations in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -36,7 +111,12 @@
 			isa = PBXGroup;
 			children = (
 				F0A000000000000000000201 /* main.swift */,
+				F0A000000000000000000207 /* Intents.swift */,
+				F0A000000000000000000208 /* foray-cli/main.swift */,
+				F0A000000000000000000209 /* foray-helper/main.swift */,
 				F0A000000000000000000203 /* Info.plist */,
+				F0A000000000000000000206 /* Foray.sdef */,
+				F0A00000000000000000020A /* io.github.emkey1.Foray.helper.plist */,
 				F0A000000000000000000204 /* Foray.entitlements */,
 				F0A000000000000000000202 /* Foray.icon */,
 				F0A000000000000000000402 /* Products */,
@@ -47,6 +127,8 @@
 			isa = PBXGroup;
 			children = (
 				F0A000000000000000000205 /* Foray.app */,
+				F0A00000000000000000020B /* foray */,
+				F0A00000000000000000020C /* foray-helper */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -61,10 +143,14 @@
 				F0A000000000000000000601 /* Sources */,
 				F0A000000000000000000301 /* Frameworks */,
 				F0A000000000000000000602 /* Resources */,
+				F0A000000000000000000605 /* Copy Helpers */,
+				F0A000000000000000000606 /* Copy Launch Daemons */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				F0A000000000000000000B01 /* PBXTargetDependency */,
+				F0A000000000000000000B02 /* PBXTargetDependency */,
 			);
 			name = ForayApp;
 			packageProductDependencies = (
@@ -73,6 +159,44 @@
 			productName = Foray;
 			productReference = F0A000000000000000000205 /* Foray.app */;
 			productType = "com.apple.product-type.application";
+		};
+		F0A000000000000000000502 /* foray */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F0A000000000000000000803 /* Build configuration list for PBXNativeTarget "foray" */;
+			buildPhases = (
+				F0A000000000000000000603 /* Sources */,
+				F0A000000000000000000302 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "foray";
+			packageProductDependencies = (
+				F0A000000000000000000902 /* ForayCLIKit */,
+			);
+			productName = "foray";
+			productReference = F0A00000000000000000020B /* foray */;
+			productType = "com.apple.product-type.tool";
+		};
+		F0A000000000000000000503 /* foray-helper */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F0A000000000000000000804 /* Build configuration list for PBXNativeTarget "foray-helper" */;
+			buildPhases = (
+				F0A000000000000000000604 /* Sources */,
+				F0A000000000000000000303 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "foray-helper";
+			packageProductDependencies = (
+				F0A000000000000000000903 /* ForayOperations */,
+			);
+			productName = "foray-helper";
+			productReference = F0A00000000000000000020C /* foray-helper */;
+			productType = "com.apple.product-type.tool";
 		};
 /* End PBXNativeTarget section */
 
@@ -85,6 +209,12 @@
 				LastUpgradeCheck = 2700;
 				TargetAttributes = {
 					F0A000000000000000000501 = {
+						CreatedOnToolsVersion = 27.0;
+					};
+					F0A000000000000000000502 = {
+						CreatedOnToolsVersion = 27.0;
+					};
+					F0A000000000000000000503 = {
 						CreatedOnToolsVersion = 27.0;
 					};
 				};
@@ -106,6 +236,8 @@
 			projectRoot = "";
 			targets = (
 				F0A000000000000000000501 /* ForayApp */,
+				F0A000000000000000000502 /* foray */,
+				F0A000000000000000000503 /* foray-helper */,
 			);
 		};
 /* End PBXProject section */
@@ -116,6 +248,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F0A000000000000000000102 /* Foray.icon in Resources */,
+				F0A000000000000000000104 /* Foray.sdef in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -127,10 +260,40 @@
 			buildActionMask = 2147483647;
 			files = (
 				F0A000000000000000000101 /* main.swift in Sources */,
+				F0A000000000000000000105 /* Intents.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F0A000000000000000000603 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F0A000000000000000000106 /* main.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F0A000000000000000000604 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F0A000000000000000000107 /* main.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		F0A000000000000000000B01 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = F0A000000000000000000502 /* foray */;
+			targetProxy = F0A000000000000000000C01 /* PBXContainerItemProxy */;
+		};
+		F0A000000000000000000B02 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = F0A000000000000000000503 /* foray-helper */;
+			targetProxy = F0A000000000000000000C02 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		F0A000000000000000000701 /* Debug */ = {
@@ -199,6 +362,66 @@
 			};
 			name = Release;
 		};
+		F0A000000000000000000705 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = UYU5FM4LQ4;
+				CREATE_INFOPLIST_SECTION_IN_BINARY = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.emkey1.Foray.cli;
+				PRODUCT_NAME = "foray";
+				SKIP_INSTALL = YES;
+			};
+			name = Debug;
+		};
+		F0A000000000000000000706 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = UYU5FM4LQ4;
+				CREATE_INFOPLIST_SECTION_IN_BINARY = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.emkey1.Foray.cli;
+				PRODUCT_NAME = "foray";
+				SKIP_INSTALL = YES;
+			};
+			name = Release;
+		};
+		F0A000000000000000000707 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = UYU5FM4LQ4;
+				CREATE_INFOPLIST_SECTION_IN_BINARY = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.emkey1.Foray.helper;
+				PRODUCT_NAME = "foray-helper";
+				SKIP_INSTALL = YES;
+			};
+			name = Debug;
+		};
+		F0A000000000000000000708 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = UYU5FM4LQ4;
+				CREATE_INFOPLIST_SECTION_IN_BINARY = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.emkey1.Foray.helper;
+				PRODUCT_NAME = "foray-helper";
+				SKIP_INSTALL = YES;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -220,6 +443,24 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		F0A000000000000000000803 /* Build configuration list for PBXNativeTarget "foray" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F0A000000000000000000705 /* Debug */,
+				F0A000000000000000000706 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F0A000000000000000000804 /* Build configuration list for PBXNativeTarget "foray-helper" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F0A000000000000000000707 /* Debug */,
+				F0A000000000000000000708 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
@@ -234,6 +475,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = F0A000000000000000000A01 /* XCLocalSwiftPackageReference ".." */;
 			productName = ForayKit;
+		};
+		F0A000000000000000000902 /* ForayCLIKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F0A000000000000000000A01 /* XCLocalSwiftPackageReference ".." */;
+			productName = ForayCLIKit;
+		};
+		F0A000000000000000000903 /* ForayOperations */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F0A000000000000000000A01 /* XCLocalSwiftPackageReference ".." */;
+			productName = ForayOperations;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

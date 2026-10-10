@@ -11,7 +11,7 @@ import Testing
         let ids = Set(html.matches(of: /id="([^"]+)"/).map { String($0.output.1) })
         let links = Set(html.matches(of: /href="#([^"]+)"/).map { String($0.output.1) })
         #expect(links.subtracting(ids).isEmpty, "links without targets: \(links.subtracting(ids))")
-        let sections: [GuideWindowController.Section] = [.start, .views, .sorting, .settings, .search, .syntax, .kinds, .files, .keys, .access, .coming]
+        let sections: [GuideWindowController.Section] = [.start, .views, .sorting, .settings, .search, .syntax, .kinds, .files, .keys, .access, .panes, .admin, .terminal, .scripting]
         for s in sections { #expect(ids.contains(s.rawValue), "missing section \(s.rawValue)") }
     }
 }

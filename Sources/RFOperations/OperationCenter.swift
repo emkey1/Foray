@@ -43,6 +43,9 @@ public final class OperationCenter {
     public var resolveConflict: @MainActor (Job, ConflictQuestion) async -> ConflictAnswer = { _, _ in ConflictAnswer(.keepBoth) }
     /// Told when a job ends with errors (or stops).
     public var reportProblems: @MainActor (Job, OperationResult) -> Void = { _, _ in }
+    /// Administrator access for operations that fail for lack of permission (DESIGN.md §5.11).
+    /// Nil (the default) until the user turns it on in Settings › Advanced.
+    public var elevation: ElevationProvider?
 
     private let journal: OperationJournal
     private let trash: TrashFunction
@@ -92,7 +95,8 @@ public final class OperationCenter {
     private func start(_ job: Job) {
         jobs.append(job)
         startTicker()
-        let execution = Execution(job.request, control: job.control, progress: job.sharedProgress, journal: journal, trash: trash) {
+        let execution = Execution(job.request, control: job.control, progress: job.sharedProgress, journal: journal, trash: trash,
+                                  elevation: elevation) {
             [weak self, weak job] question in
             await self?.ask(job, question) ?? ConflictAnswer(.skip)
         }

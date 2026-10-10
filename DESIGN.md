@@ -244,7 +244,7 @@ Each of these is additive or controlled by a setting, so Finder habits keep work
 | I9 | **Batch rename** supports regex, case changes and sequence numbers, with a live preview. The whole rename is undone in one step. | On |
 | I10 | **Never writes `.DS_Store` files**, notably on network and USB volumes. | Always |
 | I11 | **Return key** renames (as in Finder) or opens, depending on a setting. | Rename |
-| I12 | **Dual-pane mode** shows two browsers side by side in one window, with copy and move to the other pane. | P3, off |
+| I12 | **Dual-pane mode** shows two browsers side by side in one window, with copy and move to the other pane. | P3 ✅, off (View › Show Second Pane, ⌘U; per tab, remembered in the session) |
 
 ---
 
@@ -309,7 +309,7 @@ Each of these is additive or controlled by a setting, so Finder habits keep work
 | Compress and expand | `ditto` for zip (same output as Finder); Archive Utility or libarchive for other formats | P2 ✅ (zip; other formats open in Archive Utility) |
 | Undo and redo for file operations | §5.7 | P1 |
 | Progress, pause, cancel | §5.7 | P1 |
-| Operations that need admin authentication | Privileged helper (§5.11) | P3 |
+| Operations that need admin authentication | Privileged helper (§5.11) | P3 ✅ (opt-in: Settings › Advanced) |
 
 ### 4.5 Information and metadata
 
@@ -321,7 +321,7 @@ Each of these is additive or controlled by a setting, so Finder habits keep work
 | Comments | §5.8 | P2 ✅ |
 | Locked, Stationery Pad, Hide Extension, custom icons (paste or remove) | | P2 ✅ |
 | Permissions and ACL editing for items the user owns | | P2 ✅ (access lists edited as `acl_to_text` text with Finder's privilege levels; Apply to Enclosed Items undoable) |
-| Permissions for items owned by other users | Helper | P3 |
+| Permissions for items owned by other users | Helper | P3 ✅ (permission bits, access list and Locked; changing the owner isn't offered) |
 | Calculate folder sizes | `SizeService` (§5.8) | P2 ✅ (in-memory `FolderSizes`, two walks at a time; SQLite cache still to do) |
 
 ### 4.6 Search
@@ -358,8 +358,9 @@ Each of these is additive or controlled by a setting, so Finder habits keep work
 | Default file viewer ("Show in Finder" in other apps opens RealFinder) | §5.12 | P2 ✅ (opt-in switch in Settings › General writes/removes the global `NSFileViewer`; macOS delivers reveals as plain `aevt/odoc` events naming the file, verified with a probe app on 2026-10-09) |
 | Dock menu with windows and recent folders | | P2 ✅ |
 | `realfinder://` URL scheme | | P2 ✅ |
-| AppleScript dictionary, Shortcuts actions (App Intents), `rf` command-line tool | | P3 |
-| Desktop icons and Stacks | ✗ Finder keeps the desktop (Q3) | |
+| AppleScript dictionary, Shortcuts actions (App Intents), `foray` command-line tool | One `Automation` API behind all three (§5.12) | P3 ✅ |
+| Desktop icons | Opt-in: "Use Foray instead of Finder" (§5.12) draws the desktop | P2 ✅ |
+| Stacks | ✗ not planned | |
 
 ---
 
@@ -771,6 +772,14 @@ protocol SearchBackend: Sendable {
   - The helper verifies the caller's code signature using its audit token.
   - It exposes a narrow API: copy, move, delete, chmod, chown and ACL changes on explicit paths. It never runs shell commands.
   - Each operation requires an Authorization Services right, so the user sees an admin prompt, as they would in Finder.
+  - *As built (M6):*
+    - **Opt-in.** Nothing is registered until the user turns on Settings › Advanced › "Allow operations that need an administrator" (and approves the background item in System Settings). Turning it off unregisters the daemon. Tests substitute `HelperRegistration`, so they never register anything.
+    - **Layout.** `Contents/Helpers/foray-helper` (signing identifier `<app id>.helper`) and `Contents/Library/LaunchDaemons/<app id>.helper.plist` (`BundleProgram`, one Mach service). Foray Dev gets its own identifiers. The helper quits after a minute idle; launchd restarts it on demand.
+    - **Who may call.** The listener sets a code-signing requirement on connections: the app's identifier, an Apple-issued certificate, and the helper's own team ID (read from its signature, so there is no team constant to forget). The app sets the mirror-image requirement on the helper. An ad hoc or unsigned helper refuses to start.
+    - **Authorization.** The app creates one `AuthorizationRef` per job and acquires the right `io.github.emkey1.Foray.admin-file-operations` interactively (the system dialog names the job); the helper re-checks the right, without interaction, on every request. The rule is "authenticate as admin", not shared, 30-minute timeout; the reference is destroyed when the job ends.
+    - **API.** One XPC method taking a JSON `PrivilegedOperation`: `rename` (never replaces), `makeDirectory`, `copyFile` (one file or symlink, not followed), `copyDirectoryMetadata`, `remove`, `writeAttributes` (permission bits, access list, Locked only). Paths must be absolute and already resolved (no `.`/`..`). Created items are chowned to the calling user (taken from the connection). `PrivilegedExecutor` lives in RFOperations and is unit-tested unprivileged.
+    - **Engine integration.** The engine's primitives go through `ElevatingFileOps`: when one fails with `EACCES` (or `EPERM` in a sticky folder or on an item the user doesn't own, but never for locked items), it asks the job's `ElevationProvider` once and retries that single primitive through the helper. Everything else (conflicts, temporary names, progress, journal, undo) is unchanged, so undo of an elevated operation is itself elevated when needed. Trash falls back to a helper `rename` into the user's Trash on that volume.
+    - **Known limits.** A folder the user can't read is copied empty (listing isn't elevated). Path components could in principle be swapped between the app's check and the helper's call by another process running as the same user; the helper never follows a final symlink, and the requests come only from the signed app after an admin prompt, which is the same exposure Finder's authenticated operations have.
 - **Apple Events to Finder.** Avoided unless M0 shows it's the only way to make comments or the tag catalog work with Finder. Using it requires the Automation permission.
 
 ### 5.12 System integration
@@ -785,9 +794,13 @@ protocol SearchBackend: Sendable {
 - **Entry points:**
   - `open -a RealFinder <path>`
   - `realfinder://open?path=…` (P2)
-  - An `rf` command-line tool (P3)
-  - App Intents for Shortcuts (P3)
-  - An AppleScript dictionary (P3)
+  - A `foray` command-line tool (P3 ✅)
+  - App Intents for Shortcuts (P3 ✅)
+  - An AppleScript dictionary (P3 ✅)
+- **Scripting, as built (M6).** `Automation` (RFUI) is the one API behind AppleScript, Shortcuts and `foray://` links: open, reveal, current folder, selection, show a search, `find` (headless, returns files), trash (through the operation engine, so undoable), dual pane.
+  - **AppleScript:** `Resources/Foray.sdef` (a trimmed Standard Suite plus the Foray Suite); `NSScriptCommand` subclasses and `NSApplication` properties in `Scripting.swift`. `find` and `trash` suspend the Apple event while they work.
+  - **Shortcuts:** App Intents in `Sources/Foray/Intents.swift`, compiled into the app target itself so Xcode extracts their metadata (test builds made with `bundle.sh` don't have it, so Shortcuts only lists the released app's actions).
+  - **`foray`:** `Sources/ForayCLI` (logic, tested in-process) and `Sources/foray-cli` (entry point), shipped at `Contents/Helpers/foray`. Search, trash and tag run in the tool itself; open, reveal and `search --open` are handed to the app it sits in. Settings › Advanced links it into `/usr/local/bin`; the Homebrew cask links it automatically.
 
 ### 5.13 Concurrency and performance
 
@@ -965,9 +978,9 @@ These are in order with exit criteria; there are no dates.
 | **M1 Browsing core** ✅ | App shell, windows and tabs, sidebar (with editable favorites), list view with inline folder expansion, icon view, `Arrangement` model (§3.3), navigation, path and status bars, Quick Look, FSEvents updates, state restoration, in-app user guide | Done: usable as a read-only daily browser; open, mode-switch and re-sort budgets met (§5.13); sort-preservation tests pass |
 | **M2 File operations** ✅ | Engine; copy, move, rename, trash, new folder and duplicate; drag and drop; clipboard and cut; conflicts; progress; undo; journal | Done: fuzz suite passes on every filesystem image; no data loss on `kill -9` mid-copy |
 | **M3 Search** ✅ (Recents added in M5) | Scope bar, query parser, kinds, Spotlight and Crawl backends, results view, Recents | Acceptance tests for headline requirements 1 and 2 pass |
-| **M4 P1 complete** (built) | Column and gallery views, tags, read-only Get Info, View Options, Open With, eject, preferences, onboarding and TCC | The developer uses RealFinder instead of Finder for a full week. *Built:* everything in scope. Settings (⌘,): new-window folder, tabs or windows, Return renames or opens, search scope and match defaults, per-folder or same-everywhere views, Full Disk Access. Open With has Other… and ⌥ Always Open With (sets the LaunchServices default for the type). Get Info shows comments and permissions read-only. Not yet: Eject All, a confirmation before ejecting a multi-volume disk. Waiting on the week of daily use |
-| **M5 Parity (P2)** (mostly built) | All remaining P2 rows in §4 | Parity checklist complete, except ✗ and P3 items. *Built:* Trash (merged, Put Back, Empty), Recents, aliases, compress/expand, Share/AirDrop, editable Get Info, custom icons, folder sizes, cloud badges and download controls, Connect to Server and network browsing, smart folders, spring-loading, file promises, Services, Dock menu and recent folders, `realfinder://` links, batch rename, Inspector, customizable toolbar, free icon arrangement. *Left:* Quick Actions, spring-loaded tabs, Stationery Pad, ACL editing, criteria editor, Eject All, default file viewer (needs the user's OK, S8) |
-| **M6 Advanced (P3)** | Privileged helper, scripting, Shortcuts and CLI, dual-pane mode, extras | — |
+| **M4 P1 complete** (built) | Column and gallery views, tags, read-only Get Info, View Options, Open With, eject, preferences, onboarding and TCC | The developer uses RealFinder instead of Finder for a full week. *Built:* everything in scope. Settings (⌘,): new-window folder, tabs or windows, Return renames or opens, search scope and match defaults, per-folder or same-everywhere views, Full Disk Access. Open With has Other… and ⌥ Always Open With (sets the LaunchServices default for the type). Get Info shows comments and permissions read-only. Eject All and the multi-volume confirmation came with M5. Waiting on the week of daily use |
+| **M5 Parity (P2)** (built) | All remaining P2 rows in §4 | Parity checklist complete, except ✗ and P3 items. *Built:* Trash (merged, Put Back, Empty), Recents, aliases, compress/expand, Share/AirDrop, editable Get Info, custom icons, folder sizes, cloud badges and download controls, Connect to Server and network browsing, smart folders, spring-loading, file promises, Services, Dock menu and recent folders, `realfinder://` links, batch rename, Inspector, customizable toolbar, free icon arrangement. Since 0.9.1/0.9.2: Quick Actions, spring-loaded tabs, Stationery Pad, ACL editing, the criteria editor, Eject All, the default file viewer and "Use Foray instead of Finder" (both opt-in) |
+| **M6 Advanced (P3)** (built) | Privileged helper, scripting, Shortcuts and CLI, dual-pane mode, extras | *Built:* dual-pane mode (I12), the `foray` tool, AppleScript, Shortcuts actions, and the opt-in privileged helper (§5.11, §5.12). *To verify on a signed build:* registering the helper and one real authenticated operation (it can't be exercised from tests) |
 
 ---
 

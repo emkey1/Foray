@@ -32,6 +32,8 @@
   kbd { font: 12px ui-monospace, SFMono-Regular, monospace; background: var(--code-bg); border: 1px solid var(--rule);
         border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; white-space: nowrap; }
   code { font: 12.5px ui-monospace, SFMono-Regular, monospace; background: var(--code-bg); padding: 1px 4px; border-radius: 4px; }
+  pre { background: var(--code-bg); padding: 10px 14px; border-radius: 6px; overflow-x: auto; max-width: 760px; }
+  pre code { background: none; padding: 0; }
   table { border-collapse: collapse; margin: 10px 0 16px; width: 100%; max-width: 760px; }
   th, td { text-align: left; vertical-align: top; padding: 6px 10px; border-bottom: 1px solid var(--rule); }
   th { font-weight: 600; color: var(--muted); font-size: 12px; }
@@ -53,11 +55,14 @@
   <a href="#kinds">File kinds</a>
   <a href="#files">Opening and previewing</a>
   <a href="#ops">Copying, moving and renaming</a>
+  <a href="#panes">Two panes</a>
   <a href="#tags">Tags</a>
   <a href="#keys">Keyboard shortcuts</a>
   <a href="#access">Privacy and access</a>
   <a href="#desktop">The desktop</a>
-  <a href="#coming">Not yet available</a>
+  <a href="#admin">Administrator access</a>
+  <a href="#terminal">The foray command</a>
+  <a href="#scripting">AppleScript and Shortcuts</a>
 </nav>
 <main>
 
@@ -121,6 +126,7 @@
   <li><b>Views:</b> view settings the same everywhere, or remembered for each folder (see <a href="#settings">above</a>).</li>
   <li><b>Search:</b> where searches start (the current folder, This Mac, or whatever you used last), whether they match names or names and contents, and whether a search follows you to other folders.</li>
   <li><b>Privacy:</b> whether Foray has Full Disk Access, with a button to the right page of System Settings.</li>
+  <li><b>Advanced:</b> installing the <a href="#terminal"><code>foray</code> command</a> for Terminal, and <a href="#admin">administrator access</a> (off until you turn it on).</li>
 </ul>
 <p><b>View › Customize Toolbar…</b> (or right-click the toolbar) adds buttons for Get Info, the Inspector, Share, Move to Trash, New Folder, Quick Look, Tags, Eject, Copy Path and Connect to Server, and lets you rearrange or remove the rest.</p>
 <p>View options for the front window (icon size, columns, grouping and so on) are in <b>View › Show View Options</b> (<kbd>⌘J</kbd>). In list view, <b>Calculate all sizes</b> totals folders in the background so they show a size and sort by it.</p>
@@ -227,6 +233,17 @@
   <li><b>Nothing half-copied:</b> copies are written under a hidden temporary name and only appear when complete. If an item can't be copied, the rest still are, and you get a list of what failed.</li>
 </ul>
 
+<h2 id="panes">Two panes</h2>
+<p><b>View › Show Second Pane</b> (<kbd>⌘U</kbd>) splits the window into two file lists side by side, each with its own folder, view, path bar and history. Each tab can have its own second pane, and they come back when you relaunch.</p>
+<ul>
+  <li><b>The active pane</b> is the one you last clicked in; it has a colored line along its top. The sidebar, toolbar, search field and menus act on it.</li>
+  <li><b>Switch panes</b> with <kbd>Tab</kbd> (while the file list has the focus) or <kbd>⌥⌘U</kbd>.</li>
+  <li><b>Copy to Other Pane</b> <kbd>F5</kbd> and <b>Move to Other Pane</b> <kbd>F6</kbd> (File menu) send the selection to the folder the other pane shows. You can also drag between the panes. Both can be undone.</li>
+  <li><b>Open in Other Pane</b> <kbd>⌃⌘U</kbd> shows the selected folder in the other pane; with nothing selected, it shows this pane's folder there.</li>
+  <li><b>View › Hide Second Pane</b> keeps the pane you're in.</li>
+</ul>
+<p>On keyboards where the F keys control brightness and volume, hold <kbd>fn</kbd> for <kbd>F5</kbd> and <kbd>F6</kbd>.</p>
+
 <h2 id="tags">Tags</h2>
 <ul>
   <li><b>Tag dots</b> show next to names in every view.</li>
@@ -262,6 +279,9 @@
   <tr><td><kbd>⇧⌘⌫</kbd></td><td>Empty Trash</td></tr>
   <tr><td><kbd>⌘Z</kbd> <kbd>⇧⌘Z</kbd></td><td>Undo, redo</td></tr>
   <tr><td><kbd>⌃⌘S</kbd></td><td>Show or hide the sidebar</td></tr>
+  <tr><td><kbd>⌘U</kbd> <kbd>⌥⌘U</kbd> <kbd>⌃⌘U</kbd></td><td>Show or hide the second pane, switch panes, open in the other pane</td></tr>
+  <tr><td><kbd>Tab</kbd></td><td>Switch panes (two-pane windows)</td></tr>
+  <tr><td><kbd>F5</kbd> <kbd>F6</kbd></td><td>Copy / move the selection to the other pane</td></tr>
   <tr><td><kbd>⌘?</kbd></td><td>This guide</td></tr>
 </table>
 
@@ -272,8 +292,43 @@
 <p>With <b>Use Foray instead of Finder</b> on (Settings › General), Foray draws your desktop: the files in your Desktop folder, over your wallpaper, behind every window. Open, rename, drag, Quick Look, Get Info and the right-click menu work as in any Foray window; opening a folder opens a Foray window. Icons stay where you put them and snap to a grid (View Options changes that while the desktop is selected). Disks aren't shown on the desktop; they're in the sidebar.</p>
 <p>If Foray isn't running, the desktop is empty until it opens again. To give the desktop back to Finder without Foray, run <code>defaults delete com.apple.finder CreateDesktop; killall Finder</code> in Terminal.</p>
 
-<h2 id="coming">Not yet available</h2>
-<p>Foray covers what Finder does. Next on the list: AppleScript and Shortcuts support, a command-line tool, an optional two-pane view, and a helper for changes that need an administrator password.</p>
+<h2 id="admin">Administrator access</h2>
+<p>Some folders (the Library folder at the top of your disk, other users' folders) can only be changed by an administrator. Finder asks for a password there; so can Foray, once you turn it on: <b>Settings › Advanced › Allow operations that need an administrator</b>. It's off until you do.</p>
+<ul>
+  <li><b>What turning it on does.</b> Foray registers a small helper with macOS, which asks you to allow it in System Settings › General › Login Items &amp; Extensions. The helper only runs when it's needed and quits when it's done.</li>
+  <li><b>How it works afterwards.</b> When copying, moving, renaming, deleting, trashing, making a folder or changing permissions fails for lack of permission, macOS asks for an administrator's name and password, saying which operation it's for, and Foray carries on. You're asked once per operation, however many items it covers. Cancel, and you get the usual list of what couldn't be done.</li>
+  <li><b>What you copy stays yours.</b> Copies and new folders made this way belong to you, as with Finder.</li>
+  <li><b>What it can't do.</b> Locked items must be unlocked first (Get Info), and macOS protects its own system files even from administrators.</li>
+  <li><b>How it's kept safe.</b> The helper accepts requests only from Foray itself (macOS checks the app's signature), only with an administrator's approval for that operation, and only for those file operations on the exact items involved. It never runs commands.</li>
+  <li><b>Turning it off</b> removes the helper.</li>
+</ul>
+
+<h2 id="terminal">The foray command</h2>
+<p>Foray includes a command for Terminal. <b>Settings › Advanced › Install</b> links it into <code>/usr/local/bin</code>; if you installed Foray with Homebrew it's already there.</p>
+<table>
+  <tr><th>Command</th><th>What it does</th></tr>
+  <tr><td><code>foray</code> &nbsp; <code>foray ~/Projects</code></td><td>Opens the current folder, or the folders you name, in Foray. A file is shown selected in its folder.</td></tr>
+  <tr><td><code>foray reveal notes.txt</code></td><td>Shows items (folders too) selected in their enclosing folder.</td></tr>
+  <tr><td><code>foray search report kind:pdf</code></td><td>Prints the paths of matches under the current folder, using the same <a href="#syntax">search filters</a> as the search field.</td></tr>
+  <tr><td><code>foray trash old.log</code></td><td>Moves items to the Trash (Put Back works).</td></tr>
+  <tr><td><code>foray tag -a Work -r Urgent a.txt</code></td><td>Adds and removes tags; with neither, lists them.</td></tr>
+</table>
+<p>Options for <code>search</code>: <code>--in <i>folder</i></code> searches somewhere else and <code>--mac</code> the whole Mac; <code>--contents</code> also matches text inside files; <code>--limit <i>n</i></code> stops early; <code>--print0</code> separates paths for <code>xargs -0</code>; <code>--open</code> shows the search in Foray instead of printing. Like <code>grep</code>, it exits with 1 when nothing matches. <code>foray --help</code> lists everything.</p>
+
+<h2 id="scripting">AppleScript and Shortcuts</h2>
+<p><b>Shortcuts.</b> The Shortcuts app lists Foray's actions under Foray: <b>Open in Foray</b>, <b>Reveal in Foray</b>, <b>Find Files with Foray</b> (returns the files, for the next action to use), <b>Search in Foray</b> (shows the results in a window), <b>Get Selected Files in Foray</b>, <b>Get Current Folder in Foray</b> and <b>Move to Trash with Foray</b>.</p>
+<p><b>AppleScript.</b> Open Foray's dictionary in Script Editor (File › Open Dictionary…) to see everything. In short:</p>
+<pre><code>tell application "Foray"
+    set current folder to POSIX file "/Users/me/Projects"
+    set found to find "report kind:pdf" in (path to documents folder)
+    reveal found
+    get selection
+    search "invoice" in (path to home folder) with contents
+    trash {POSIX file "/Users/me/Desktop/old.txt"}
+    set dual pane to true
+end tell</code></pre>
+<p><code>current folder</code> and <code>selection</code> belong to the front window (its active pane). <code>find</code> returns files without showing anything; <code>search</code> shows the results. <code>trash</code> goes through Foray, so Undo and Put Back work.</p>
+<p><b>Links.</b> <code>foray://open?path=…</code>, <code>foray://reveal?path=…</code> and <code>foray://search?q=…&amp;in=…</code> open Foray from anything that can open a link.</p>
 
 </main>
 </body>

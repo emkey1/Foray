@@ -93,6 +93,58 @@ final class SettingsPaneModel {
     private(set) var insteadOfFinder = FinderTakeover.isEnabled
     var quitFinder = FinderTakeover.state.quitFinder { didSet { if quitFinder != oldValue { FinderTakeover.setQuitFinder(quitFinder) } } }
     var takeoverNote: String?
+    private(set) var administratorAccess = AdministratorAccess.status
+    var administratorNote: String?
+    private(set) var commandLineTool = CommandLineTool.status
+    var commandLineNote: String?
+    /// The Terminal command to install the tool, when /usr/local/bin needs an administrator.
+    var commandLineCommand: String?
+
+    /// The administrator-access switch: asks first, then registers (or removes) the helper.
+    func setAdministratorAccess(_ on: Bool, confirm: (() -> Bool)? = nil) {
+        guard on != AdministratorAccess.isOn else { return }
+        if on {
+            guard (confirm ?? Self.confirmAdministratorAccess)() else { return }
+            administratorNote = AdministratorAccess.turnOn()
+        } else {
+            AdministratorAccess.turnOff()
+            administratorNote = nil
+        }
+        refreshAccess()
+    }
+
+    static func confirmAdministratorAccess() -> Bool {
+        let alert = NSAlert()
+        alert.messageText = "Turn on administrator access?"
+        alert.informativeText = """
+        Foray will install a small helper that macOS runs in the background when it's needed. With it, copying,         moving, renaming and deleting in places only an administrator can change (such as the Library folder)         ask for an administrator's name and password and then go ahead, as they do in Finder.
+
+        macOS will ask you to allow it in System Settings. Turn this off any time to remove the helper.
+        """
+        alert.addButton(withTitle: "Turn On")
+        alert.addButton(withTitle: "Cancel")
+        return alert.runModal() == .alertFirstButtonReturn
+    }
+
+    func installCommandLineTool() {
+        commandLineNote = nil
+        commandLineCommand = nil
+        switch CommandLineTool.install() {
+        case .done: break
+        case .needsAdministrator(let command):
+            commandLineCommand = command
+            commandLineNote = "\(CommandLineTool.link.deletingLastPathComponent().path) needs an administrator. Paste this into Terminal:"
+        case .failed(let message): commandLineNote = message
+        }
+        refreshAccess()
+    }
+
+    func removeCommandLineTool() {
+        CommandLineTool.uninstall()
+        commandLineNote = nil
+        commandLineCommand = nil
+        refreshAccess()
+    }
 
     /// The switch: asks first, then applies (or undoes) the changes.
     func setInsteadOfFinder(_ on: Bool, confirm: (() -> Bool)? = nil) {
@@ -135,6 +187,10 @@ final class SettingsPaneModel {
         insteadOfFinder = FinderTakeover.isEnabled
         fileViewer = FileViewerSetting.isForay
         fileViewerName = FileViewerSetting.currentViewerName
+        administratorAccess = AdministratorAccess.status
+        if administratorAccess == .needsApproval { administratorNote = AdministratorAccess.approvalNote }
+        else if administratorNote == AdministratorAccess.approvalNote { administratorNote = nil }
+        commandLineTool = CommandLineTool.status
     }
 }
 
@@ -219,6 +275,62 @@ struct SettingsView: View {
             }
             .formStyle(.grouped)
             .tabItem { Label("Privacy", systemImage: "lock.shield") }
+
+            Form {
+                Section("Command-Line Tool") {
+                    LabeledContent("foray in Terminal") {
+                        HStack {
+                            switch model.commandLineTool {
+                            case .unavailable: Text("Not included in this build").foregroundStyle(.secondary)
+                            case .installed:
+                                Text("Installed").foregroundStyle(.green)
+                                Button("Remove") { model.removeCommandLineTool() }
+                            case .elsewhere(let path):
+                                Text("Points to another copy").foregroundStyle(.orange).help(path)
+                                Button("Use This Copy") { model.installCommandLineTool() }
+                            case .blocked: Text("Something else is at \(CommandLineTool.link.path)").foregroundStyle(.orange)
+                            case .notInstalled:
+                                if let brew = CommandLineTool.homebrewLink {
+                                    Text("Installed by Homebrew").foregroundStyle(.green).help(brew)
+                                } else {
+                                    Button("Install") { model.installCommandLineTool() }
+                                }
+                            }
+                        }
+                    }
+                    Text("Open folders, search, tag and trash from Terminal: “foray .”, “foray search report kind:pdf”. “foray --help” lists everything.")
+                        .font(.callout).foregroundStyle(.secondary)
+                    if let note = model.commandLineNote { Text(note).font(.callout).foregroundStyle(.orange) }
+                    if let command = model.commandLineCommand {
+                        HStack {
+                            Text(command).font(.system(.caption, design: .monospaced)).textSelection(.enabled).lineLimit(3)
+                            Button("Copy") {
+                                NSPasteboard.general.clearContents()
+                                NSPasteboard.general.setString(command, forType: .string)
+                            }
+                        }
+                    }
+                }
+                Section("Administrator Access") {
+                    Toggle("Allow operations that need an administrator",
+                           isOn: Binding(get: { model.administratorAccess == .on || model.administratorAccess == .needsApproval },
+                                         set: { model.setAdministratorAccess($0) }))
+                        .disabled(model.administratorAccess == .unavailable)
+                    Text(model.administratorAccess == .unavailable
+                         ? "Not available in this build of Foray (it has no helper, or isn't signed with a developer certificate)."
+                         : "Copying, moving, renaming and deleting in places only an administrator can change ask for an administrator's name and password, then go ahead. This installs a small helper that macOS runs in the background when needed. Off until you turn it on; turning it off removes the helper.")
+                        .font(.callout).foregroundStyle(.secondary)
+                    if let note = model.administratorNote {
+                        Text(note).font(.callout).foregroundStyle(.orange)
+                        HStack {
+                            Button("Open Login Items Settings") { AdministratorAccess.openLoginItems() }
+                            Button("Check Again") { model.refreshAccess() }
+                        }
+                    }
+                }
+            }
+            .formStyle(.grouped)
+            .tabItem { Label("Advanced", systemImage: "wrench.and.screwdriver") }
         }
         .frame(width: 580, height: 500)
     }

@@ -9,7 +9,7 @@ public final class GuideWindowController: NSWindowController, NSToolbarDelegate,
 
     /// Sections of guide.html that other parts of the app link to.
     public enum Section: String {
-        case top = "", start, views, sorting, settings, prefs, search, syntax, kinds, files, ops, tags, keys, access, desktop, coming
+        case top = "", start, views, sorting, settings, prefs, search, syntax, kinds, files, ops, panes, tags, keys, access, desktop, admin, terminal, scripting
     }
 
     private let webView = WKWebView()

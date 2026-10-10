@@ -40,6 +40,16 @@ fi
 
 [[ -d $app/Contents ]] || { print -u2 "error: $app isn't an app bundle"; exit 1; }
 codesign --verify --strict "$app"
+# The `foray` tool and the privileged helper must be inside, signed under the names the app and
+# the helper check each other by.
+id=$(/usr/libexec/PlistBuddy -c "Print CFBundleIdentifier" "$app/Contents/Info.plist")
+for pair in foray:$id.cli foray-helper:$id.helper; do
+  tool="$app/Contents/Helpers/${pair%%:*}"
+  [[ -x $tool ]] || { print -u2 "error: $tool is missing"; exit 1; }
+  signed=$(codesign -dv "$tool" 2>&1 | sed -n 's/^Identifier=//p')
+  [[ $signed == "${pair#*:}" ]] || { print -u2 "error: $tool is signed as \"$signed\", not \"${pair#*:}\""; exit 1; }
+done
+[[ -f "$app/Contents/Library/LaunchDaemons/$id.helper.plist" ]] || { print -u2 "error: the helper's launchd plist is missing"; exit 1; }
 if xcrun stapler validate "$app" >/dev/null 2>&1; then
   spctl --assess --type execute "$app" && print "Notarized and accepted by Gatekeeper."
 else
