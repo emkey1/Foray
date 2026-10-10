@@ -20,7 +20,7 @@ trap 'rm -rf "$tap"' EXIT
 gh repo clone emkey1/homebrew-tap "$tap" -- -q
 cask="$tap/Casks/foray.rb"
 sed -i '' -E "s/^  version \".*\"/  version \"$version\"/; s/^  sha256 \".*\"/  sha256 \"$local_sum\"/" "$cask"
-# From 0.9.3 the app contains the `foray` command-line tool: have Homebrew link it into its bin.
+# From 0.10.0 the app contains the `foray` command-line tool: have Homebrew link it into its bin.
 if ! grep -q 'Contents/Helpers/foray' "$cask"; then
   sed -i '' -E 's|^  app "Foray.app"$|  app "Foray.app"\
   binary "#{appdir}/Foray.app/Contents/Helpers/foray"|' "$cask"
