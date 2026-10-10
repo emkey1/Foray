@@ -117,10 +117,8 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate, NSToo
         syncChrome()
     }
 
-    deinit {
-        MainActor.assumeIsolated {
-            if let tabKeyMonitor { NSEvent.removeMonitor(tabKeyMonitor) }
-        }
+    isolated deinit {
+        if let tabKeyMonitor { NSEvent.removeMonitor(tabKeyMonitor) }
     }
 
     /// The window's chrome follows whichever pane is active.
@@ -563,15 +561,16 @@ public final class WindowManager {
         NSApplication.shared.activate()
     }
 
+    /// `openFolders: false` shows folders selected in their parent too, instead of opening them.
     @discardableResult
-    func revealing(_ urls: [URL]) -> [BrowserWindowController] {
+    func revealing(_ urls: [URL], openFolders: Bool = true) -> [BrowserWindowController] {
         var folders: [URL] = []
         var selections: [URL: [String]] = [:]
         for url in urls {
             var isDir: ObjCBool = false
             guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir) else { continue }
             let isPackage = (try? url.resourceValues(forKeys: [.isPackageKey]).isPackage) == true
-            if isDir.boolValue && !isPackage {
+            if isDir.boolValue && !isPackage && (openFolders || url.path == "/") {
                 if !folders.contains(url) { folders.append(url) }
             } else {
                 let parent = url.deletingLastPathComponent()
@@ -591,9 +590,14 @@ public final class WindowManager {
         return opened
     }
 
+    /// The browser window in front (the last one opened if none is main).
+    var frontController: BrowserWindowController? {
+        (NSApplication.shared.mainWindow?.windowController as? BrowserWindowController) ?? controllers.last
+    }
+
     /// Shows `location` in the front browser window, or a new window if there's none.
     public func show(_ location: Location) {
-        let front = (NSApp.mainWindow?.windowController as? BrowserWindowController) ?? controllers.last
+        let front = frontController
         if let front, front.window?.isVisible == true {
             front.browser.state.jump(to: location)
             front.window?.makeKeyAndOrderFront(nil)

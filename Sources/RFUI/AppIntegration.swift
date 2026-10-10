@@ -42,6 +42,7 @@ public enum AppIntegration {
     }
 
     /// foray://open?path=/Users/me/Projects        → that folder (a file: its folder, selected)
+    /// foray://reveal?path=/Users/me/Projects      → its enclosing folder, with it selected
     /// foray://search?q=report%20kind:pdf&in=/path → that search ("in" omitted: This Mac)
     public static func location(for url: URL) -> (Location, select: [String])? {
         guard isOurs(url), let c = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return nil }
@@ -53,6 +54,12 @@ public enum AppIntegration {
             var isDir: ObjCBool = false
             guard FileManager.default.fileExists(atPath: target.path, isDirectory: &isDir) else { return nil }
             return isDir.boolValue ? (.folder(target), []) : (.folder(target.deletingLastPathComponent()), [target.lastPathComponent])
+        case "reveal":
+            // Like "open", but a folder is shown selected in its parent too.
+            guard let raw = param("path") else { return nil }
+            let target = URL(fileURLWithPath: (raw as NSString).expandingTildeInPath).standardizedFileURL
+            guard FileManager.default.fileExists(atPath: target.path), target.path != "/" else { return nil }
+            return (.folder(target.deletingLastPathComponent()), [target.lastPathComponent])
         case "search":
             guard let q = param("q"), !q.isEmpty else { return nil }
             let scope: SearchScope = param("in").map { .folder(URL(fileURLWithPath: ($0 as NSString).expandingTildeInPath, isDirectory: true), recursive: true) } ?? .thisMac
@@ -68,6 +75,11 @@ public enum AppIntegration {
     /// Opens a `foray://` link. Returns false if it isn't one.
     public static func open(_ url: URL) -> Bool {
         guard let (location, select) = location(for: url) else { return isOurs(url) }
+        // A search link was asked for explicitly, so it runs (a restored search tab only waits).
+        if let q = location.searchQuery {
+            Automation.showSearch(q.text, in: q.scope.folderURL)
+            return true
+        }
         if let front = NSApp.mainWindow?.windowController as? BrowserWindowController {
             front.browser.state.navigate(to: location, select: select)
         } else {

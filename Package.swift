@@ -9,6 +9,10 @@ let package = Package(
         .executable(name: "Foray", targets: ["Foray"]),
         // What the Xcode project (Xcode/Foray.xcodeproj, used for signed, notarized releases) links.
         .library(name: "ForayKit", targets: ["RFUI", "RFModel"]),
+        // The `foray` command-line tool. (Its SwiftPM product is "foray-cli": "foray" would
+        // collide with "Foray" on a case-insensitive disk. It's installed in the app as "foray".)
+        .executable(name: "foray-cli", targets: ["foray-cli"]),
+        .library(name: "ForayCLIKit", targets: ["ForayCLI"]),
     ],
     targets: [
         // getattrlistbulk(2) parsing and copyfile(3) helpers. Only RFFileSystem and RFOperations
@@ -26,6 +30,9 @@ let package = Package(
         .target(name: "RFUI", dependencies: ["RFModel", "RFFileSystem", "RFSearch", "RFOperations"], resources: [.copy("Guide")]),
         // App entry point: menus, app delegate.
         .executableTarget(name: "Foray", dependencies: ["RFUI"]),
+        // The `foray` command-line tool: its logic (testable) and the thin executable.
+        .target(name: "ForayCLI", dependencies: ["RFModel", "RFFileSystem", "RFSearch", "RFOperations"]),
+        .executableTarget(name: "foray-cli", dependencies: ["ForayCLI", "RFOperations"]),
         // Test helper: runs one copy so a test can kill it mid-way (DESIGN.md §9, M2 exit criteria).
         .executableTarget(name: "rf-crash-probe", dependencies: ["RFOperations", "RFFileSystem"]),
 
@@ -34,5 +41,6 @@ let package = Package(
         .testTarget(name: "RFSearchTests", dependencies: ["RFSearch"]),
         .testTarget(name: "RFOperationsTests", dependencies: ["RFOperations", "rf-crash-probe"]),
         .testTarget(name: "RFUITests", dependencies: ["RFUI"]),
+        .testTarget(name: "ForayCLITests", dependencies: ["ForayCLI"]),
     ]
 )

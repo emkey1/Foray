@@ -27,6 +27,23 @@ public enum SearchEngine {
             continuation.onTermination = { _ in task.cancel() }
         }
     }
+
+    /// Runs a search to the end and returns what it found: for scripts, Shortcuts and the `foray`
+    /// command-line tool. With a `limit` it stops as soon as that many items have turned up.
+    public static func collect(_ query: SearchQuery, limit: Int? = nil, kinds: KindCatalog = .shared) async -> SearchStatus {
+        var last = SearchStatus()
+        for await status in run(query, kinds: kinds) {
+            last = status
+            if let limit, status.items.count >= limit {
+                last.items = Array(status.items.prefix(limit))
+                break
+            }
+            // A live Spotlight query keeps the stream open for later changes; the search itself
+            // is over once both backends have reported in.
+            if !status.isRunning { break }
+        }
+        return last
+    }
 }
 
 private actor Search {

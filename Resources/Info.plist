@@ -53,6 +53,8 @@
 	<string>26.0</string>
 	<key>NSAppleEventsUsageDescription</key>
 	<string>Foray asks Finder to save the comments you write in Get Info, so Finder shows them too.</string>
+	<key>NSAppleScriptEnabled</key>
+	<true/>
 	<key>NSBonjourServices</key>
 	<array>
 		<string>_smb._tcp</string>
@@ -67,5 +69,7 @@
 	<string>NSApplication</string>
 	<key>NSSupportsAutomaticTermination</key>
 	<false/>
+	<key>OSAScriptingDefinition</key>
+	<string>Foray.sdef</string>
 </dict>
 </plist>
