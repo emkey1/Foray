@@ -6,6 +6,10 @@ import RFUI
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.mainMenu = MainMenu.build(target: self)
+        #if DEBUG
+        // scripts/screenshots.sh: photograph demo windows and quit, instead of opening as usual.
+        if ScreenshotStudio.runIfRequested() { return }
+        #endif
         if !openedFromLaunchURLs && !WindowManager.shared.restoreSession() {
             WindowManager.shared.openWindow()
         }

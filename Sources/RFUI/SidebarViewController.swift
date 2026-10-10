@@ -82,6 +82,10 @@ final class SidebarViewController: NSViewController {
         return s
     }()
 
+    /// The screenshot script (scripts/screenshots.sh, `ScreenshotStudio`) replaces what's specific
+    /// to this Mac: the home folder's name, disks, cloud services, computers on the network and tags.
+    static var sectionsForScreenshots: (([Node]) -> [Node])?
+
     func reload() {
         let favorites = AppModel.shared.favorites.enumerated().map { i, url in
             // Smart folders (.savedSearch) run their search; everything else is a folder.
@@ -120,6 +124,7 @@ final class SidebarViewController: NSViewController {
                      icon: TagDotsView.image(for: tag.color))
             }),
         ]
+        if let stage = Self.sectionsForScreenshots { sections = stage(sections) }
         // Sections with nothing in them (Cloud with no services, Tags with none) are left out.
         sections = sections.enumerated().filter { $0.offset == 0 || !$0.element.children.isEmpty }.map(\.element)
         outline.reloadData()

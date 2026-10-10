@@ -439,11 +439,15 @@ private final class IconItem: NSCollectionViewItem {
         let iconFrame = NSRect(x: (b.width - iconSize) / 2, y: b.height - iconSize - 6, width: iconSize, height: iconSize)
         iconView.frame = iconFrame
         iconBackground.frame = iconFrame.insetBy(dx: -4, dy: -4)
-        let fitted = label.sizeThatFits(NSSize(width: b.width - 4, height: 34))
-        let w = min(b.width - 4, fitted.width + 8)
-        label.frame = NSRect(x: (b.width - w) / 2, y: iconFrame.minY - 6 - min(fitted.height, 34), width: w, height: min(fitted.height, 34))
-        // Tag dots just left of the name's first line.
-        dots.frame = NSRect(x: max(0, label.frame.minX - dots.dotsWidth - 3), y: label.frame.maxY - TagDotsView.diameter - 3,
+        // Tag dots sit just left of the name's first line. The name gives up that much width (a
+        // long name used to run under the dots), and the two are centered together.
+        let dotsSpace = dots.tags.isEmpty ? 0 : dots.dotsWidth + 3
+        let available = b.width - 4 - dotsSpace
+        let fitted = label.sizeThatFits(NSSize(width: available, height: 34))
+        let w = min(available, fitted.width + 8)
+        label.frame = NSRect(x: (b.width - w - dotsSpace) / 2 + dotsSpace, y: iconFrame.minY - 6 - min(fitted.height, 34),
+                             width: w, height: min(fitted.height, 34))
+        dots.frame = NSRect(x: max(0, label.frame.minX - dotsSpace), y: label.frame.maxY - TagDotsView.diameter - 3,
                             width: dots.dotsWidth, height: TagDotsView.diameter)
         // Not downloaded: a cloud at the icon's lower right.
         let s = CloudBadgeView.size + 2

@@ -113,9 +113,13 @@ final class ListContentViewController: NSViewController, ContentView {
         let columnsChanged = settings.presentation.list.columns != self.settings.presentation.list.columns || outline.tableColumns.isEmpty
         self.snapshot = snapshot
         self.settings = settings
-        if columnsChanged { rebuildColumns() }
+        // Rows first, columns second. Changing columns makes the table lay itself out, which asks
+        // for rows straight away: if it still believed in the previous listing's rows (say, a
+        // folder of twenty when a search has just started with none), it asked for ones that no
+        // longer exist and Foray crashed.
         rebuildTopLevel()
         outline.reloadData()
+        if columnsChanged { rebuildColumns() }
         restoreExpansion(in: (host?.state.expanded ?? []).compactMap { id in
             snapshot.index(of: id).map { node(for: snapshot.items[$0]) }
         })
@@ -230,16 +234,29 @@ final class ListContentViewController: NSViewController, ContentView {
         }
     }
 
+    var columnIdentifiersForTesting: [String] { outline.tableColumns.map(\.identifier.rawValue) }
+
     private func rebuildColumns() {
-        for c in outline.tableColumns { outline.removeTableColumn(c) }
-        for spec in settings.presentation.list.columns {
-            let column = NSTableColumn(identifier: NSUserInterfaceItemIdentifier(spec.column.rawValue))
+        // An outline view doesn't give up its outline column (removing it does nothing), so the
+        // Name column is kept and the others are rebuilt around it. Removing "all" columns used
+        // to leave it behind, and a second Name column was added next to it.
+        let name = outline.outlineTableColumn
+        for c in outline.tableColumns where c !== name { outline.removeTableColumn(c) }
+        for (index, spec) in settings.presentation.list.columns.enumerated() {
+            let column: NSTableColumn
+            if spec.column == .name, let name {
+                column = name
+            } else {
+                column = NSTableColumn(identifier: NSUserInterfaceItemIdentifier(spec.column.rawValue))
+                outline.addTableColumn(column)
+                if spec.column == .name { outline.outlineTableColumn = column }
+            }
             column.title = spec.column.title
             column.width = spec.width
             column.minWidth = spec.column == .name ? 120 : 50
             if spec.column == .size { column.headerCell.alignment = .right }
-            outline.addTableColumn(column)
-            if spec.column == .name { outline.outlineTableColumn = column }
+            let at = outline.column(withIdentifier: column.identifier)
+            if at >= 0, at != index, index < outline.numberOfColumns { outline.moveColumn(at, toColumn: index) }
         }
     }
 

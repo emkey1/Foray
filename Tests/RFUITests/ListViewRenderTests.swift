@@ -259,3 +259,50 @@ extension UISerial {
         }
     }
 }
+
+extension UISerial {
+    @MainActor
+    @Suite(.serialized) final class ListColumnChangeTests {
+        let base = TestDirs.make("listcols")
+
+        isolated deinit { try? FileManager.default.removeItem(at: base) }
+
+        /// Search results add a Where column; the columns are rebuilt, not added to.
+        @Test func columnsAreReplacedNotDuplicatedWhenTheyChange() async throws {
+            _ = NSApplication.shared
+            try FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
+            // Many items in the folder, one match: the listing shrinks as the columns change.
+            for name in ["report.txt"] + (1...30).map({ "other \($0).txt" }) {
+                FileManager.default.createFile(atPath: base.appendingPathComponent(name).path, contents: Data("x".utf8))
+            }
+            AppModel.shared = AppModel(store: AppSupportStore(directory: base.appendingPathComponent("store")))
+            let vc = BrowserViewController(location: .folder(base))
+            let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 900, height: 500), styleMask: [.titled], backing: .buffered, defer: false)
+            window.contentViewController = vc
+            defer { vc.state.invalidate() }
+            vc.state.updatePresentation { $0.mode = .list }
+            func wait(_ c: () -> Bool) async {
+                let deadline = Date().addingTimeInterval(15)
+                while !c() && Date() < deadline { try? await Task.sleep(for: .milliseconds(20)) }
+            }
+            await wait { vc.state.loadState == .complete }
+            window.setContentSize(NSSize(width: 900, height: 500))
+            window.layoutIfNeeded()
+            let list = try #require(vc.content as? ListContentViewController)
+            await wait { vc.state.snapshot.items.count == 31 }
+            window.displayIfNeeded()
+            func columns() -> [String] { list.columnIdentifiersForTesting }
+            #expect(columns() == ["name", "dateModified", "size", "kind"])
+
+            vc.state.runSearch(SearchQuery(text: "report", scope: .folder(base, recursive: true)))
+            await wait { vc.state.searchStatus?.isRunning == false }
+            await wait { columns().contains("folder") }
+            #expect(columns().filter { $0 == "name" }.count == 1, "columns: \(columns())")
+            #expect(Set(columns()).count == columns().count)
+
+            vc.state.endSearch()
+            await wait { !columns().contains("folder") }
+            #expect(columns() == ["name", "dateModified", "size", "kind"])
+        }
+    }
+}

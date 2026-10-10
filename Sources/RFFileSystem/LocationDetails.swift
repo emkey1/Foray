@@ -38,8 +38,19 @@ extension LocationInfo {
         if let hit = capacityCache.withLock({ $0[key] }), Date().timeIntervalSince(hit.at) < 30 { return hit.value }
         return await withCheckedContinuation { continuation in
             DirectoryLoader.shared.metadataQueue(for: url).async {
-                let value = try? url.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey])
+                // "For important usage" counts space macOS can free up, which is what Finder shows,
+                // but it reports 0 on disk images and some external and network disks. The plain
+                // figure is always there, so show whichever is larger.
+                let important = try? url.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey])
                     .volumeAvailableCapacityForImportantUsage
+                var fs = statfs()
+                let plain: Int64? = statfs(url.path, &fs) == 0 ? Int64(fs.f_bavail) * Int64(fs.f_bsize) : nil
+                let value: Int64? = switch (important, plain) {
+                case let (i?, p?): max(i, p)
+                case let (i?, nil): i
+                case let (nil, p?): p
+                default: nil
+                }
                 if let value { capacityCache.withLock { $0[key] = (value, Date()) } }
                 continuation.resume(returning: value)
             }
