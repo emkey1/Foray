@@ -617,6 +617,19 @@ extension UISerial {
             UserDefaults().removePersistentDomain(forName: suite)
         }
 
+        /// Only a person is asked "Quit Foray?"; an installer, a script, logout or the updater isn't.
+        @Test func onlyThePersonQuittingIsAsked() {
+            typealias T = FinderTakeover
+            #expect(T.quitSource(updating: false, quitEventSender: nil) == .user)                    // ⌘Q, the Quit command
+            #expect(T.quitSource(updating: false, quitEventSender: "com.apple.dock") == .user)       // Quit in the Dock
+            #expect(T.quitSource(updating: false, quitEventSender: "") == .anotherProcess)           // osascript (Homebrew)
+            #expect(T.quitSource(updating: false, quitEventSender: "com.apple.loginwindow") == .anotherProcess)
+            #expect(T.quitSource(updating: false, quitEventSender: "com.apple.Terminal") == .anotherProcess)
+            #expect(T.quitSource(updating: true, quitEventSender: nil) == .update)
+            // With the switch off nobody is asked anything.
+            #expect(!T.isEnabled && T.shouldQuit())
+        }
+
         @Test func offUntilTheUserTurnsItOn() {
             #expect(!FinderTakeover.isEnabled)
             FinderTakeover.applyAtLaunch()

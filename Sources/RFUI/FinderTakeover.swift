@@ -178,8 +178,52 @@ public enum FinderTakeover {
         state = State()
     }
 
+    /// Who is asking Foray to quit.
+    enum QuitSource: Equatable {
+        /// The person at the Mac: Foray's Quit command, or Quit in the Dock.
+        case user
+        /// Foray relaunching itself to finish an update.
+        case update
+        /// Another process, by Apple event: an installer upgrading Foray (Homebrew quits the app
+        /// and reopens it), a script, or macOS logging out.
+        case anotherProcess
+    }
+
+    /// Set by the updater just before it quits to relaunch.
+    static var isRelaunchingForUpdate = false
+
+    /// `quitEventSender`: the bundle identifier of whoever sent the quit Apple event being handled
+    /// ("" if it has none, as a command-line tool doesn't); nil when there is no such event.
+    static func quitSource(updating: Bool, quitEventSender: String?) -> QuitSource {
+        if updating { return .update }
+        guard let sender = quitEventSender else { return .user }
+        return sender == "com.apple.dock" || sender == bundleID ? .user : .anotherProcess
+    }
+
+    /// The quit Apple event being handled right now, if that's why Foray is quitting.
+    private static var currentQuitEventSender: String? {
+        guard let event = NSAppleEventManager.shared().currentAppleEvent,
+              event.eventClass == AEEventClass(kCoreEventClass), event.eventID == AEEventID(kAEQuitApplication) else { return nil }
+        let pid = event.attributeDescriptor(forKeyword: AEKeyword(keySenderPIDAttr))?.int32Value ?? 0
+        return NSRunningApplication(processIdentifier: pid)?.bundleIdentifier ?? ""
+    }
+
+    /// Whether to go ahead with quitting. While Foray stands in for Finder, the person quitting
+    /// it is asked first (their desktop icons go with it). An installer, a script, logging out or
+    /// Foray's own updater is never asked: a question nobody is there to answer would leave the
+    /// old version running after an upgrade, or hold up a logout.
+    public static func shouldQuit() -> Bool {
+        let source = quitSource(updating: isRelaunchingForUpdate, quitEventSender: currentQuitEventSender)
+        if source != .user { NSLog("Foray: quitting at the request of %@", source == .update ? "its updater" : "another process") }
+        guard isEnabled else { return true }
+        switch source {
+        case .user: return confirmQuit()
+        case .update, .anotherProcess: return true
+        }
+    }
+
     /// Quitting Foray while it's on: the desktop icons go too, until Foray opens again.
-    public static func confirmQuit() -> Bool {
+    static func confirmQuit() -> Bool {
         guard !defaults.bool(forKey: "FinderTakeoverQuitWithoutAsking") else { return true }
         let alert = NSAlert()
         alert.messageText = "Quit Foray?"

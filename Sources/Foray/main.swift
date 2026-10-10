@@ -36,8 +36,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        // While Foray stands in for Finder, quitting takes the desktop icons with it: ask first.
-        if FinderTakeover.isEnabled, !FinderTakeover.confirmQuit() { return .terminateCancel }
+        // While Foray stands in for Finder, quitting takes the desktop icons with it: ask first
+        // (but only a person; an installer or the updater isn't held up by the question).
+        if !FinderTakeover.shouldQuit() { return .terminateCancel }
         WindowManager.shared.prepareForTermination()
         return .terminateNow
     }

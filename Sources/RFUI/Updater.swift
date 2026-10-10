@@ -231,6 +231,7 @@ public final class Updater {
         p.executableURL = URL(fileURLWithPath: "/bin/sh")
         p.arguments = ["-c", "while kill -0 \(getpid()) 2>/dev/null; do sleep 0.2; done; /usr/bin/open \"$0\"", app.path]
         try? p.run()
+        FinderTakeover.isRelaunchingForUpdate = true   // no "Quit Foray?" question in the way
         NSApp.terminate(nil)
     }
 }
