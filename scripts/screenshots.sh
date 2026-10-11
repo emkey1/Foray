@@ -37,12 +37,13 @@ out=${out:A}
 scratch=$(mktemp -d)
 mount=/Volumes/Atlas
 [[ -e $mount ]] && { print -u2 "$mount already exists; eject it first."; exit 1; }
-cleanup() { hdiutil detach "$mount" -quiet 2>/dev/null || hdiutil detach "$mount" -force -quiet 2>/dev/null || true; rm -rf "$scratch"; }
+cleanup() { diskutil eject "$mount" >/dev/null 2>&1 || { diskutil unmountDisk force "$mount" >/dev/null 2>&1; diskutil eject "$mount" >/dev/null 2>&1; } || true; rm -rf "$scratch"; }
 trap cleanup EXIT
 scripts/bundle.sh debug >/dev/null
-hdiutil create -size 300m -fs APFS -volname Atlas "$scratch/atlas.dmg" -quiet
-# -nobrowse: the disk doesn't show up in Finder or on the desktop while this runs.
-hdiutil attach "$scratch/atlas.dmg" -nobrowse -quiet
+diskutil image create blank --fs APFS --format RAW --size 300m --volumeName Atlas "$scratch/atlas.dmg" >/dev/null
+# --nobrowse: the disk doesn't show up in Finder or on the desktop while this runs.
+diskutil image attach --nobrowse "$scratch/atlas.dmg" >/dev/null
+[[ -d $mount ]] || { print -u2 "The Atlas disk image didn't mount at $mount."; exit 1; }
 rm -f "$out/.request" "$out/.done"
 # -n: a separate copy, even if Foray Dev is open.
 open -n ".build/Foray Dev.app" --env RF_SCREENSHOTS="$out" --env RF_DEMO_ROOT="$mount" --stderr "$scratch/log"

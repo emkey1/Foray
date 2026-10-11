@@ -15,6 +15,12 @@ set -euo pipefail
 cd "${0:A:h}/.."
 scratch=$(mktemp -d)
 trap 'rm -rf "$scratch"' EXIT
+# Ejects a disk image by mount point or device.
+eject() {
+  diskutil eject "$1" >/dev/null 2>&1 && return
+  diskutil unmountDisk force "$1" >/dev/null 2>&1
+  diskutil eject "$1" >/dev/null 2>&1 || true
+}
 
 if [[ ${1:-} == --build ]]; then
   identity="Apple Development"
@@ -60,19 +66,27 @@ volname="Foray $version"
 mount="/Volumes/$volname"
 if [[ -e $mount ]]; then
   # An earlier installer image with the same name (e.g. one opened to look at it): eject it.
-  if hdiutil info | grep -qF "$mount"; then
+  if diskutil info "$mount" 2>/dev/null | grep -q "Disk Image"; then
     print "Ejecting the earlier \"$volname\" disk image."
-    hdiutil detach "$mount" -quiet || hdiutil detach "$mount" -force -quiet
+    eject "$mount"
   else
     print -u2 "\"$mount\" is in use by something else; eject it first."
     exit 1
   fi
 fi
 
-# A writable image to lay out, then compressed.
+# A writable image to lay out, then compressed. The volume is HFS+ (Mac OS Extended): the window
+# layout's record of where the background picture is (scripts/dmg-layout.swift) is written for it.
+# `diskutil image`, which replaces the deprecated hdiutil verbs, only makes APFS volumes itself,
+# so the image starts with no filesystem and newfs_hfs formats it.
 megabytes=$(( $(du -sm "$app" | cut -f1) + 20 ))
-hdiutil create -size ${megabytes}m -fs HFS+ -volname "$volname" -ov "$scratch/rw.dmg" >/dev/null
-hdiutil attach -nobrowse -noverify -noautoopen -mountpoint "$mount" "$scratch/rw.dmg" >/dev/null
+diskutil image create blank --fs None --format RAW --size ${megabytes}m "$scratch/rw.dmg" >/dev/null
+device=$(diskutil image attach --noMount "$scratch/rw.dmg" | awk 'NR == 1 { print $1 }')
+[[ $device == /dev/disk* ]] || { print -u2 "error: couldn't attach the new disk image"; exit 1; }
+newfs_hfs -v "$volname" "$device" >/dev/null
+eject "$device"
+# --nobrowse: it doesn't appear in Finder or on the desktop while it's being laid out.
+diskutil image attach --nobrowse --mountPoint "$mount" "$scratch/rw.dmg" >/dev/null
 {
   ditto "$app" "$mount/Foray.app"
   ln -s /Applications "$mount/Applications"
@@ -80,12 +94,15 @@ hdiutil attach -nobrowse -noverify -noautoopen -mountpoint "$mount" "$scratch/rw
   SetFile -a C "$mount"            # show .VolumeIcon.icns as the disk's icon
   rm -rf "$mount/.fseventsd"   # (detaching flushes the volume; no global sync, which can hang)
 } always {
-  hdiutil detach "$mount" -quiet || hdiutil detach "$mount" -force -quiet
+  eject "$mount"
 }
-mkdir -p dist
-dmg="dist/Foray-$version.dmg"
+# RF_DMG_DIR: somewhere other than dist/ (for trying the script without touching a released file).
+out=${RF_DMG_DIR:-dist}
+mkdir -p "$out"
+dmg="$out/Foray-$version.dmg"
 rm -f "$dmg"
-hdiutil convert "$scratch/rw.dmg" -format UDZO -imagekey zlib-level=9 -o "$dmg" >/dev/null
+# (It reports progress on stderr; keep that out of the way unless it fails.)
+diskutil image create from --format UDZO "$scratch/rw.dmg" "$dmg" >/dev/null 2>"$scratch/compress.log" || { cat "$scratch/compress.log" >&2; exit 1; }
 # The app inside carries the notarization; sign the disk image too when a Developer ID key is here.
 if security find-identity -v -p codesigning | grep -q "Developer ID Application"; then
   codesign --force --timestamp --sign "Developer ID Application" "$dmg"
