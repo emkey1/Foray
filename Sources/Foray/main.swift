@@ -15,6 +15,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         WindowManager.shared.prefillMostRecentSearch()
         EjectUI.startWatchingUnmounts()
+        DiskImages.startWatching()
         FinderTakeover.applyAtLaunch()   // does nothing unless the user turned it on in Settings
         NetworkBrowser.shared.start()
         DispatchQueue.main.async { Onboarding.showIfNeeded() }

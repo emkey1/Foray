@@ -546,7 +546,14 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
             for f in folders { openInNewTab?(.folder(f.url)) }
         }
         for f in files {
-            if f.flags.contains(.stationery) { openStationery(f) } else { Self.openFile(f.url) }
+            if f.flags.contains(.stationery) { openStationery(f); continue }
+            // A disk image only mounts when opened; show its contents once the disk is there.
+            if DiskImages.isDiskImage(f) {
+                DiskImages.opened(f.url) { [weak self] volume in
+                    if let show = self?.openInNewTab { show(.folder(volume)) } else { DiskImages.showInNewWindow(volume) }
+                }
+            }
+            Self.openFile(f.url)
         }
     }
 
