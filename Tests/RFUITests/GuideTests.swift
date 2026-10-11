@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import UniformTypeIdentifiers
 
 @testable import RFUI
 
@@ -20,5 +21,11 @@ import Testing
             let file = url.deletingLastPathComponent().appendingPathComponent(picture)
             #expect(FileManager.default.fileExists(atPath: file.path), "missing \(picture)")
         }
+    }
+
+    /// Documents get the page look in icon view; pictures and video are shown as they are.
+    @Test func whichThumbnailsLookLikeAPage() {
+        for type in [UTType.plainText, .pdf, .swiftSource, .data, .rtf, .html] { #expect(IconProvider.looksLikeAPage(type), "\(type)") }
+        for type in [UTType.jpeg, .png, .heic, .rawImage, .movie, .mpeg4Movie, .mp3] { #expect(!IconProvider.looksLikeAPage(type), "\(type)") }
     }
 }

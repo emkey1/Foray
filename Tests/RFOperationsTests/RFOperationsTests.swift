@@ -168,6 +168,31 @@ final class Sandbox {
         _ = r
     }
 
+    /// A folder that can't be listed is reported as not copied, never copied as an empty folder.
+    /// (Copying file by file, as between two disks; on one APFS disk the tree is cloned whole.)
+    @Test func aFolderThatCantBeReadIsReportedNotCopiedEmpty() async throws {
+        let s = try Sandbox()
+        s.file("src/ok.txt")
+        s.file("src/Locked/inside.txt", "can't see me")
+        let locked = s.work.appendingPathComponent("src/Locked")
+        try FileManager.default.setAttributes([.posixPermissions: 0], ofItemAtPath: locked.path)
+        defer { try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: locked.path) }
+        let dest = s.dir("dest")
+        let execution = Execution(.copy([], to: dest), control: JobControl(), progress: ProgressBox(), journal: s.journal,
+                                  trash: { $0 }) { _ in ConflictAnswer(.skip) }
+
+        // Inside a folder being copied: the rest is copied, the unreadable folder is listed as a
+        // problem, and nothing stands in for it at the destination.
+        #expect(execution.copyTree(s.work.appendingPathComponent("src"), to: dest.appendingPathComponent("src")) == 0)
+        #expect(s.tree(dest) == ["src": "<dir>", "src/ok.txt": "x"])
+        #expect(execution.result.errors.map(\.url.lastPathComponent) == ["Locked"])
+        #expect(execution.result.errors.first?.code == EACCES)
+
+        // Copied on its own: it fails outright and leaves nothing behind.
+        #expect(execution.copyTree(locked, to: dest.appendingPathComponent("Locked")) == EACCES)
+        #expect(!FileManager.default.fileExists(atPath: dest.appendingPathComponent("Locked").path))
+    }
+
     @Test func progressReachesTheTotal() async throws {
         let s = try Sandbox()
         s.file("big.bin", String(repeating: "z", count: 2_000_000))

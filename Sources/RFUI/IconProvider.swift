@@ -71,6 +71,7 @@ final class IconProvider {
         guard inFlight[key] == nil else { return }
         let request = QLThumbnailGenerator.Request(
             fileAt: item.url, size: CGSize(width: size, height: size), scale: scale, representationTypes: [.icon, .thumbnail])
+        request.iconMode = Self.looksLikeAPage(item.contentType)
         inFlight[key] = request
         QLThumbnailGenerator.shared.generateBestRepresentation(for: request) { rep, _ in
             let image = rep?.type == .thumbnail ? rep?.nsImage : nil
@@ -81,6 +82,14 @@ final class IconProvider {
                 completion(image)
             }
         }
+    }
+
+    /// Documents (text, PDFs, source code and so on) get macOS's document look: a page with
+    /// rounded corners and a shadow. Without it a text file's preview is a bare white square,
+    /// which on a white background is a few lines of text floating in space. Pictures and video
+    /// are shown as they are (the document look would put a white frame around them).
+    static func looksLikeAPage(_ type: UTType) -> Bool {
+        !(type.conforms(to: .image) || type.conforms(to: .audiovisualContent))
     }
 
     func cancelThumbnail(for item: FileItem, size: CGFloat) {

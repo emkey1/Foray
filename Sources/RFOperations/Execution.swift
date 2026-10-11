@@ -320,14 +320,21 @@ final class Execution: @unchecked Sendable {
 
     /// Recursive copy with per-item errors (recorded, not fatal) and byte progress. Returns
     /// 0, ECANCELED, or the errno if the top-level item itself failed.
-    private func copyTree(_ src: URL, to dst: URL) -> Int32 {
+    func copyTree(_ src: URL, to dst: URL) -> Int32 {
         guard control.checkpoint() else { return ECANCELED }
         guard let st = FileOps.lstat(src) else { return Darwin.errno }
         if FileOps.isDirectory(st) {
+            // List it before making anything: a folder that can't be read is reported as not
+            // copied. (It used to be copied as an empty folder, with no word that anything was missing.)
+            let children: [String]
+            do {
+                children = try FileManager.default.contentsOfDirectory(atPath: src.path)
+            } catch {
+                return Self.errno(of: error as NSError)
+            }
             let rc = ops.makeDirectory(dst, mode: 0o700)
             guard rc == 0 else { return rc }
             update { $0.itemsDone += 1 }
-            let children = (try? FileManager.default.contentsOfDirectory(atPath: src.path)) ?? []
             for child in children {
                 let crc = copyTree(src.appendingPathComponent(child), to: dst.appendingPathComponent(child))
                 if crc == ECANCELED { return ECANCELED }
