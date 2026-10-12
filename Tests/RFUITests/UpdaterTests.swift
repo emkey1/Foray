@@ -4,6 +4,16 @@ import Testing
 @testable import RFUI
 
 @Suite struct UpdaterTests {
+    /// Help › Release Notes opens the releases page (every version's notes, newest first).
+    @MainActor @Test func releaseNotesOpenTheReleasesPage() {
+        let saved = Updater.openPage
+        defer { Updater.openPage = saved }
+        var opened: [URL] = []
+        Updater.openPage = { opened.append($0) }
+        Updater.showReleaseNotes()
+        #expect(opened.map(\.absoluteString) == ["https://github.com/emkey1/Foray/releases"])
+    }
+
     @Test func comparesVersions() {
         #expect(Versions.isNewer("0.9.1", than: "0.9.0"))
         #expect(Versions.isNewer("0.10.0", than: "0.9.12"))

@@ -58,6 +58,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc func checkForUpdates(_ sender: Any?) { Updater.shared.checkNow() }
 
+    @objc func showReleaseNotes(_ sender: Any?) { Updater.showReleaseNotes() }
+
     @objc func connectToServer(_ sender: Any?) { ConnectToServerWindowController.shared.show() }
 
     /// Works with no window open, like Finder.
@@ -268,6 +270,10 @@ enum MainMenu {
             i.representedObject = section
             menu.addItem(i)
         }
+        menu.addItem(.separator())
+        let notes = item("Release Notes", #selector(AppDelegate.showReleaseNotes(_:)))
+        notes.target = target
+        menu.addItem(notes)
         return menu
     }
 

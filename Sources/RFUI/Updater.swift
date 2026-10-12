@@ -40,6 +40,13 @@ public final class Updater {
     public static let shared = Updater()
 
     static let latestURL = URL(string: "https://api.github.com/repos/emkey1/Foray/releases/latest")!
+    /// Every release with its notes, newest first (Help › Release Notes).
+    public static let releaseNotesURL = URL(string: "https://github.com/emkey1/Foray/releases")!
+    /// Opens a web page. Tests substitute it so no browser opens.
+    static var openPage: (URL) -> Void = { NSWorkspace.shared.open($0) }
+
+    /// Help › Release Notes: what changed in each version, in the browser.
+    public static func showReleaseNotes() { openPage(releaseNotesURL) }
     /// Who may replace this app: Foray, signed with our Developer ID (team UYU5FM4LQ4).
     nonisolated static let requirement = #"identifier "io.github.emkey1.Foray" and anchor apple generic and certificate 1[field.1.2.840.113635.100.6.2.6] and certificate leaf[field.1.2.840.113635.100.6.1.13] and certificate leaf[subject.OU] = "UYU5FM4LQ4""#
 
@@ -93,7 +100,7 @@ public final class Updater {
             let latest = try await fetchLatest()
             lastCheck = Date()
             guard let latest, Versions.isNewer(latest.version, than: currentVersion) else {
-                if userInitiated { inform("Foray is up to date", "You have the latest version, \(currentVersion).") }
+                if userInitiated { inform("Foray is up to date", "You have the latest version, \(currentVersion).", offerNotes: true) }
                 return
             }
             if !userInitiated && skipped == latest.version { return }
@@ -103,11 +110,13 @@ public final class Updater {
         }
     }
 
-    private func inform(_ title: String, _ text: String) {
+    private func inform(_ title: String, _ text: String, offerNotes: Bool = false) {
         let alert = NSAlert()
         alert.messageText = title
         alert.informativeText = text
-        alert.runModal()
+        alert.addButton(withTitle: "OK")
+        if offerNotes { alert.addButton(withTitle: "Release Notes") }
+        if alert.runModal() == .alertSecondButtonReturn { Self.showReleaseNotes() }
     }
 
     private func offer(_ release: ReleaseInfo) {
