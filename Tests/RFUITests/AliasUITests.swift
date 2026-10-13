@@ -174,6 +174,45 @@ extension UISerial {
             #expect(rows().suffix(2) == ["Allow Network Access…", "Connect to Server…"])
         }
 
+        /// Windows-style servers (a Raspberry Pi running Samba, say) are listed too, once each.
+        @Test func windowsStyleServersAreListed() {
+            let sidebar = SidebarViewController()
+            _ = sidebar.view
+            defer { NetworkBrowser.shared.setServicesForTesting([]) }
+            func rows() -> [String] { sidebar.sectionsForTesting.first { $0.title == "Network" }?.children.map(\.title) ?? [] }
+            let pi = NetBIOSDiscovery.Host(name: "RPI", workgroup: "WORKGROUP", address: "192.168.1.20")
+            let mac = NetBIOSDiscovery.Host(name: "ANNAS-MACBOOK-P", workgroup: "WORKGROUP", address: "192.168.1.30")
+            NetworkBrowser.shared.setServicesForTesting(["Anna's MacBook Pro"], windowsHosts: [mac, pi])
+            // The Mac announces itself both ways and is listed once, under its Bonjour name; the Pi
+            // only answers the Windows way, and is shown in lower case as Finder does.
+            #expect(rows() == ["Anna's MacBook Pro", "rpi", "Connect to Server…"])
+            // An address saved for a server that's now listed isn't shown as well.
+            ServerHistory.noteConnected("smb://rpi/nas")
+            ServerHistory.noteConnected("192.168.1.20/nas")
+            ServerHistory.noteConnected("smb://other-nas/data")
+            #expect(rows() == ["Anna's MacBook Pro", "rpi", "other-nas/data", "Connect to Server…"])
+            // A Mac whose two names have nothing in common is still one machine: same address.
+            let mini = NetBIOSDiscovery.Host(name: "M4-2", workgroup: "WORKGROUP", address: "192.168.1.40")
+            NetworkBrowser.shared.setServicesForTesting(["Studio Mac mini"], windowsHosts: [mini, pi], bonjourAddresses: ["192.168.1.40"])
+            #expect(rows().prefix(2) == ["Studio Mac mini", "rpi"])
+            // Or, on Wi-Fi and Ethernet at once with a different address on each, the same host name.
+            NetworkBrowser.shared.setServicesForTesting(["Studio Mac mini"], windowsHosts: [mini, pi],
+                                                        bonjourAddresses: ["192.168.1.41"], bonjourHosts: ["m4-2"])
+            #expect(rows().prefix(2) == ["Studio Mac mini", "rpi"])
+            // With neither in common, they're listed as two machines.
+            NetworkBrowser.shared.setServicesForTesting(["Studio Mac mini"], windowsHosts: [mini, pi], bonjourAddresses: ["192.168.1.41"])
+            #expect(rows().prefix(3) == ["Studio Mac mini", "m4-2", "rpi"])
+        }
+
+        @Test func sameMachineUnderTwoNames() {
+            #expect(NetworkBrowser.isSameMachine(windowsName: "MBP5", bonjourName: "MBP5"))
+            #expect(NetworkBrowser.isSameMachine(windowsName: "ANNAS-MACBOOK-P", bonjourName: "Anna's MacBook Pro"))
+            #expect(NetworkBrowser.isSameMachine(windowsName: "OFFICE-NAS", bonjourName: "Office NAS"))
+            #expect(!NetworkBrowser.isSameMachine(windowsName: "RPI", bonjourName: "Anna's MacBook Pro"))
+            #expect(!NetworkBrowser.isSameMachine(windowsName: "NAS", bonjourName: "NAS2"))      // short names must match exactly
+            #expect(!NetworkBrowser.isSameMachine(windowsName: "", bonjourName: ""))
+        }
+
         @Test func serverTitlesDropTheUsualScheme() {
             #expect(ServerHistory.title(for: "smb://nas.local/Media") == "nas.local/Media")
             #expect(ServerHistory.title(for: "nas/Media/") == "nas/Media")

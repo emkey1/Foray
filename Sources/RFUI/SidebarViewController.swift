@@ -264,8 +264,16 @@ extension SidebarViewController: NSOutlineViewDataSource, NSOutlineViewDelegate 
         var rows = found.map { name in
             Node(title: name, icon: symbol("server.rack"), action: { [weak self] in self?.connect(toService: name) })
         }
+        // Windows-style servers (Finder shows these as a PC), by the name they give, in lower
+        // case as Finder shows them. They're connected to by address.
+        let windows = NetworkBrowser.shared.unlistedWindowsHosts
+        rows += windows.compactMap { host in
+            guard let url = URL(string: "smb://\(host.address)") else { return nil }
+            return Node(title: host.name.lowercased(), icon: symbol("pc") ?? symbol("server.rack"),
+                        action: { [weak self] in self?.connect(to: url, address: nil) })
+        }
         // Saved addresses, except ones that are plainly a server already listed above.
-        let listed = Set(found.map { $0.lowercased() })
+        let listed = Set(found.map { $0.lowercased() } + windows.flatMap { [$0.name.lowercased(), $0.address] })
         for address in ServerHistory.saved {
             guard let url = NetworkMounts.normalize(address) else { continue }
             let host = (url.host ?? "").lowercased()

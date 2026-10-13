@@ -187,12 +187,22 @@ public final class ConnectToServerWindowController: NSWindowController {
     }
 }
 
-/// SMB servers on the local network (Bonjour), for the sidebar's Network section. Only servers
-/// that announce themselves this way are found; others are reached with Connect to Server.
+/// File servers on the local network, for the sidebar's Network section: ones that announce
+/// themselves with Bonjour (Macs, most NAS units), and Windows-style ones that answer NetBIOS
+/// queries (`NetBIOSDiscovery`: many Samba servers, older NAS units, some PCs). Anything else is
+/// reached with Connect to Server.
 @MainActor
 public final class NetworkBrowser {
     public static let shared = NetworkBrowser()
     private(set) var services: [String] = []
+    /// Windows-style servers found, minus this Mac.
+    private(set) var windowsHosts: [NetBIOSDiscovery.Host] = []
+    /// The addresses and host names of the Bonjour servers, to recognize a machine found both ways.
+    private(set) var bonjourAddresses = Set<String>()
+    private(set) var bonjourHosts = Set<String>()
+    private var scanTimer: Timer?
+    /// How often to look again for Windows-style servers (they don't announce coming and going).
+    static let scanInterval: TimeInterval = 90
     /// macOS is refusing Foray access to the local network (System Settings › Privacy & Security ›
     /// Local Network), so nothing can be found.
     private(set) var accessDenied = false
@@ -214,6 +224,7 @@ public final class NetworkBrowser {
                     guard sorted != self.services else { return }
                     self.services = sorted
                     for o in self.observers.values { o() }
+                    self.scanForWindowsHosts()   // and look up the new list's addresses
                 }
             }
         }
@@ -233,6 +244,66 @@ public final class NetworkBrowser {
         }
         b.start(queue: .main)
         browser = b
+        scanForWindowsHosts()
+        scanTimer = Timer.scheduledTimer(withTimeInterval: Self.scanInterval, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated { self?.scanForWindowsHosts() }
+        }
+    }
+
+    private var isScanning = false
+    /// Asked to look again while a look was under way (the Bonjour list changed meanwhile).
+    private var scanAgain = false
+
+    private func scanForWindowsHosts() {
+        guard !isScanning else {
+            scanAgain = true
+            return
+        }
+        isScanning = true
+        let names = services
+        Task { @MainActor in
+            async let scan = NetBIOSDiscovery.scan()
+            async let resolved = Task.detached(priority: .utility) {
+                names.reduce(into: (hosts: Set<String>(), addresses: Set<String>())) { all, name in
+                    let machine = BonjourResolver.machine(forSMBService: name)
+                    if let host = machine.host { all.hosts.insert(host) }
+                    all.addresses.formUnion(machine.addresses)
+                }
+            }.value
+            let (found, bonjour) = await (scan, resolved)
+            let mine = NetBIOSDiscovery.localAddresses()
+            let others = found.filter { !mine.contains($0.address) }
+            self.isScanning = false
+            if self.scanAgain {
+                self.scanAgain = false
+                self.scanForWindowsHosts()
+            }
+            guard others != self.windowsHosts || bonjour.addresses != self.bonjourAddresses || bonjour.hosts != self.bonjourHosts else { return }
+            self.windowsHosts = others
+            self.bonjourAddresses = bonjour.addresses
+            self.bonjourHosts = bonjour.hosts
+            for o in self.observers.values { o() }
+        }
+    }
+
+    /// Whether a Windows-style name is plainly the same machine as a Bonjour one. The two names
+    /// come from different settings ("Anna's MacBook Pro" and "ANNAS-MACBOOK-P"), so compare the
+    /// letters and digits only, allowing for NetBIOS's 15-character limit.
+    static func isSameMachine(windowsName: String, bonjourName: String) -> Bool {
+        func plain(_ s: String) -> String { String(s.lowercased().unicodeScalars.filter { CharacterSet.alphanumerics.contains($0) }) }
+        let w = plain(windowsName), b = plain(bonjourName)
+        guard !w.isEmpty, !b.isEmpty else { return false }
+        return w == b || (w.count >= 8 && b.hasPrefix(w))
+    }
+
+    /// The Windows-style servers to list: those Bonjour hasn't already listed. A machine found
+    /// both ways shows up with the same address, or (on two network connections at once, with a
+    /// different address on each) the same host name; failing both, plainly the same display name.
+    var unlistedWindowsHosts: [NetBIOSDiscovery.Host] {
+        windowsHosts.filter { host in
+            !bonjourAddresses.contains(host.address)
+                && !(bonjourHosts.union(services)).contains { Self.isSameMachine(windowsName: host.name, bonjourName: $0) }
+        }
     }
 
     static func openLocalNetworkSettings() {
@@ -246,8 +317,12 @@ public final class NetworkBrowser {
     }
 
     /// Tests set services directly.
-    func setServicesForTesting(_ names: [String], accessDenied: Bool = false) {
+    func setServicesForTesting(_ names: [String], accessDenied: Bool = false, windowsHosts: [NetBIOSDiscovery.Host] = [],
+                               bonjourAddresses: Set<String> = [], bonjourHosts: Set<String> = []) {
         services = names
+        self.windowsHosts = windowsHosts
+        self.bonjourAddresses = bonjourAddresses
+        self.bonjourHosts = bonjourHosts
         self.accessDenied = accessDenied
         for o in observers.values { o() }
     }
