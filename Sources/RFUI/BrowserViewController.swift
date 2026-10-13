@@ -171,6 +171,7 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
         }
         view = root
         contentContainer.menuProvider = { [weak self] in self?.contentMenu(clicked: nil) }
+        ContextClick.install()
 
         state.observe { [weak self] change in self?.stateChanged(change) }
         installContent()
