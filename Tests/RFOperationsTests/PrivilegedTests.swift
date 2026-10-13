@@ -114,10 +114,11 @@ extension Sandbox {
         #expect(await box.center.run(.move([incoming], to: protected)).errors.isEmpty)
         #expect(await box.center.run(.rename(protected.appendingPathComponent("old.txt"), to: "new.txt")).errors.isEmpty)
         #expect(await box.center.run(.newFolder(in: protected, name: "Made")).errors.isEmpty)
+        #expect(await box.center.run(.newFile(in: protected)).errors.isEmpty)
         #expect(await box.center.run(.delete([protected.appendingPathComponent("junk.txt")])).errors.isEmpty)
-        #expect(box.names(in: protected) == ["Made", "incoming.txt", "new.txt"])
+        #expect(box.names(in: protected) == ["Made", "incoming.txt", "new.txt", "untitled.txt"])
         #expect(!FileManager.default.fileExists(atPath: incoming.path))
-        #expect(prompt.asked == 4)                                  // once per job, like Finder
+        #expect(prompt.asked == 5)                                  // once per job, like Finder
     }
 
     @Test func undoGoesThroughTheHelperToo() async {
@@ -255,7 +256,7 @@ extension Sandbox {
 
     @Test func requestsSurviveTheTripToTheHelper() throws {
         let all: [PrivilegedOperation] = [
-            .rename(from: "/a", to: "/b"), .makeDirectory(path: "/a", mode: 0o755), .copyFile(from: "/a", to: "/b"),
+            .rename(from: "/a", to: "/b"), .makeDirectory(path: "/a", mode: 0o755), .createFile(path: "/a"), .copyFile(from: "/a", to: "/b"),
             .copyDirectoryMetadata(from: "/a", to: "/b"), .remove(path: "/a"),
             .writeAttributes(path: "/a", attributes: ItemAttributes(locked: false, permissions: 0o644, accessList: "")),
         ]

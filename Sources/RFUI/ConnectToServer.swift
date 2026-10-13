@@ -10,14 +10,36 @@ enum ServerHistory {
     static let limit = 10
     static var defaults = UserDefaults.standard
 
+    /// Posted when the favorites or recents change (the sidebar lists them under Network).
+    static let changed = Notification.Name("ForayServerHistoryChanged")
+
     static var favorites: [String] {
         get { defaults.stringArray(forKey: "ServerFavorites") ?? [] }
-        set { defaults.set(newValue, forKey: "ServerFavorites") }
+        set {
+            defaults.set(newValue, forKey: "ServerFavorites")
+            NotificationCenter.default.post(name: changed, object: nil)
+        }
     }
 
     static var recents: [String] {
         get { defaults.stringArray(forKey: "RecentServers") ?? [] }
-        set { defaults.set(Array(newValue.prefix(limit)), forKey: "RecentServers") }
+        set {
+            defaults.set(Array(newValue.prefix(limit)), forKey: "RecentServers")
+            NotificationCenter.default.post(name: changed, object: nil)
+        }
+    }
+
+    /// Servers to offer in the sidebar: favorites, then recent ones, without repeats.
+    static var saved: [String] {
+        var seen = Set<String>()
+        return (favorites + recents).filter { seen.insert($0.lowercased()).inserted }
+    }
+
+    /// How an address reads in a list: without the scheme when it's the usual one.
+    static func title(for address: String) -> String {
+        var s = address
+        for prefix in ["smb://", "cifs://"] where s.lowercased().hasPrefix(prefix) { s = String(s.dropFirst(prefix.count)) }
+        return s.hasSuffix("/") ? String(s.dropLast()) : s
     }
 
     static func noteConnected(_ address: String) {
@@ -165,11 +187,15 @@ public final class ConnectToServerWindowController: NSWindowController {
     }
 }
 
-/// SMB servers on the local network (Bonjour), for the sidebar's Network section.
+/// SMB servers on the local network (Bonjour), for the sidebar's Network section. Only servers
+/// that announce themselves this way are found; others are reached with Connect to Server.
 @MainActor
 public final class NetworkBrowser {
     public static let shared = NetworkBrowser()
     private(set) var services: [String] = []
+    /// macOS is refusing Foray access to the local network (System Settings › Privacy & Security ›
+    /// Local Network), so nothing can be found.
+    private(set) var accessDenied = false
     private var browser: NWBrowser?
     private var observers: [UUID: @MainActor () -> Void] = [:]
 
@@ -191,8 +217,26 @@ public final class NetworkBrowser {
                 }
             }
         }
+        b.stateUpdateHandler = { state in
+            // kDNSServiceErr_PolicyDenied: the user (or a profile) turned Local Network access off.
+            let denied: Bool = switch state {
+            case .waiting(.dns(let code)), .failed(.dns(let code)): code == -65570
+            default: false
+            }
+            DispatchQueue.main.async {
+                MainActor.assumeIsolated {
+                    guard denied != self.accessDenied else { return }
+                    self.accessDenied = denied
+                    for o in self.observers.values { o() }
+                }
+            }
+        }
         b.start(queue: .main)
         browser = b
+    }
+
+    static func openLocalNetworkSettings() {
+        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_LocalNetwork") { NSWorkspace.shared.open(url) }
     }
 
     func observe(_ body: @escaping @MainActor () -> Void) -> UUID {
@@ -202,8 +246,9 @@ public final class NetworkBrowser {
     }
 
     /// Tests set services directly.
-    func setServicesForTesting(_ names: [String]) {
+    func setServicesForTesting(_ names: [String], accessDenied: Bool = false) {
         services = names
+        self.accessDenied = accessDenied
         for o in observers.values { o() }
     }
 }

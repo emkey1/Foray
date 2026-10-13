@@ -64,6 +64,15 @@ extension BrowserViewController {
         }
     }
 
+    /// Creates an empty "untitled.txt" and starts renaming it (DESIGN.md I7).
+    @objc func newTextFile(_ sender: Any?) {
+        guard let folder = operationFolder else { return }
+        FileOperationsUI.shared.submit(.newFile(in: folder), from: state) { [weak self] result in
+            guard let created = result.created.first else { return }
+            self?.renameWhenVisible(created)
+        }
+    }
+
     @objc func newFolderWithSelection(_ sender: Any?) {
         guard let folder = operationFolder, !selectedURLs.isEmpty else { return }
         let items = selectedURLs.filter { $0.deletingLastPathComponent().standardizedFileURL == folder.standardizedFileURL }
@@ -141,7 +150,7 @@ extension BrowserViewController {
             return operationFolder != nil && FileClipboard.hasFiles
         case #selector(moveItemsHere(_:)):
             return operationFolder != nil && FileClipboard.hasFiles
-        case #selector(newFolder(_:)):
+        case #selector(newFolder(_:)), #selector(newTextFile(_:)):
             return operationFolder != nil
         case #selector(newFolderWithSelection(_:)):
             return operationFolder != nil && hasSelection

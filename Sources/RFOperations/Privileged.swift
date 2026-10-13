@@ -17,6 +17,8 @@ public enum PrivilegedOperation: Codable, Sendable, Equatable {
     case rename(from: String, to: String)
     /// A new folder, owned by the user who asked.
     case makeDirectory(path: String, mode: UInt16)
+    /// A new, empty file, owned by the user who asked. Never replaces anything.
+    case createFile(path: String)
     /// Copy one file or symlink (not followed) with its metadata. The copy belongs to the user who asked.
     case copyFile(from: String, to: String)
     /// Dates, permissions, flags and extended attributes of a copied folder.
@@ -29,7 +31,7 @@ public enum PrivilegedOperation: Codable, Sendable, Equatable {
     var paths: [String] {
         switch self {
         case .rename(let a, let b), .copyFile(let a, let b), .copyDirectoryMetadata(let a, let b): [a, b]
-        case .makeDirectory(let p, _), .remove(let p), .writeAttributes(let p, _): [p]
+        case .makeDirectory(let p, _), .createFile(let p), .remove(let p), .writeAttributes(let p, _): [p]
         }
     }
 }
@@ -63,6 +65,9 @@ public enum PrivilegedExecutor {
             return FileOps.rename(url(from), to: url(to))
         case .makeDirectory(let path, let mode):
             let rc = FileOps.makeDirectory(url(path), mode: mode_t(mode & 0o777))
+            return rc == 0 ? own(path, owner) : rc
+        case .createFile(let path):
+            let rc = FileOps.createFile(url(path))
             return rc == 0 ? own(path, owner) : rc
         case .copyFile(let from, let to):
             guard let st = FileOps.lstat(url(from)) else { return errno }
@@ -139,6 +144,10 @@ final class ElevatingFileOps: @unchecked Sendable {
 
     func makeDirectory(_ url: URL, mode: mode_t = 0o755) -> Int32 {
         retry(FileOps.makeDirectory(url, mode: mode), on: url, .makeDirectory(path: url.path, mode: UInt16(mode)))
+    }
+
+    func createFile(_ url: URL) -> Int32 {
+        retry(FileOps.createFile(url), on: url, .createFile(path: url.path))
     }
 
     func copyFile(_ from: URL, to: URL, progress: ((Int64) -> Bool)?) -> Int32 {

@@ -193,6 +193,25 @@ final class Sandbox {
         #expect(!FileManager.default.fileExists(atPath: dest.appendingPathComponent("Locked").path))
     }
 
+    @Test func newFileIsEmptyNumberedWhenTakenAndUndoable() async throws {
+        let s = try Sandbox()
+        let first = await s.run(.newFile(in: s.work))
+        #expect(first.errors.isEmpty && first.created == [s.work.appendingPathComponent("untitled.txt")])
+        #expect(s.tree() == ["untitled.txt": ""])
+        // The name is taken: the next one gets a number, and nothing is overwritten.
+        try "kept".write(to: s.work.appendingPathComponent("untitled.txt"), atomically: true, encoding: .utf8)
+        let second = await s.run(.newFile(in: s.work))
+        #expect(second.created == [s.work.appendingPathComponent("untitled 2.txt")])
+        #expect(s.tree() == ["untitled.txt": "kept", "untitled 2.txt": ""])
+        // A chosen name, and one that can't be used.
+        #expect(await s.run(.newFile(in: s.work, name: "notes.md")).created.map(\.lastPathComponent) == ["notes.md"])
+        #expect(await s.run(.newFile(in: s.work, name: "a/b.txt")).errors.count == 1)
+        // Undo moves the new file to the Trash.
+        await s.undo()
+        #expect(!s.exists("notes.md") && s.exists("untitled 2.txt"))
+        #expect(FileManager.default.fileExists(atPath: s.trashDir.appendingPathComponent("notes.md").path))
+    }
+
     @Test func progressReachesTheTotal() async throws {
         let s = try Sandbox()
         s.file("big.bin", String(repeating: "z", count: 2_000_000))

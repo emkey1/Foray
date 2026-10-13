@@ -105,6 +105,13 @@ extension UISerial {
     @Suite(.serialized) final class ConnectToServerTests {
         let suite = "rf-test-servers-\(UUID().uuidString)"
 
+        /// Every test here gets its own, empty server history (never the test runner's own
+        /// defaults, where entries would carry over from one run to the next).
+        init() {
+            ServerHistory.defaults = UserDefaults(suiteName: suite)!
+            for key in ["ServerFavorites", "RecentServers"] { UserDefaults.standard.removeObject(forKey: key) }
+        }
+
         isolated deinit {
             UserDefaults().removePersistentDomain(forName: suite)
             ServerHistory.defaults = .standard
@@ -136,8 +143,41 @@ extension UISerial {
             NetworkBrowser.shared.setServicesForTesting(["Office NAS"])
             defer { NetworkBrowser.shared.setServicesForTesting([]) }
             let network = sidebar.sectionsForTesting.first { $0.title == "Network" }
-            #expect(network?.children.map(\.title) == ["Office NAS"])
+            #expect(network?.children.map(\.title) == ["Office NAS", "Connect to Server…"])
             #expect(network?.children.first?.action != nil && network?.children.first?.isSection == false)
+        }
+
+        /// Network is always in the sidebar, with a way in, even when nothing announces itself
+        /// (plenty of Samba servers don't). Servers connected to before are listed there too.
+        @Test func networkIsAlwaysThereWithSavedServers() {
+            let sidebar = SidebarViewController()
+            _ = sidebar.view
+            NetworkBrowser.shared.setServicesForTesting([])
+            defer { NetworkBrowser.shared.setServicesForTesting([]) }
+            func rows() -> [String] { sidebar.sectionsForTesting.first { $0.title == "Network" }?.children.map(\.title) ?? [] }
+            #expect(rows() == ["Connect to Server…"])
+
+            // Favorites first, then recent ones, each once; the sidebar follows changes.
+            ServerHistory.favorites = ["smb://nas.local/Media"]
+            ServerHistory.noteConnected("192.168.1.20/backup")
+            ServerHistory.noteConnected("smb://nas.local/Media")
+            #expect(rows() == ["nas.local/Media", "192.168.1.20/backup", "Connect to Server…"])
+            #expect(sidebar.sectionsForTesting.first { $0.title == "Network" }?.children.allSatisfy { $0.action != nil } == true)
+
+            // A saved address for a server that's listed anyway isn't shown twice.
+            ServerHistory.noteConnected("smb://Office-NAS.local")
+            NetworkBrowser.shared.setServicesForTesting(["Office-NAS"])
+            #expect(rows() == ["Office-NAS", "nas.local/Media", "192.168.1.20/backup", "Connect to Server…"])
+
+            // Local Network access turned off: say so, since that's why nothing is found.
+            NetworkBrowser.shared.setServicesForTesting([], accessDenied: true)
+            #expect(rows().suffix(2) == ["Allow Network Access…", "Connect to Server…"])
+        }
+
+        @Test func serverTitlesDropTheUsualScheme() {
+            #expect(ServerHistory.title(for: "smb://nas.local/Media") == "nas.local/Media")
+            #expect(ServerHistory.title(for: "nas/Media/") == "nas/Media")
+            #expect(ServerHistory.title(for: "afp://old-mac.local") == "afp://old-mac.local")
         }
     }
 }

@@ -103,6 +103,7 @@ final class Execution: @unchecked Sendable {
         case .delete(let items): await delete(items)
         case .rename(let item, let name): await rename(item, to: name)
         case .newFolder(let dir, let name, let moving): await newFolder(in: dir, name: name, moving: moving)
+        case .newFile(let dir, let name): await newFile(in: dir, name: name)
         case .restore(let pairs), .putBack(let pairs): await restore(pairs)
         case .makeAlias(let items, let dir): await makeAliases(items, in: dir)
         case .setAttributes(let list): await setAttributes(list)
@@ -436,6 +437,20 @@ final class Execution: @unchecked Sendable {
         } else {
             fail(item, rc, "rename")
         }
+    }
+
+    private func newFile(in dir: URL, name: String?) async {
+        update { $0.phase = .running }
+        let wanted = name ?? "untitled.txt"
+        if FileNaming.problem(with: wanted) != nil { return fail(dir.appendingPathComponent(wanted), EINVAL, "create") }
+        let fileName = await blocking {
+            FileNaming.keepBothFreeName(wanted) { FileOps.exists(dir.appendingPathComponent($0)) }
+        }
+        let file = dir.appendingPathComponent(fileName)
+        let rc = await blocking { self.ops.createFile(file) }
+        guard rc == 0 else { return fail(file, rc, "create") }
+        result.record(.created(file))
+        result.changedFolders.insert(dir)
     }
 
     private func newFolder(in dir: URL, name: String?, moving: [URL]) async {

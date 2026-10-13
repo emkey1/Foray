@@ -281,7 +281,9 @@ final class ColumnContentViewController: NSViewController, ContentView {
     }
 
     fileprivate func menu(for column: ColumnTable, clicked: FileID?) -> NSMenu? {
-        column.role == .current ? host?.contentMenu(clicked: clicked) : nil
+        // Another column isn't the folder the window is on: no menu, rather than letting the click
+        // fall through to this folder's (whose New Folder would land somewhere unexpected).
+        column.role == .current ? host?.contentMenu(clicked: clicked) : NSMenu()
     }
 }
 

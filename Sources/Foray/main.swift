@@ -151,6 +151,7 @@ enum MainMenu {
         menu.addItem(newTab)
         menu.addItem(item("New Folder", Commands.newFolder, "n", [.command, .shift]))
         menu.addItem(item("New Folder with Selection", Commands.newFolderWithSelection, "n", [.command, .control]))
+        menu.addItem(item("New Text File", Commands.newTextFile))
         menu.addItem(.separator())
         menu.addItem(item("Open", Commands.openSelection, "o"))
         menu.addItem(item("Open in New Tab", Commands.openSelectionInNewTab))

@@ -11,7 +11,9 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
     /// Asks the window layer to open a location in a new tab.
     var openInNewTab: ((Location) -> Void)?
 
-    private let contentContainer = NSView()
+    /// Holds the content view. A right-click that lands on none of its items (the space under a
+    /// short list, beside the columns, around the gallery's preview) gets the folder's own menu here.
+    private let contentContainer = BackgroundMenuView()
     private let scopeBar = SearchScopeBar()
     private var scopeBarCollapsed: NSLayoutConstraint?
     private let trashBar = TrashBar()
@@ -168,6 +170,7 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
             ])
         }
         view = root
+        contentContainer.menuProvider = { [weak self] in self?.contentMenu(clicked: nil) }
 
         state.observe { [weak self] change in self?.stateChanged(change) }
         installContent()
@@ -384,20 +387,33 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
         open(ids.compactMap(state.item), inNewTab: inNewTab)
     }
 
+    /// The menu for a right-click. `clicked` nil means empty space: the folder's own menu, the
+    /// same in every view and whatever is selected (as in Finder).
     func contentMenu(clicked: FileID?) -> NSMenu? {
         let menu = NSMenu()
         let items = state.selectedItems
-        if items.isEmpty, state.location == .trash {
-            menu.addItem(withTitle: "Empty Trash…", action: #selector(emptyTrash(_:)), keyEquivalent: "")
-            return menu
-        }
-        if items.isEmpty {
+        if clicked == nil || items.isEmpty {
+            if state.location == .trash {
+                menu.addItem(withTitle: "Empty Trash…", action: #selector(emptyTrash(_:)), keyEquivalent: "")
+                return menu
+            }
             menu.addItem(withTitle: "New Folder", action: #selector(newFolder(_:)), keyEquivalent: "")
+            menu.addItem(withTitle: "New Text File", action: #selector(newTextFile(_:)), keyEquivalent: "")
             menu.addItem(withTitle: "Paste", action: #selector(paste(_:)), keyEquivalent: "")
             menu.addItem(.separator())
             menu.addItem(withTitle: "Show Hidden Files", action: #selector(toggleHiddenFiles(_:)), keyEquivalent: "")
                 .state = state.settings.arrangement.showHidden ? .on : .off
             menu.addItem(sortMenuItem())
+            menu.addItem(withTitle: "Show View Options", action: #selector(showViewOptions(_:)), keyEquivalent: "")
+            // The items act on this browser even when the click didn't make it first responder
+            // (a right-click in the other pane of a two-pane window, say).
+            func aim(_ menu: NSMenu) {
+                for item in menu.items {
+                    if item.action != nil && item.target == nil { item.target = self }
+                    if let sub = item.submenu { aim(sub) }
+                }
+            }
+            aim(menu)
             return menu
         }
         menu.addItem(withTitle: "Open", action: #selector(openSelection(_:)), keyEquivalent: "")
@@ -1003,4 +1019,10 @@ final class RenameField: NSTextField, NSTextFieldDelegate {
     func controlTextDidEndEditing(_ obj: Notification) {
         if !isHidden { onCommit?() }
     }
+}
+
+/// A plain view that offers a menu for right-clicks none of its subviews took.
+final class BackgroundMenuView: NSView {
+    var menuProvider: (() -> NSMenu?)?
+    override func menu(for event: NSEvent) -> NSMenu? { menuProvider?() ?? super.menu(for: event) }
 }

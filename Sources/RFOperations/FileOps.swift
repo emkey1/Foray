@@ -46,6 +46,14 @@ enum FileOps {
         mkdir(url.path, mode) == 0 ? 0 : errno
     }
 
+    /// A new, empty file. Never replaces anything (EEXIST if the name is taken).
+    static func createFile(_ url: URL) -> Int32 {
+        let fd = open(url.path, O_WRONLY | O_CREAT | O_EXCL, 0o644)
+        guard fd >= 0 else { return errno }
+        close(fd)
+        return 0
+    }
+
     /// APFS clone of a file or a whole directory tree, metadata included. ENOTSUP/EXDEV when the
     /// volume can't clone.
     static func clone(_ from: URL, to: URL) -> Int32 {

@@ -239,7 +239,7 @@ Each of these is additive or controlled by a setting, so Finder habits keep work
 | I4 | **Search finds what Spotlight misses:** hidden files, unindexed volumes and network shares, via the crawl backend. | On |
 | I5 | **The status bar shows selection count and total size.** Folder sizes are calculated in the background, cached, and shown in every view. | On (sizes: setting) |
 | I6 | **Hidden-files visibility is part of the arrangement**, so it follows the settings model (§3.3) instead of being one global switch. | On |
-| I7 | **New File** in the File and context menus creates an empty text file, or a file from a user template in `~/Library/Application Support/RealFinder/Templates`. | On |
+| I7 | **New File** in the File and context menus creates an empty text file, or a file from a user template in `~/Library/Application Support/RealFinder/Templates`. | On ✅ (New Text File makes "untitled.txt"; templates not built) |
 | I8 | **Copy As** copies the path, a `~`-relative path, a file URL, the name, or a shell-escaped path. **Open in Terminal** uses Terminal or a terminal the user chooses. | On |
 | I9 | **Batch rename** supports regex, case changes and sequence numbers, with a live preview. The whole rename is undone in one step. | On |
 | I10 | **Never writes `.DS_Store` files**, notably on network and USB volumes. | Always |

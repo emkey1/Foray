@@ -90,6 +90,7 @@ public enum Commands {
     public static let showViewOptions = #selector(BrowserViewController.showViewOptions(_:))
     public static let getInfo = #selector(BrowserViewController.getInfo(_:))
     public static let newFolder = #selector(BrowserViewController.newFolder(_:))
+    public static let newTextFile = #selector(BrowserViewController.newTextFile(_:))
     public static let newFolderWithSelection = #selector(BrowserViewController.newFolderWithSelection(_:))
     public static let duplicate = #selector(BrowserViewController.duplicate(_:))
     public static let rename = #selector(BrowserViewController.renameSelection(_:))

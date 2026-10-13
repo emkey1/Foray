@@ -70,6 +70,9 @@ final class SidebarViewController: NSViewController {
         observers = Volumes.observeChanges { [weak self] in self?.reload() }
         favoritesObserver = AppModel.shared.observeFavorites { [weak self] in self?.reload() }
         _ = NetworkBrowser.shared.observe { [weak self] in self?.reload() }
+        observers.append(NotificationCenter.default.addObserver(forName: ServerHistory.changed, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.reload() }
+        })
     }
 
     private static let symbols: [String: String] = {
@@ -113,10 +116,9 @@ final class SidebarViewController: NSViewController {
                          ejectURL: v.isEjectable ? v.url : nil)
                 }
                 + [Node(title: "Trash", location: .trash, icon: TrashUI.icon)]),
-            Node(title: "Network", children: NetworkBrowser.shared.services.map { name in
-                Node(title: name, icon: NSImage(systemSymbolName: "server.rack", accessibilityDescription: nil),
-                     action: { [weak self] in self?.connect(toService: name) })
-            }),
+            // Always there, even with nothing found: servers that announce themselves, servers
+            // connected to before (not every server announces itself), and Connect to Server.
+            Node(title: "Network", children: networkRows()),
             // Clicking a tag shows every file with it (a This Mac search for tag:"Name").
             Node(title: "Tags", children: Tags.finderFavorites().map { tag in
                 Node(title: tag.name,
@@ -256,10 +258,38 @@ extension SidebarViewController: NSOutlineViewDataSource, NSOutlineViewDelegate 
     }
 
     /// Connects to a Bonjour SMB server and shows it in this window.
+    private func networkRows() -> [Node] {
+        func symbol(_ name: String) -> NSImage? { NSImage(systemSymbolName: name, accessibilityDescription: nil) }
+        let found = NetworkBrowser.shared.services
+        var rows = found.map { name in
+            Node(title: name, icon: symbol("server.rack"), action: { [weak self] in self?.connect(toService: name) })
+        }
+        // Saved addresses, except ones that are plainly a server already listed above.
+        let listed = Set(found.map { $0.lowercased() })
+        for address in ServerHistory.saved {
+            guard let url = NetworkMounts.normalize(address) else { continue }
+            let host = (url.host ?? "").lowercased()
+            if listed.contains(host) || listed.contains(host.replacingOccurrences(of: ".local", with: "")) { continue }
+            rows.append(Node(title: ServerHistory.title(for: address), icon: symbol("externaldrive.connected.to.line.below"),
+                             action: { [weak self] in self?.connect(to: url, address: address) }))
+        }
+        if NetworkBrowser.shared.accessDenied {
+            rows.append(Node(title: "Allow Network Access…", icon: symbol("exclamationmark.triangle"),
+                             action: { NetworkBrowser.openLocalNetworkSettings() }))
+        }
+        rows.append(Node(title: "Connect to Server…", icon: symbol("plus.circle"),
+                         action: { ConnectToServerWindowController.shared.show() }))
+        return rows
+    }
+
     private func connect(toService name: String) {
         guard let url = NetworkMounts.url(forSMBService: name) else { return }
+        connect(to: url, address: nil)
+    }
+
+    private func connect(to url: URL, address: String?) {
         Task { [weak self] in
-            let failure = await ServerConnector.connect(url, then: { mount in self?.onNavigate?(.folder(mount)) })
+            let failure = await ServerConnector.connect(url, address: address, then: { mount in self?.onNavigate?(.folder(mount)) })
             // Cancelling the system's sign-in dialog isn't an error.
             if let failure, ![ECANCELED, -128].contains((failure as? NetworkMounts.Failure)?.status ?? 0) {
                 self?.presentError(failure)

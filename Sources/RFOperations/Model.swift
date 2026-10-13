@@ -12,6 +12,8 @@ public enum OperationRequest: Sendable, Equatable {
     case rename(URL, to: String)
     /// New folder in `in`, optionally moving `moving` into it (New Folder with Selection).
     case newFolder(in: URL, name: String? = nil, moving: [URL] = [])
+    /// An empty file ("untitled.txt" unless named; a taken name gets a number).
+    case newFile(in: URL, name: String? = nil)
     /// Moves each item back to an exact path (undo/redo, Put Back). Fails per item if taken.
     case restore([Pair])
     /// Put Back: items in the Trash to where they came from (as `restore`, named for the menus).
@@ -79,6 +81,7 @@ public enum OperationRequest: Sendable, Equatable {
         case .delete(let items): return "Deleting \(n(items))"
         case .rename(let item, let name): return "Renaming “\(item.lastPathComponent)” to “\(name)”"
         case .newFolder: return "Creating a folder"
+        case .newFile(let dir, _): return "Creating a file in “\(dir.lastPathComponent)”"
         case .restore(let pairs): return pairs.count == 1 ? "Restoring “\(pairs[0].to.lastPathComponent)”" : "Restoring \(pairs.count) items"
         case .putBack(let pairs): return pairs.count == 1 ? "Putting back “\(pairs[0].to.lastPathComponent)”" : "Putting back \(pairs.count) items"
         case .emptyTrash: return "Emptying the Trash"
@@ -108,6 +111,7 @@ public enum OperationRequest: Sendable, Equatable {
         case .createPDF: "Create PDF"
         case .applyAccessToEnclosed: "Apply Permissions"
         case .newFolder: "New Folder"
+        case .newFile: "New File"
         case .restore: "Restore"
         case .putBack: "Put Back"
         case .emptyTrash: "Empty Trash"
