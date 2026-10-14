@@ -62,6 +62,18 @@ else
   print -u2 "warning: this app isn't notarized; other Macs will block it."
 fi
 version=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" "$app/Contents/Info.plist")
+# An archive made before the version was bumped carries the last release's number: making it would
+# overwrite that release's installer in dist/. Stop instead (RF_DMG_DIR builds elsewhere, for tests).
+source_version=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" Resources/Info.plist)
+if [[ -z ${RF_DMG_DIR:-} && $version != "$source_version" ]]; then
+  print -u2 "error: this app is version $version, but Resources/Info.plist says $source_version."
+  print -u2 "The archive was probably made before the version was bumped: archive again in Xcode, then rerun this."
+  exit 1
+fi
+if [[ -z ${RF_DMG_DIR:-} ]] && command -v gh >/dev/null && gh release view "v$version" >/dev/null 2>&1; then
+  print -u2 "error: Foray $version is already released on GitHub; not replacing its installer."
+  exit 1
+fi
 volname="Foray $version"
 mount="/Volumes/$volname"
 if [[ -e $mount ]]; then
