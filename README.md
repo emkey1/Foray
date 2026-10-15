@@ -75,7 +75,7 @@ Or by hand:
 2. Open it and drag **Foray** to **Applications**.
 3. Open Foray. macOS asks before it can see Desktop, Documents, Downloads and external drives; allow those. For the Trash, Mail data and other protected places, add Foray in **System Settings › Privacy & Security › Full Disk Access** (Foray › Settings › Privacy has a button for it).
 
-Requires macOS 26 or later (Apple silicon or Intel). From 0.9.1 on, Foray offers new versions itself (Foray › Check for Updates…); if you have 0.9.0, download the latest release once.
+Requires macOS 15 (Sequoia) or later, on Apple silicon or Intel. From 0.9.1 on, Foray offers new versions itself (Foray › Check for Updates…); if you have 0.9.0, download the latest release once.
 
 ## Build from source
 

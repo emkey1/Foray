@@ -150,6 +150,9 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
                 separator.leadingAnchor.constraint(equalTo: root.leadingAnchor),
                 separator.trailingAnchor.constraint(equalTo: root.trailingAnchor),
                 separator.bottomAnchor.constraint(equalTo: pathBar.topAnchor, constant: -2),
+                // Its height is pinned: left free, macOS 15 sometimes gave the line almost the whole
+                // pane and the file list none (a new second pane showed no files at all).
+                separator.heightAnchor.constraint(equalToConstant: 1),
 
                 pathBar.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 8),
                 pathBar.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -8),
@@ -168,6 +171,15 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
                 sizeSlider.centerYAnchor.constraint(equalTo: statusLabel.centerYAnchor),
                 sizeSlider.widthAnchor.constraint(equalToConstant: 90),
             ])
+        }
+        // The path bar and status line shorten (truncating) rather than hold the window open: at
+        // their natural widths a deep folder or a long status forced every pane wider, so a window
+        // couldn't be made narrow, and a second pane pushed the window off the screen.
+        // Nor do they pull the pane to their natural width (a label hugs its text a notch above the
+        // split view's own sizing, so the status line used to set each pane's width).
+        for v in [pathBar, addressField, statusLabel] as [NSView] {
+            v.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+            v.setContentHuggingPriority(.init(1), for: .horizontal)
         }
         view = root
         contentContainer.menuProvider = { [weak self] in self?.contentMenu(clicked: nil) }

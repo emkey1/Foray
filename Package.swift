@@ -4,7 +4,7 @@ import PackageDescription
 
 let package = Package(
     name: "Foray",
-    platforms: [.macOS(.v26)],
+    platforms: [.macOS(.v15)],
     products: [
         .executable(name: "Foray", targets: ["Foray"]),
         // What the Xcode project (Xcode/Foray.xcodeproj, used for signed, notarized releases) links.

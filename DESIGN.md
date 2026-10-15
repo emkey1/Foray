@@ -373,7 +373,7 @@ Each of these is additive or controlled by a setting, so Finder habits keep work
 | Language | Swift 6.4 with strict concurrency | Compile-time data-race checking matters with this much background I/O |
 | Main UI | AppKit | NSOutlineView and NSCollectionView reuse cells, so they handle 100k+ rows. AppKit also has mature drag and drop (spring loading, modifier keys, file promises), inline editing, type-select, rubber-band selection and menu validation through the responder chain. SwiftUI's List, Table and LazyVGrid still fall short here at this scale. |
 | Secondary UI | SwiftUI hosted in AppKit (`NSHostingView`) | Settings, Get Info, Inspector, View Options and onboarding are form-like UIs that are faster to build in SwiftUI |
-| Deployment target | macOS 26 | Matches the development machine and the current system look (Liquid Glass), with no backward-compatibility code paths (Q1) |
+| Deployment target | macOS 15 | Was macOS 26 (the development machine). Lowered 2026-10-15 after testing in a macOS 15.7 virtual machine (tart on mbp5): it needed no code changes, but showed layout bugs that macOS 26 hid (see the dual-pane notes). |
 | Persistence | SQLite via GRDB (SwiftPM) | Predictable performance, explicit migrations and queryable caches. SwiftData and Core Data add little for these simple tables. |
 | Distribution | Signed with Developer ID, notarized, hardened runtime, not sandboxed | A general file manager can't work inside the App Sandbox. Updates via Sparkle (Q2). |
 | Tests | Swift Testing for unit and integration tests; XCTest for performance (`measure`) and UI tests | |
@@ -1007,7 +1007,7 @@ These are in order with exit criteria; there are no dates.
 
 | # | Question | Recommendation |
 |---|---|---|
-| Q1 | What is the minimum macOS version? | macOS 26, your current OS. Supporting older versions costs UI branching. |
+| Q1 | What is the minimum macOS version? | macOS 15 since 0.10.5 (was 26). It builds without changes; test new UI in the macOS 15 VM. |
 | Q2 | Is this a personal tool or for public distribution? This affects Developer ID signing, notarization, Sparkle and helper signing. | Build as if it's public; it costs little up front |
 | Q3 | Should RealFinder leave the desktop to Finder, or replace it (draw desktop icons itself)? | **Decided (2026-10-09):** optional. Settings › General › "Use Foray instead of Finder", off by default and only ever turned on by the user: Foray draws the desktop (DesktopWindowController) with Finder's CreateDesktop off, becomes the default app for folders, sets NSFileViewer, adds a login item, optionally quits Finder; it records what it changed and turning it off restores exactly that (FinderTakeover; SystemControl is faked in tests) |
 | Q4 | Which view-settings model should be the default: "same everywhere, with opt-in per-folder pins" or "remember per folder"? | Same everywhere; pins are opt-in |

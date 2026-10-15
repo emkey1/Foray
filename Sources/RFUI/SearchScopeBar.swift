@@ -69,20 +69,34 @@ final class SearchScopeBar: NSView {
         all.spacing = 6
         all.edgeInsets = NSEdgeInsets(top: 6, left: 12, bottom: 8, right: 12)
         all.translatesAutoresizingMaskIntoConstraints = false
+        // In a narrow window (or a pane of a two-pane window) the bar is cut off at the right
+        // rather than holding the window wider than the screen. It's there (hidden) even when no
+        // search is showing, so at full strength it set every pane's minimum width.
+        for stack in [all, top] {
+            stack.setClippingResistancePriority(.defaultLow, for: .horizontal)
+            for v in stack.arrangedSubviews { v.setContentCompressionResistancePriority(.defaultLow, for: .horizontal) }
+        }
         addSubview(all)
         let separator = NSBox()
         separator.boxType = .separator
         separator.translatesAutoresizingMaskIntoConstraints = false
         addSubview(separator)
-        NSLayoutConstraint.activate([
+        // The browser folds the bar to zero height while no search is showing. Its contents then
+        // give way (these hold at 999, not "required") instead of contradicting the fold, which
+        // made AppKit discard constraints on every layout and log a conflict each time.
+        let vertical = [
             all.topAnchor.constraint(equalTo: topAnchor),
+            all.bottomAnchor.constraint(equalTo: separator.topAnchor),
+            separator.bottomAnchor.constraint(equalTo: bottomAnchor),
+        ]
+        vertical.forEach { $0.priority = .init(999) }
+        NSLayoutConstraint.activate(vertical + [
             all.leadingAnchor.constraint(equalTo: leadingAnchor),
             all.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor),
-            all.bottomAnchor.constraint(equalTo: separator.topAnchor),
             separator.leadingAnchor.constraint(equalTo: leadingAnchor),
             separator.trailingAnchor.constraint(equalTo: trailingAnchor),
-            separator.bottomAnchor.constraint(equalTo: bottomAnchor),
         ])
+        clipsToBounds = true
     }
 
     required init?(coder: NSCoder) { fatalError() }

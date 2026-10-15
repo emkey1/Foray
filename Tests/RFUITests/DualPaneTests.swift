@@ -126,6 +126,7 @@ extension UISerial {
             c.setDualPane(false)
             c.setDualPane(true, location: .folder(b))
             await wait { c.panes.allSatisfy { $0.state.loadState == .complete } }
+            try? await Task.sleep(for: .milliseconds(150))
             c.window?.contentView?.layoutSubtreeIfNeeded()
             let widths = c.panes.map(\.view.frame.width)
             #expect(widths.allSatisfy { $0 >= 240 })
@@ -135,6 +136,33 @@ extension UISerial {
                 view.cacheDisplay(in: view.bounds, to: rep)
                 try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: dir).appendingPathComponent("dualpane.png"))
             }
+        }
+
+        /// The second pane splits the window; it doesn't make the window wider (on a screen without
+        /// room to spare, a wider window ran off the edge, toolbar and all).
+        @Test func theWindowKeepsItsSize() async throws {
+            let c = BrowserWindowController(location: .folder(a))
+            let window = try #require(c.window)
+            defer { window.close() }
+            window.setFrame(NSRect(x: 100, y: 100, width: 1000, height: 600), display: true)
+            c.browser.state.updatePresentation { $0.mode = .list }
+            await wait { c.browser.state.loadState == .complete }
+            window.contentView?.layoutSubtreeIfNeeded()
+            let before = window.frame
+            c.setDualPane(true)
+            await wait { c.panes.allSatisfy { $0.state.loadState == .complete } }
+            try? await Task.sleep(for: .milliseconds(150))   // let the window settle, as it would on screen
+            window.contentView?.layoutSubtreeIfNeeded()
+            #expect(window.frame == before, "was \(before), now \(window.frame)")
+            let widths = c.panes.map(\.view.frame.width)
+            #expect(abs(widths[0] - widths[1]) <= 2, "\(widths)")
+            // Too narrow for two panes: it grows only as much as it must, and stays on the screen.
+            c.setDualPane(false)
+            window.setFrame(NSRect(x: 100, y: 100, width: 560, height: 600), display: true)
+            c.setDualPane(true)
+            window.contentView?.layoutSubtreeIfNeeded()
+            if let screen = window.screen?.visibleFrame { #expect(screen.contains(window.frame), "\(window.frame) vs \(screen)") }
+            #expect(window.frame.width >= 700)
         }
 
         @Test func commandsAreOffWithOnePane() {

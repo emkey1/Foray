@@ -167,14 +167,31 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate, NSToo
             adopt(second)
             let item = NSSplitViewItem(viewController: second)
             item.minimumThickness = 240
+            // Adding a split item makes AppKit widen the window to fit it, which on a screen without
+            // room to spare ran the window (toolbar and all) off the edge. The second pane splits the
+            // window instead: same frame, unless it's too narrow for two panes, and on the screen.
+            let before = window?.frame
             splitController.addSplitViewItem(item)
             window?.minSize = NSSize(width: 700, height: 300)
+            if let window, var frame = before {
+                frame.size.width = max(frame.width, window.minSize.width)
+                if let screen = window.screen?.visibleFrame {
+                    frame.size.width = min(frame.width, screen.width)
+                    if frame.maxX > screen.maxX { frame.origin.x = max(screen.minX, screen.maxX - frame.width) }
+                }
+                window.setFrame(frame, display: true)
+                window.contentView?.layoutSubtreeIfNeeded()
+            }
             equalizePanes()
+            // macOS 15 sizes the new pane in a later pass (to its minimum width): even them up after it.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in MainActor.assumeIsolated { self?.evenUpDivider() } }
             installTabKeyMonitor()
         } else {
             let closing = panes[1 - activePaneIndex]
             if let item = splitController.splitViewItem(for: closing) { splitController.removeSplitViewItem(item) }
             closing.state.invalidate()
+            equalWidths?.isActive = false
+            equalWidths = nil
             panes = [browser]
             activePaneIndex = 0
             window?.minSize = NSSize(width: 520, height: 300)
@@ -185,14 +202,37 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate, NSToo
         activePaneDidChange()
     }
 
-    /// Gives the two panes the same width.
+    /// Keeps the two panes the same width, until the user drags the divider: the split view holds
+    /// a dragged position at a higher priority than this. (Setting the divider's position directly
+    /// didn't stick: with nothing else deciding the widths, AppKit gave the first pane its minimum.)
+    private var equalWidths: NSLayoutConstraint?
+
     private func equalizePanes() {
+        equalWidths?.isActive = false
+        equalWidths = nil
+        guard isDualPane else { return }
+        // Firmly at first (on macOS 15 the split view otherwise kept the first pane at its old width
+        // and squeezed the new one to its minimum), then just below a split item's holding priority
+        // (250), so the panes stay as they are but a dragged divider wins.
+        let equal = panes[0].view.widthAnchor.constraint(equalTo: panes[1].view.widthAnchor)
+        equal.priority = .init(489)   // below a divider drag (490), above anything holding the panes
+        equal.isActive = true
+        equalWidths = equal
+        window?.contentView?.layoutSubtreeIfNeeded()
+        equal.priority = .init(249)
+        evenUpDivider()
+    }
+
+    /// Where the split view places its panes by frame (macOS 15), the constraint above has no say;
+    /// there, moving the divider does it. (On macOS 26 and later the reverse holds.)
+    private func evenUpDivider() {
         guard isDualPane else { return }
         let split = splitController.splitView
-        split.layoutSubtreeIfNeeded()
-        let left = panes[0].view.frame, right = panes[1].view.frame
-        guard left.width + right.width > 0 else { return }
+        let left = panes[0].view.superview?.frame ?? panes[0].view.frame
+        let right = panes[1].view.superview?.frame ?? panes[1].view.frame
+        guard abs(left.width - right.width) > 2 else { return }
         split.setPosition(left.minX + (right.maxX - left.minX - split.dividerThickness) / 2, ofDividerAt: split.arrangedSubviews.count - 2)
+        split.layoutSubtreeIfNeeded()
     }
 
     func setActivePane(_ index: Int, focus: Bool = true) {

@@ -20,6 +20,14 @@ trap 'rm -rf "$tap"' EXIT
 gh repo clone emkey1/homebrew-tap "$tap" -- -q
 cask="$tap/Casks/foray.rb"
 sed -i '' -E "s/^  version \".*\"/  version \"$version\"/; s/^  sha256 \".*\"/  sha256 \"$local_sum\"/" "$cask"
+# The cask's minimum macOS follows the app's (LSMinimumSystemVersion in Resources/Info.plist).
+minimum=$(/usr/libexec/PlistBuddy -c "Print LSMinimumSystemVersion" Resources/Info.plist)
+case ${minimum%%.*} in
+  15) macos=':sequoia' ;;
+  26) macos=':tahoe' ;;
+  *) print -u2 "Don't know the Homebrew name for macOS $minimum; leaving depends_on alone."; macos= ;;
+esac
+[[ -n $macos ]] && sed -i '' -E "s/^  depends_on macos: .*/  depends_on macos: \">= $macos\"/" "$cask"
 # From 0.10.0 the app contains the `foray` command-line tool: have Homebrew link it into its bin.
 if ! grep -q 'Contents/Helpers/foray' "$cask"; then
   sed -i '' -E 's|^  app "Foray.app"$|  app "Foray.app"\
