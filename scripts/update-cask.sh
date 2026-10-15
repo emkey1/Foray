@@ -27,7 +27,8 @@ case ${minimum%%.*} in
   26) macos=':tahoe' ;;
   *) print -u2 "Don't know the Homebrew name for macOS $minimum; leaving depends_on alone."; macos= ;;
 esac
-[[ -n $macos ]] && sed -i '' -E "s/^  depends_on macos: .*/  depends_on macos: \">= $macos\"/" "$cask"
+# (Homebrew reads a plain release name as "this or later".)
+[[ -n $macos ]] && sed -i '' -E "s/^  depends_on macos: .*/  depends_on macos: $macos/" "$cask"
 # From 0.10.0 the app contains the `foray` command-line tool: have Homebrew link it into its bin.
 if ! grep -q 'Contents/Helpers/foray' "$cask"; then
   sed -i '' -E 's|^  app "Foray.app"$|  app "Foray.app"\
@@ -37,7 +38,11 @@ if git -C "$tap" diff --quiet; then
   print "The cask is already at $version."
   exit 0
 fi
-command -v brew >/dev/null && brew style "$cask" >/dev/null
+if command -v brew >/dev/null && ! style=$(brew style "$cask" 2>&1); then
+  print -u2 "brew style rejects the updated cask; not pushing it:"
+  print -u2 "$style"
+  exit 1
+fi
 git -C "$tap" commit -qam "Foray $version"
 git -C "$tap" push -q
 print "Cask updated to $version: brew upgrade --cask foray"
