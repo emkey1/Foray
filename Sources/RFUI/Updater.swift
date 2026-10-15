@@ -16,7 +16,10 @@ public struct ReleaseInfo: Equatable, Sendable {
               let tag = json["tag_name"] as? String, json["draft"] as? Bool != true, json["prerelease"] as? Bool != true,
               let page = (json["html_url"] as? String).flatMap(URL.init(string:)),
               let assets = json["assets"] as? [[String: Any]],
-              let dmg = assets.first(where: { ($0["name"] as? String)?.lowercased().hasSuffix(".dmg") == true }),
+              // Each release carries Foray-<version>.dmg and the same file as Foray.dmg (for the
+              // permanent latest-version link); either will do, the numbered one is preferred.
+              let dmg = assets.first(where: { ($0["name"] as? String)?.lowercased().hasPrefix("foray-") == true && ($0["name"] as? String)?.lowercased().hasSuffix(".dmg") == true })
+                ?? assets.first(where: { ($0["name"] as? String)?.lowercased().hasSuffix(".dmg") == true }),
               let url = (dmg["browser_download_url"] as? String).flatMap(URL.init(string:)) else { return nil }
         let version = tag.hasPrefix("v") ? String(tag.dropFirst()) : tag
         return ReleaseInfo(version: version, notes: json["body"] as? String ?? "", dmg: url, page: page)

@@ -71,7 +71,7 @@ brew install --cask emkey1/tap/foray
 
 Or by hand:
 
-1. Download `Foray-x.y.z.dmg` from the [latest release](https://github.com/emkey1/Foray/releases/latest).
+1. [Download Foray](https://github.com/emkey1/Foray/releases/latest/download/Foray.dmg) (always the latest version; the [releases page](https://github.com/emkey1/Foray/releases/latest) has the notes).
 2. Open it and drag **Foray** to **Applications**.
 3. Open Foray. macOS asks before it can see Desktop, Documents, Downloads and external drives; allow those. For the Trash, Mail data and other protected places, add Foray in **System Settings › Privacy & Security › Full Disk Access** (Foray › Settings › Privacy has a button for it).
 
@@ -88,7 +88,7 @@ swift test                                                  # run the tests
 
 Test builds are a separate app, **Foray Dev** (its own bundle ID, settings and privacy grants, and a DEV badge on the icon), so they never get mixed up with an installed Foray. They're signed with your Apple Development certificate when you have one, which keeps permissions like Full Disk Access across rebuilds.
 
-Releases are built from `Xcode/Foray.xcodeproj` (scheme "Foray App"): Product › Archive, then Distribute App › Direct Distribution signs with Developer ID and notarizes. Then `scripts/make-dmg.sh` exports the notarized app from the newest archive and makes the installer: a window with Foray and an Applications shortcut over a background that explains what to do (`scripts/dmg-layout.swift` writes the window layout directly, so Finder isn't scripted). After publishing the GitHub release, `scripts/update-cask.sh` points the Homebrew cask ([emkey1/homebrew-tap](https://github.com/emkey1/homebrew-tap)) at it.
+Releases are built from `Xcode/Foray.xcodeproj` (scheme "Foray App"): Product › Archive, then Distribute App › Direct Distribution signs with Developer ID and notarizes. Then `scripts/make-dmg.sh` exports the notarized app from the newest archive and makes the installer: a window with Foray and an Applications shortcut over a background that explains what to do (`scripts/dmg-layout.swift` writes the window layout directly, so Finder isn't scripted). Attach both `dist/Foray-x.y.z.dmg` and `dist/Foray.dmg` (the same file; it's what the permanent download link fetches) to the GitHub release. After publishing it, `scripts/update-cask.sh` points the Homebrew cask ([emkey1/homebrew-tap](https://github.com/emkey1/homebrew-tap)) at it.
 
 The app bundle also carries the `foray` command-line tool and the privileged helper (`Contents/Helpers`), built from `Sources/foray-cli` and `Sources/foray-helper`. The helper is a root launchd daemon that macOS learns about only when the user turns on administrator access; `Sources/RFOperations/Privileged.swift` lists the handful of file operations it will do, and `PrivilegedHelper.swift` how callers are checked (Foray's code signature, plus an administrator's authorization for each job).
 

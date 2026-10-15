@@ -119,4 +119,8 @@ diskutil image create from --format UDZO "$scratch/rw.dmg" "$dmg" >/dev/null 2>"
 if security find-identity -v -p codesigning | grep -q "Developer ID Application"; then
   codesign --force --timestamp --sign "Developer ID Application" "$dmg"
 fi
+# The same installer named plainly, for the permanent "latest" link
+# (https://github.com/emkey1/Foray/releases/latest/download/Foray.dmg): attach both to the release.
+cp -f "$dmg" "$out/Foray.dmg"
 echo "$dmg"
+echo "$out/Foray.dmg (the same file, for the latest-version link)"
