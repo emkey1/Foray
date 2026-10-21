@@ -1,7 +1,7 @@
 import AppKit
 import RFModel
 
-/// Foray's desktop (DESIGN.md Q3, "Use Foray instead of Finder"): the Desktop folder's icons drawn
+/// Foray's desktop (DESIGN.md Q3, "Use AOK-Foray instead of Finder"): the Desktop folder's icons drawn
 /// over the wallpaper, behind every window, on every Space. Everything works as in a Foray window
 /// (open, rename, drag, Quick Look, Get Info, its menus); going to another folder opens a window.
 @MainActor

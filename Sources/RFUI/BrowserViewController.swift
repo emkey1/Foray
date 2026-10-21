@@ -374,7 +374,7 @@ final class BrowserViewController: NSViewController, ContentHost, NSMenuItemVali
         switch state.loadState {
         case .failed(let message, let permission):
             messageLabel.stringValue = permission && !FullDiskAccess.isGranted
-                ? message + "\n\nIf this is a protected location, Foray may need Full Disk Access (Settings › Privacy)."
+                ? message + "\n\nIf this is a protected location, AOK-Foray may need Full Disk Access (Settings › Privacy)."
                 : message
             messageLabel.isHidden = false
         case .complete where state.snapshot.items.isEmpty && state.location.searchQuery != nil:

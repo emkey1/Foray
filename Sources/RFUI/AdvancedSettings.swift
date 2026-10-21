@@ -70,7 +70,7 @@ public enum AdministratorAccess {
     /// Turns it on. Returns a note for the user, or nil.
     @discardableResult
     static func turnOn() -> String? {
-        guard registration.isBundled else { return "This copy of Foray doesn't include the helper." }
+        guard registration.isBundled else { return "This copy of AOK-Foray doesn't include the helper." }
         var note: String?
         do {
             try registration.register()
@@ -83,7 +83,7 @@ public enum AdministratorAccess {
         return note
     }
 
-    static let approvalNote = "To finish, allow Foray in System Settings › General › Login Items & Extensions."
+    static let approvalNote = "To finish, allow AOK-Foray in System Settings › General › Login Items & Extensions."
 
     static func turnOff() {
         try? registration.unregister()
@@ -154,9 +154,9 @@ enum CommandLineTool {
     static func install() -> InstallResult {
         let fm = FileManager.default
         switch status {
-        case .unavailable: return .failed("This copy of Foray doesn't include the command-line tool.")
+        case .unavailable: return .failed("This copy of AOK-Foray doesn't include the command-line tool.")
         case .installed: return .done
-        case .blocked: return .failed("\(link.path) already exists and isn't a link, so Foray left it alone.")
+        case .blocked: return .failed("\(link.path) already exists and isn't a link, so AOK-Foray left it alone.")
         case .notInstalled, .elsewhere: break
         }
         let dir = link.deletingLastPathComponent()

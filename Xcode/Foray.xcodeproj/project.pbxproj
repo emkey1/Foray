@@ -19,6 +19,7 @@
 		F0A00000000000000000010A /* foray in Copy Helpers */ = {isa = PBXBuildFile; fileRef = F0A00000000000000000020B /* foray */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		F0A00000000000000000010B /* foray-helper in Copy Helpers */ = {isa = PBXBuildFile; fileRef = F0A00000000000000000020C /* foray-helper */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		F0A00000000000000000010C /* io.github.emkey1.Foray.helper.plist in Copy Launch Daemons */ = {isa = PBXBuildFile; fileRef = F0A00000000000000000020A /* io.github.emkey1.Foray.helper.plist */; };
+		F0A00000000000000000010D /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = F0A00000000000000000020D /* InfoPlist.strings */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -77,6 +78,7 @@
 		F0A00000000000000000020A /* io.github.emkey1.Foray.helper.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = io.github.emkey1.Foray.helper.plist; path = ../Resources/io.github.emkey1.Foray.helper.plist; sourceTree = SOURCE_ROOT; };
 		F0A00000000000000000020B /* foray */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = foray; sourceTree = BUILT_PRODUCTS_DIR; };
 		F0A00000000000000000020C /* foray-helper */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "foray-helper"; sourceTree = BUILT_PRODUCTS_DIR; };
+		F0A00000000000000000020E /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = ../Resources/en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -116,6 +118,7 @@
 				F0A000000000000000000209 /* foray-helper/main.swift */,
 				F0A000000000000000000203 /* Info.plist */,
 				F0A000000000000000000206 /* Foray.sdef */,
+				F0A00000000000000000020D /* InfoPlist.strings */,
 				F0A00000000000000000020A /* io.github.emkey1.Foray.helper.plist */,
 				F0A000000000000000000204 /* Foray.entitlements */,
 				F0A000000000000000000202 /* Foray.icon */,
@@ -200,6 +203,17 @@
 		};
 /* End PBXNativeTarget section */
 
+/* Begin PBXVariantGroup section */
+		F0A00000000000000000020D /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				F0A00000000000000000020E /* en */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
 /* Begin PBXProject section */
 		F0A000000000000000000001 /* Project object */ = {
 			isa = PBXProject;
@@ -249,6 +263,7 @@
 			files = (
 				F0A000000000000000000102 /* Foray.icon in Resources */,
 				F0A000000000000000000104 /* Foray.sdef in Resources */,
+				F0A00000000000000000010D /* InfoPlist.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

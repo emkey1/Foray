@@ -30,7 +30,7 @@ public enum AppIntegration {
 
     public static func dockMenu() -> NSMenu {
         let menu = NSMenu()
-        let new = NSMenuItem(title: "New Foray Window", action: #selector(MenuTarget.newWindow(_:)), keyEquivalent: "")
+        let new = NSMenuItem(title: "New AOK-Foray Window", action: #selector(MenuTarget.newWindow(_:)), keyEquivalent: "")
         new.target = MenuTarget.shared
         menu.addItem(new)
         let recents = recentFolderItems()

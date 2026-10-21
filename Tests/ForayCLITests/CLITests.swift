@@ -90,8 +90,8 @@ import Testing
     }
 
     @Test func aFailureToReachTheAppIsReported() async {
-        let out = await cli(openError: "can't find the Foray app").run(["Reports"])
-        #expect(out.status == 1 && out.err == "foray: can't find the Foray app\n")
+        let out = await cli(openError: "can't find the AOK-Foray app").run(["Reports"])
+        #expect(out.status == 1 && out.err == "foray: can't find the AOK-Foray app\n")
     }
 
     @Test func searchPrintsSortedPathsUnderTheCurrentDirectory() async {

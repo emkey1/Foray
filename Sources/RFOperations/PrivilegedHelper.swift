@@ -72,7 +72,7 @@ public enum PrivilegedHelper {
             "shared": false, "timeout": 1800,
             "comment": "Foray: file operations that need an administrator",
         ]
-        _ = AuthorizationRightSet(auth, right, rule as CFDictionary, "Foray wants to make changes that need an administrator." as CFString, nil, nil)
+        _ = AuthorizationRightSet(auth, right, rule as CFDictionary, "AOK-Foray wants to make changes that need an administrator." as CFString, nil, nil)
     }
 
     /// Helper side: does this authorization hold the right? Never shows anything.
@@ -130,7 +130,7 @@ public enum PrivilegedHelper {
             connection.invalidate()
             return nil
         }
-        let prompt = "Foray needs an administrator to finish “\(jobTitle)”."
+        let prompt = "AOK-Foray needs an administrator to finish “\(jobTitle)”."
         var form = AuthorizationExternalForm()
         guard copyRight(auth, flags: [.interactionAllowed, .extendRights], prompt: prompt) == errAuthorizationSuccess,
               AuthorizationMakeExternalForm(auth, &form) == errAuthorizationSuccess else {

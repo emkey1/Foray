@@ -179,14 +179,14 @@ extension UISerial {
             let sdef = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
                 .appendingPathComponent("Resources/Foray.sdef")
             let doc = try XMLDocument(contentsOf: sdef)
-            let classes = try doc.nodes(forXPath: "//suite[@name='Foray Suite']/command/cocoa/@class").compactMap(\.stringValue)
+            let classes = try doc.nodes(forXPath: "//suite[@name='AOK-Foray Suite']/command/cocoa/@class").compactMap(\.stringValue)
             #expect(Set(classes) == ["ForayRevealCommand", "ForaySearchCommand", "ForayFindCommand", "ForayTrashCommand"])
             for name in classes { #expect(NSClassFromString(name) is NSScriptCommand.Type, "\(name) isn't a script command class") }
             let keys = try doc.nodes(forXPath: "//class-extension/property/cocoa/@key").compactMap(\.stringValue)
             #expect(Set(keys) == ["scriptCurrentFolder", "scriptSelection", "scriptDualPane"])
             for key in keys { #expect(NSApplication.shared.responds(to: Selector(key)), "NSApplication has no \(key)") }
             // Four-character codes are unique within the suite's commands.
-            let codes = try doc.nodes(forXPath: "//suite[@name='Foray Suite']/command/@code").compactMap(\.stringValue)
+            let codes = try doc.nodes(forXPath: "//suite[@name='AOK-Foray Suite']/command/@code").compactMap(\.stringValue)
             #expect(Set(codes).count == codes.count && codes.allSatisfy { $0.count == 8 })
         }
     }

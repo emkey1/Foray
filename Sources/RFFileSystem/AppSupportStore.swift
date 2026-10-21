@@ -13,8 +13,9 @@ public struct AppSupportStore: Sendable {
                 .appendingPathComponent("rf-test-appsupport-\(getpid())", isDirectory: true))
         }
         let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        // "Foray", or "Foray Dev" for test builds (their own settings, sidebar and history).
-        let name = Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String ?? "Foray"
+        // "Foray", or "Foray Dev" for test builds (their own settings, sidebar and history). Fixed
+        // names, not the app's name: the app is called AOK-Foray now, and the folder stays put.
+        let name = (Bundle.main.bundleIdentifier ?? "").hasSuffix(".dev") ? "Foray Dev" : "Foray"
         let dir = support.appendingPathComponent(name, isDirectory: true)
         // Foray was called RealFinder during development: take over its folder the first time.
         let legacy = support.appendingPathComponent("RealFinder", isDirectory: true)

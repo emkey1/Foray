@@ -18,9 +18,9 @@ for product in Foray foray-cli foray-helper; do swift build -c "$config" $arch -
 bin=$(swift build -c "$config" $arch --show-bin-path)/Foray
 
 if [[ -n ${RF_RELEASE:-} ]]; then
-  app=.build/Foray.app; name=Foray; id=io.github.emkey1.Foray; scheme=foray; icon=Foray.icns
+  app=.build/Foray.app; name=Foray; display=AOK-Foray; id=io.github.emkey1.Foray; scheme=foray; icon=Foray.icns
 else
-  app=".build/Foray Dev.app"; name="Foray Dev"; id=io.github.emkey1.Foray.dev; scheme=foray-dev; icon=Foray-Dev.icns
+  app=".build/Foray Dev.app"; name="Foray Dev"; display="AOK-Foray Dev"; id=io.github.emkey1.Foray.dev; scheme=foray-dev; icon=Foray-Dev.icns
 fi
 identity=${RF_SIGN_IDENTITY:-}
 if [[ -z $identity ]]; then
@@ -37,6 +37,9 @@ plist="$app/Contents/Info.plist"
 cp Resources/Info.plist "$plist"
 cp "Resources/$icon" "$app/Contents/Resources/Foray.icns"
 cp Resources/Foray.sdef "$app/Contents/Resources/"
+# The name people see (menu bar, Dock, Finder): CFBundleName stays the file's name, as macOS requires.
+mkdir -p "$app/Contents/Resources/en.lproj"
+sed "s/AOK-Foray/$display/g" Resources/en.lproj/InfoPlist.strings > "$app/Contents/Resources/en.lproj/InfoPlist.strings"
 # The `foray` command-line tool and the privileged helper, with the helper's launchd plist. (The
 # helper does nothing until the user turns on administrator access in Settings › Advanced.)
 mkdir -p "$app/Contents/Helpers" "$app/Contents/Library/LaunchDaemons"

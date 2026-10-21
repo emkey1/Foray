@@ -52,7 +52,7 @@ extension UISerial {
             }
             #expect(AppModel.shared.recentFolders.count == AppModel.recentFolderLimit)
             let dock = AppIntegration.dockMenu()
-            #expect(dock.items.first?.title == "New Foray Window")
+            #expect(dock.items.first?.title == "New AOK-Foray Window")
             #expect(dock.items.contains { $0.title == "D11" })
             let go = AppIntegration.recentFoldersMenuItem()
             MenuTarget.shared.menuNeedsUpdate(go.submenu!)

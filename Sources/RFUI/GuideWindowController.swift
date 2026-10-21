@@ -19,7 +19,7 @@ public final class GuideWindowController: NSWindowController, NSToolbarDelegate,
     private init() {
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 980, height: 720),
                               styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
-        window.title = "Foray Guide"
+        window.title = "AOK-Foray Guide"
         window.tabbingMode = .disallowed
         window.setFrameAutosaveName("ForayGuide")
         super.init(window: window)

@@ -26,7 +26,7 @@ let version = info?["CFBundleShortVersionString"] as? String ?? "dev"
 let environment = CLI.Environment(
     currentDirectory: URL(fileURLWithPath: FileManager.default.currentDirectoryPath, isDirectory: true),
     openInApp: { urls in
-        guard let app else { return "can't find the Foray app" }
+        guard let app else { return "can't find the AOK-Foray app" }
         return await withCheckedContinuation { done in
             let configuration = NSWorkspace.OpenConfiguration()
             configuration.activates = true

@@ -413,7 +413,7 @@ final class BrowserWindowController: NSWindowController, NSWindowDelegate, NSToo
             let item = NSToolbarItem(itemIdentifier: id)
             item.image = NSImage(systemSymbolName: "questionmark.circle", accessibilityDescription: "Guide")
             item.label = "Guide"
-            item.toolTip = "Open the Foray Guide (⌘?)"
+            item.toolTip = "Open the AOK-Foray Guide (⌘?)"
             item.target = self
             item.action = #selector(openGuide(_:))
             return item

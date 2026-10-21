@@ -2,7 +2,7 @@ import AppKit
 import ServiceManagement
 import UniformTypeIdentifiers
 
-/// The system settings "Use Foray instead of Finder" changes. Behind a protocol so tests never
+/// The system settings "Use AOK-Foray instead of Finder" changes. Behind a protocol so tests never
 /// touch the real ones.
 @MainActor
 protocol SystemControl: AnyObject {
@@ -87,7 +87,7 @@ final class RealSystemControl: SystemControl {
     }
 }
 
-/// "Use Foray instead of Finder" (Settings › General). Off when Foray is installed and stays off
+/// "Use AOK-Foray instead of Finder" (Settings › General). Off when Foray is installed and stays off
 /// until the user turns it on there; nothing here runs before that. When on: Foray draws the
 /// desktop and Finder's desktop icons are hidden, folders from other apps open in Foray,
 /// "Show in Finder" opens Foray, and Foray opens at login; optionally Finder is quit. It records
@@ -146,7 +146,7 @@ public enum FinderTakeover {
         }
         if !system.loginItem {
             if !system.setLoginItem(true) {
-                notes.append("To open Foray at login, allow it in System Settings › General › Login Items.")
+                notes.append("To open AOK-Foray at login, allow it in System Settings › General › Login Items.")
             }
             s.addedLoginItem = true
         }
@@ -226,8 +226,8 @@ public enum FinderTakeover {
     static func confirmQuit() -> Bool {
         guard !defaults.bool(forKey: "FinderTakeoverQuitWithoutAsking") else { return true }
         let alert = NSAlert()
-        alert.messageText = "Quit Foray?"
-        alert.informativeText = "Foray is showing your desktop icons, so they'll disappear until Foray opens again. To give the desktop back to Finder, turn off “Use Foray instead of Finder” in Foray › Settings."
+        alert.messageText = "Quit AOK-Foray?"
+        alert.informativeText = "AOK-Foray is showing your desktop icons, so they'll disappear until AOK-Foray opens again. To give the desktop back to Finder, turn off “Use AOK-Foray instead of Finder” in AOK-Foray › Settings."
         alert.addButton(withTitle: "Quit")
         alert.addButton(withTitle: "Cancel")
         alert.showsSuppressionButton = true

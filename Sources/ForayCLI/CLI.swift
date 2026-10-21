@@ -36,7 +36,7 @@ public struct CLI: Sendable {
     }
 
     public static let usage = """
-    usage: foray [path ...]                    Open folders in Foray (no path: the current directory).
+    usage: foray [path ...]                    Open folders in AOK-Foray (no path: the current directory).
                                                Files are shown selected in their folder.
            foray reveal path ...               Show items selected in their enclosing folder.
            foray search [options] query ...    Print the paths of matching items.
@@ -46,13 +46,13 @@ public struct CLI: Sendable {
                -c, --contents                  Also match text inside files (default: names only).
                -n, --limit count               Stop after this many items.
                -0, --print0                    Separate paths with NUL instead of newlines (for xargs -0).
-               -o, --open                      Show the search in Foray instead of printing.
+               -o, --open                      Show the search in AOK-Foray instead of printing.
            foray trash path ...                Move items to the Trash (Put Back works).
            foray tag [-a tag] [-r tag] path ...
                                                Add (-a) and remove (-r) tags; with neither, list them.
            foray --version | --help
 
-    Queries use Foray's search syntax, for example:  foray search report kind:pdf modified:>2026-01-01
+    Queries use AOK-Foray's search syntax, for example:  foray search report kind:pdf modified:>2026-01-01
     """
 
     let env: Environment

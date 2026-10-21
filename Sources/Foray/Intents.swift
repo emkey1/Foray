@@ -21,22 +21,22 @@ enum ForayIntentError: Error, CustomLocalizedStringResourceConvertible {
 
     var localizedStringResource: LocalizedStringResource {
         switch self {
-        case .notOnDisk: "Foray needs files or folders that are saved on disk."
-        case .noFolder: "The front Foray window isn't showing a folder."
+        case .notOnDisk: "AOK-Foray needs files or folders that are saved on disk."
+        case .noFolder: "The front AOK-Foray window isn't showing a folder."
         case .failed(let message): "\(message)"
         }
     }
 }
 
 struct OpenInForayIntent: AppIntent {
-    static let title: LocalizedStringResource = "Open in Foray"
-    static let description = IntentDescription("Opens folders in Foray. Files are shown selected in their folder.")
+    static let title: LocalizedStringResource = "Open in AOK-Foray"
+    static let description = IntentDescription("Opens folders in AOK-Foray. Files are shown selected in their folder.")
     static let openAppWhenRun = true
 
     @Parameter(title: "Items", supportedContentTypes: [.item, .folder])
     var items: [IntentFile]
 
-    static var parameterSummary: some ParameterSummary { Summary("Open \(\.$items) in Foray") }
+    static var parameterSummary: some ParameterSummary { Summary("Open \(\.$items) in AOK-Foray") }
 
     @MainActor
     func perform() async throws -> some IntentResult {
@@ -46,14 +46,14 @@ struct OpenInForayIntent: AppIntent {
 }
 
 struct RevealInForayIntent: AppIntent {
-    static let title: LocalizedStringResource = "Reveal in Foray"
+    static let title: LocalizedStringResource = "Reveal in AOK-Foray"
     static let description = IntentDescription("Shows files and folders selected in their enclosing folder.")
     static let openAppWhenRun = true
 
     @Parameter(title: "Items", supportedContentTypes: [.item, .folder])
     var items: [IntentFile]
 
-    static var parameterSummary: some ParameterSummary { Summary("Reveal \(\.$items) in Foray") }
+    static var parameterSummary: some ParameterSummary { Summary("Reveal \(\.$items) in AOK-Foray") }
 
     @MainActor
     func perform() async throws -> some IntentResult {
@@ -63,11 +63,11 @@ struct RevealInForayIntent: AppIntent {
 }
 
 struct FindFilesIntent: AppIntent {
-    static let title: LocalizedStringResource = "Find Files with Foray"
+    static let title: LocalizedStringResource = "Find Files with AOK-Foray"
     static let description = IntentDescription(
-        "Searches by name (and optionally contents) using Foray's search syntax, such as “report kind:pdf”, and returns the files found.")
+        "Searches by name (and optionally contents) using AOK-Foray's search syntax, such as “report kind:pdf”, and returns the files found.")
 
-    @Parameter(title: "Search", description: "What to look for, in Foray's search syntax.")
+    @Parameter(title: "Search", description: "What to look for, in AOK-Foray's search syntax.")
     var text: String
 
     @Parameter(title: "Folder", description: "The folder to search, including its subfolders. Leave empty to search the whole Mac.",
@@ -95,11 +95,11 @@ struct FindFilesIntent: AppIntent {
 }
 
 struct ShowSearchIntent: AppIntent {
-    static let title: LocalizedStringResource = "Search in Foray"
-    static let description = IntentDescription("Runs a search in the front Foray window and shows the results.")
+    static let title: LocalizedStringResource = "Search in AOK-Foray"
+    static let description = IntentDescription("Runs a search in the front AOK-Foray window and shows the results.")
     static let openAppWhenRun = true
 
-    @Parameter(title: "Search", description: "What to look for, in Foray's search syntax.")
+    @Parameter(title: "Search", description: "What to look for, in AOK-Foray's search syntax.")
     var text: String
 
     @Parameter(title: "Folder", description: "The folder to search, including its subfolders. Leave empty to search the whole Mac.",
@@ -121,8 +121,8 @@ struct ShowSearchIntent: AppIntent {
 }
 
 struct GetSelectionIntent: AppIntent {
-    static let title: LocalizedStringResource = "Get Selected Files in Foray"
-    static let description = IntentDescription("Returns the items selected in the front Foray window.")
+    static let title: LocalizedStringResource = "Get Selected Files in AOK-Foray"
+    static let description = IntentDescription("Returns the items selected in the front AOK-Foray window.")
 
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<[IntentFile]> {
@@ -131,8 +131,8 @@ struct GetSelectionIntent: AppIntent {
 }
 
 struct GetCurrentFolderIntent: AppIntent {
-    static let title: LocalizedStringResource = "Get Current Folder in Foray"
-    static let description = IntentDescription("Returns the folder shown in the front Foray window.")
+    static let title: LocalizedStringResource = "Get Current Folder in AOK-Foray"
+    static let description = IntentDescription("Returns the folder shown in the front AOK-Foray window.")
 
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<IntentFile> {
@@ -142,8 +142,8 @@ struct GetCurrentFolderIntent: AppIntent {
 }
 
 struct MoveToTrashIntent: AppIntent {
-    static let title: LocalizedStringResource = "Move to Trash with Foray"
-    static let description = IntentDescription("Moves files and folders to the Trash. Foray's Undo and Put Back work as usual.")
+    static let title: LocalizedStringResource = "Move to Trash with AOK-Foray"
+    static let description = IntentDescription("Moves files and folders to the Trash. AOK-Foray's Undo and Put Back work as usual.")
 
     @Parameter(title: "Items", supportedContentTypes: [.item, .folder])
     var items: [IntentFile]

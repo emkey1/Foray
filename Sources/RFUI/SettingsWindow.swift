@@ -117,7 +117,7 @@ final class SettingsPaneModel {
         let alert = NSAlert()
         alert.messageText = "Turn on administrator access?"
         alert.informativeText = """
-        Foray will install a small helper that macOS runs in the background when it's needed. With it, copying,         moving, renaming and deleting in places only an administrator can change (such as the Library folder)         ask for an administrator's name and password and then go ahead, as they do in Finder.
+        AOK-Foray will install a small helper that macOS runs in the background when it's needed. With it, copying,         moving, renaming and deleting in places only an administrator can change (such as the Library folder)         ask for an administrator's name and password and then go ahead, as they do in Finder.
 
         macOS will ask you to allow it in System Settings. Turn this off any time to remove the helper.
         """
@@ -162,14 +162,14 @@ final class SettingsPaneModel {
 
     static func confirmTakeover() -> Bool {
         let alert = NSAlert()
-        alert.messageText = "Use Foray instead of Finder?"
+        alert.messageText = "Use AOK-Foray instead of Finder?"
         alert.informativeText = """
-        Foray will show your desktop icons and Finder's will be hidden (Finder restarts once to do it). \
-        Folders opened from other apps, and “Show in Finder”, will open Foray, and Foray will open at login.
+        AOK-Foray will show your desktop icons and Finder's will be hidden (Finder restarts once to do it). \
+        Folders opened from other apps, and “Show in Finder”, will open AOK-Foray, and AOK-Foray will open at login.
 
         Turn this off any time to put everything back as it was.
         """
-        alert.addButton(withTitle: "Use Foray")
+        alert.addButton(withTitle: "Use AOK-Foray")
         alert.addButton(withTitle: "Cancel")
         return alert.runModal() == .alertFirstButtonReturn
     }
@@ -212,23 +212,23 @@ struct SettingsView: View {
                     Text("Renames the selected item (like Finder)").tag(false)
                     Text("Opens the selected item").tag(true)
                 }
-                Toggle("Use Foray instead of Finder", isOn: Binding(get: { model.insteadOfFinder }, set: { model.setInsteadOfFinder($0) }))
+                Toggle("Use AOK-Foray instead of Finder", isOn: Binding(get: { model.insteadOfFinder }, set: { model.setInsteadOfFinder($0) }))
                 Text(model.insteadOfFinder
-                     ? "Foray shows your desktop, opens folders from other apps and “Show in Finder”, and opens at login. Turn this off to put everything back."
-                     : "Foray shows your desktop instead of Finder (whose desktop icons are hidden), opens folders from other apps and “Show in Finder”, and opens at login. Off until you turn it on; turning it off puts everything back.")
+                     ? "AOK-Foray shows your desktop, opens folders from other apps and “Show in Finder”, and opens at login. Turn this off to put everything back."
+                     : "AOK-Foray shows your desktop instead of Finder (whose desktop icons are hidden), opens folders from other apps and “Show in Finder”, and opens at login. Off until you turn it on; turning it off puts everything back.")
                     .font(.callout).foregroundStyle(.secondary)
                 if model.insteadOfFinder {
                     Toggle("Also quit Finder", isOn: $model.quitFinder)
-                        .help("Finder stays quit while Foray runs. A few system features (some disk and server dialogs, AirDrop's window) start it again.")
+                        .help("Finder stays quit while AOK-Foray runs. A few system features (some disk and server dialogs, AirDrop's window) start it again.")
                 }
                 if let note = model.takeoverNote {
                     Text(note).font(.callout).foregroundStyle(.orange)
                 }
                 Toggle("Check for updates automatically", isOn: $model.checkForUpdates)
-                    .help("Once a day, Foray asks GitHub whether there's a newer release. It never installs without asking.")
-                Toggle("Use Foray for “Show in Finder” in other apps", isOn: $model.fileViewer)
+                    .help("Once a day, AOK-Foray asks GitHub whether there's a newer release. It never installs without asking.")
+                Toggle("Use AOK-Foray for “Show in Finder” in other apps", isOn: $model.fileViewer)
                 Text(model.fileViewer
-                     ? "Other apps reveal files in Foray. This is a system-wide setting; turn it off to go back to Finder."
+                     ? "Other apps reveal files in AOK-Foray. This is a system-wide setting; turn it off to go back to Finder."
                      : "Other apps reveal files in \(model.fileViewerName). Turning this on changes a system-wide setting; Finder stays installed and you can switch back anytime.")
                     .font(.callout).foregroundStyle(.secondary)
             }
@@ -317,7 +317,7 @@ struct SettingsView: View {
                                          set: { model.setAdministratorAccess($0) }))
                         .disabled(model.administratorAccess == .unavailable)
                     Text(model.administratorAccess == .unavailable
-                         ? "Not available in this build of Foray (it has no helper, or isn't signed with a developer certificate)."
+                         ? "Not available in this build of AOK-Foray (it has no helper, or isn't signed with a developer certificate)."
                          : "Copying, moving, renaming and deleting in places only an administrator can change ask for an administrator's name and password, then go ahead. This installs a small helper that macOS runs in the background when needed. Off until you turn it on; turning it off removes the helper.")
                         .font(.callout).foregroundStyle(.secondary)
                     if let note = model.administratorNote {
@@ -344,7 +344,7 @@ public final class SettingsWindowController: NSWindowController {
     private init() {
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 580, height: 520), styleMask: [.titled, .closable],
                               backing: .buffered, defer: true)
-        window.title = "Foray Settings"
+        window.title = "AOK-Foray Settings"
         window.tabbingMode = .disallowed
         super.init(window: window)
         window.contentView = NSHostingView(rootView: SettingsView(model: model))
@@ -369,15 +369,15 @@ public enum Onboarding {
         UserDefaults.standard.set(true, forKey: key)
         guard !FullDiskAccess.isGranted else { return }
         let alert = NSAlert()
-        alert.messageText = "Welcome to Foray"
+        alert.messageText = "Welcome to AOK-Foray"
         alert.informativeText = """
-        macOS will ask before Foray can see your Desktop, Documents, Downloads, external drives and \
+        macOS will ask before AOK-Foray can see your Desktop, Documents, Downloads, external drives and \
         network volumes. Allow these when asked.
 
         A few places (the Trash, Mail, Messages and Safari data, other users' folders) need Full Disk Access, \
-        which you can turn on in System Settings › Privacy & Security › Full Disk Access. Foray works without it.
+        which you can turn on in System Settings › Privacy & Security › Full Disk Access. AOK-Foray works without it.
 
-        The Guide (Help › Foray Guide, or ⌘?) explains everything else.
+        The Guide (Help › AOK-Foray Guide, or ⌘?) explains everything else.
         """
         alert.addButton(withTitle: "Open Privacy Settings")
         alert.addButton(withTitle: "Not Now")

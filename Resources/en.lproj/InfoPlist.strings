@@ -1,0 +1,7 @@
+/* The app's name as people see it: in the menu bar, the Dock, Finder and Spotlight. The file stays
+   Foray.app (and CFBundleName in Info.plist stays "Foray", which must match the file name for
+   macOS to show this name), so permissions, settings, updates and Homebrew carry on unchanged. */
+"CFBundleName" = "AOK-Foray";
+"CFBundleDisplayName" = "AOK-Foray";
+"NSAppleEventsUsageDescription" = "AOK-Foray asks Finder to save the comments you write in Get Info, so Finder shows them too.";
+"NSLocalNetworkUsageDescription" = "AOK-Foray lists file servers on your network in the sidebar, like Finder.";

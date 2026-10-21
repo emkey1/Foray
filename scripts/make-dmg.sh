@@ -71,10 +71,10 @@ if [[ -z ${RF_DMG_DIR:-} && $version != "$source_version" ]]; then
   exit 1
 fi
 if [[ -z ${RF_DMG_DIR:-} ]] && command -v gh >/dev/null && gh release view "v$version" >/dev/null 2>&1; then
-  print -u2 "error: Foray $version is already released on GitHub; not replacing its installer."
+  print -u2 "error: AOK-Foray $version is already released on GitHub; not replacing its installer."
   exit 1
 fi
-volname="Foray $version"
+volname="AOK-Foray $version"
 mount="/Volumes/$volname"
 if [[ -e $mount ]]; then
   # An earlier installer image with the same name (e.g. one opened to look at it): eject it.

@@ -94,7 +94,7 @@ public final class Updater {
     private func check(userInitiated: Bool) async {
         guard !checking else { return }
         guard isUpdatable else {
-            if userInitiated { inform("Updates are for the released Foray", "This is a test build (\(Bundle.main.bundleIdentifier ?? "")); it doesn't update itself.") }
+            if userInitiated { inform("Updates are for the released AOK-Foray", "This is a test build (\(Bundle.main.bundleIdentifier ?? "")); it doesn't update itself.") }
             return
         }
         checking = true
@@ -103,7 +103,7 @@ public final class Updater {
             let latest = try await fetchLatest()
             lastCheck = Date()
             guard let latest, Versions.isNewer(latest.version, than: currentVersion) else {
-                if userInitiated { inform("Foray is up to date", "You have the latest version, \(currentVersion).", offerNotes: true) }
+                if userInitiated { inform("AOK-Foray is up to date", "You have the latest version, \(currentVersion).", offerNotes: true) }
                 return
             }
             if !userInitiated && skipped == latest.version { return }
@@ -124,8 +124,8 @@ public final class Updater {
 
     private func offer(_ release: ReleaseInfo) {
         let alert = NSAlert()
-        alert.messageText = "Foray \(release.version) is available"
-        alert.informativeText = "You have \(currentVersion). Install it now? Foray will relaunch."
+        alert.messageText = "AOK-Foray \(release.version) is available"
+        alert.informativeText = "You have \(currentVersion). Install it now? AOK-Foray will relaunch."
         let notes = NSTextView(frame: NSRect(x: 0, y: 0, width: 420, height: 160))
         notes.string = release.notes
         notes.isEditable = false
@@ -154,7 +154,7 @@ public final class Updater {
 
     private func install(_ release: ReleaseInfo) {
         let target = Bundle.main.bundleURL
-        let panel = ProgressPanel(title: "Updating Foray to \(release.version)…")
+        let panel = ProgressPanel(title: "Updating AOK-Foray to \(release.version)…")
         panel.show()
         Task {
             do {
@@ -166,7 +166,7 @@ public final class Updater {
                 Self.relaunch(target)
             } catch {
                 panel.close()
-                inform("Foray couldn't update", error.localizedDescription + "\n\nYou can download it yourself from \(release.page.absoluteString).")
+                inform("AOK-Foray couldn't update", error.localizedDescription + "\n\nYou can download it yourself from \(release.page.absoluteString).")
             }
         }
     }
@@ -176,10 +176,10 @@ public final class Updater {
     nonisolated static func checkInstallable(_ app: URL) throws {
         let path = app.path
         if path.hasPrefix("/Volumes/") || path.contains("/AppTranslocation/") {
-            throw InstallError(message: "Move Foray to your Applications folder first, then update.")
+            throw InstallError(message: "Move AOK-Foray to your Applications folder first, then update.")
         }
         guard FileManager.default.isWritableFile(atPath: app.deletingLastPathComponent().path) else {
-            throw InstallError(message: "Foray's folder (\(app.deletingLastPathComponent().path)) isn't writable.")
+            throw InstallError(message: "AOK-Foray's folder (\(app.deletingLastPathComponent().path)) isn't writable.")
         }
     }
 
@@ -219,7 +219,7 @@ public final class Updater {
         else { throw InstallError(message: "The download isn't a valid app.") }
         let status = SecStaticCodeCheckValidity(code, SecCSFlags(rawValue: kSecCSCheckAllArchitectures | kSecCSStrictValidate), req)
         guard status == errSecSuccess else {
-            throw InstallError(message: "The download isn't signed by Foray's developer (\(status)), so it wasn't installed.")
+            throw InstallError(message: "The download isn't signed by AOK-Foray's developer (\(status)), so it wasn't installed.")
         }
         guard run("/usr/sbin/spctl", ["--assess", "--type", "execute", app.path]) == 0 else {
             throw InstallError(message: "The download isn't notarized by Apple, so it wasn't installed.")
@@ -243,7 +243,7 @@ public final class Updater {
         p.executableURL = URL(fileURLWithPath: "/bin/sh")
         p.arguments = ["-c", "while kill -0 \(getpid()) 2>/dev/null; do sleep 0.2; done; /usr/bin/open \"$0\"", app.path]
         try? p.run()
-        FinderTakeover.isRelaunchingForUpdate = true   // no "Quit Foray?" question in the way
+        FinderTakeover.isRelaunchingForUpdate = true   // no "Quit AOK-Foray?" question in the way
         NSApp.terminate(nil)
     }
 }

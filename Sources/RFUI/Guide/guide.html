@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Foray Guide</title>
+<title>AOK-Foray Guide</title>
 <style>
   :root {
     color-scheme: light dark;
@@ -46,7 +46,7 @@
 </head>
 <body>
 <nav>
-  <div class="title">Foray Guide</div>
+  <div class="title">AOK-Foray Guide</div>
   <a href="#start">Getting around</a>
   <a href="#views">Views</a>
   <a href="#sorting">Sorting and grouping</a>
@@ -68,11 +68,11 @@
 </nav>
 <main>
 
-<h1>Foray Guide</h1>
+<h1>AOK-Foray Guide</h1>
 <p class="lede">A file browser for macOS that keeps Finder's habits and fixes its annoyances.</p>
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="images/1-icons-dark.webp">
-  <img class="shot" src="images/1-icons-light.webp" alt="A Foray window in icon view: the sidebar, a folder of pictures with tag dots, the path bar and the status bar.">
+  <img class="shot" src="images/1-icons-light.webp" alt="A AOK-Foray window in icon view: the sidebar, a folder of pictures with tag dots, the path bar and the status bar.">
 </picture>
 
 <h2 id="start">Getting around</h2>
@@ -81,8 +81,8 @@
   <li><b>Sidebar.</b> Favorites and Locations (your disks, with eject buttons). Click to go there. Drag folders onto the sidebar to add them; drag a favorite out, or right-click it, to remove it.</li>
   <li><b>Recents</b> (top of the sidebar, or <kbd>⇧⌘F</kbd>) lists files you've opened in the last 30 days, newest first, with when you last opened each and where it is. Folders, apps and files in your Library are left out, like Finder. It updates as you open things.</li>
   <li><b>Cloud.</b> iCloud Drive and services such as Dropbox, Google Drive and OneDrive appear in the sidebar's Cloud section. A small cloud next to an item means it isn't downloaded yet; opening it downloads it. Right-click for <b>Download Now</b> (whole folders too) or <b>Remove Download</b>, which frees the space but keeps the item in the cloud. Previews never download anything.</li>
-  <li><b>Servers.</b> <b>Go › Connect to Server…</b> <kbd>⌘K</kbd>: type an address (just “server/share” means SMB; afp://, nfs:// and https:// for WebDAV work too). macOS asks for the name and password itself and can keep them in your Keychain; Foray never sees them. Keep favorite servers with <b>+</b>; recent ones are listed too. The sidebar's <b>Network</b> section is always there: it lists the file servers Foray finds on your network (macOS asks once whether Foray may look), then your favorite and recent servers, then <b>Connect to Server…</b>. Click one to connect. Foray finds Macs and NAS units that announce themselves, and Windows-style servers such as a Linux machine running Samba (shown with a PC icon, as in Finder; it looks for those every minute or two). If yours still isn't listed, connect to it once by address and it stays in the list. If macOS's Local Network permission for Foray is off, the section says so and takes you to the setting.</li>
-  <li><b>Ejecting.</b> Click a disk's eject button, or select it (in Computer, <kbd>⇧⌘C</kbd>) and press <kbd>⌘E</kbd>. If something has files open on it, Foray says which apps, so you can quit them, or you can <b>Force Eject</b> (unsaved changes in those apps may be lost). If the disk has other volumes too, Foray asks whether to eject them all or unmount just that one. <b>Eject All</b> <kbd>⌥⌘E</kbd> (File menu, or right-click a disk in the sidebar) ejects every removable disk and network volume. Tabs that were showing a disk go to Computer.</li>
+  <li><b>Servers.</b> <b>Go › Connect to Server…</b> <kbd>⌘K</kbd>: type an address (just “server/share” means SMB; afp://, nfs:// and https:// for WebDAV work too). macOS asks for the name and password itself and can keep them in your Keychain; AOK-Foray never sees them. Keep favorite servers with <b>+</b>; recent ones are listed too. The sidebar's <b>Network</b> section is always there: it lists the file servers AOK-Foray finds on your network (macOS asks once whether AOK-Foray may look), then your favorite and recent servers, then <b>Connect to Server…</b>. Click one to connect. AOK-Foray finds Macs and NAS units that announce themselves, and Windows-style servers such as a Linux machine running Samba (shown with a PC icon, as in Finder; it looks for those every minute or two). If yours still isn't listed, connect to it once by address and it stays in the list. If macOS's Local Network permission for AOK-Foray is off, the section says so and takes you to the setting.</li>
+  <li><b>Ejecting.</b> Click a disk's eject button, or select it (in Computer, <kbd>⇧⌘C</kbd>) and press <kbd>⌘E</kbd>. If something has files open on it, AOK-Foray says which apps, so you can quit them, or you can <b>Force Eject</b> (unsaved changes in those apps may be lost). If the disk has other volumes too, AOK-Foray asks whether to eject them all or unmount just that one. <b>Eject All</b> <kbd>⌥⌘E</kbd> (File menu, or right-click a disk in the sidebar) ejects every removable disk and network volume. Tabs that were showing a disk go to Computer.</li>
   <li><b>Back and Forward.</b> <kbd>⌘[</kbd> and <kbd>⌘]</kbd>. Going back selects the item you had selected.</li>
   <li><b>Enclosing folder.</b> <kbd>⌘↑</kbd> goes up one level and selects the folder you came from. <kbd>⌘↓</kbd> opens the selection.</li>
   <li><b>Path bar.</b> Click any folder in the path bar at the bottom to go there.</li>
@@ -116,13 +116,13 @@
   <li><b>Empty values go last</b> in both directions, e.g. folders when sorting by size.</li>
   <li><b>Group By</b> Kind, Date Modified, Date Created, Date Added or Size. Sorting applies within each group.</li>
   <li><b>Keep Folders on Top</b> works in every view.</li>
-  <li><b>Arrange icons yourself:</b> in icon view choose <b>Sort By › None</b>. Icons stay where they are, and you can drag them anywhere; Foray remembers where for each folder. New items fill the first free spots, and items dropped in from elsewhere land where you drop them. <b>View › Clean Up</b> lines them up on the grid. Choose any other sort to go back to automatic order.</li>
+  <li><b>Arrange icons yourself:</b> in icon view choose <b>Sort By › None</b>. Icons stay where they are, and you can drag them anywhere; AOK-Foray remembers where for each folder. New items fill the first free spots, and items dropped in from elsewhere land where you drop them. <b>View › Clean Up</b> lines them up on the grid. Choose any other sort to go back to automatic order.</li>
   <li><b>Filter by Kind</b> shows only certain kinds of files in the current folder, e.g. only images. Choose <b>All Kinds</b> to show everything again.</li>
   <li><b>Hidden files.</b> <kbd>⇧⌘.</kbd> shows or hides them.</li>
 </ul>
 
 <h2 id="settings">Which settings apply where</h2>
-<p>Finder remembers view settings per folder in a way that's hard to predict. Foray keeps it simple:</p>
+<p>Finder remembers view settings per folder in a way that's hard to predict. AOK-Foray keeps it simple:</p>
 <ul>
   <li>By default, your view, sort order, grouping and filters are <b>the same in every folder</b>. Change them anywhere and they apply everywhere.</li>
   <li>To give a folder its own settings, choose <b>View › Remember Settings for This Folder</b>. Choose it again to forget them. These survive renaming or moving the folder.</li>
@@ -130,12 +130,12 @@
 </ul>
 
 <h2 id="prefs">Preferences</h2>
-<p><b>Foray › Settings…</b> (<kbd>⌘,</kbd>):</p>
+<p><b>AOK-Foray › Settings…</b> (<kbd>⌘,</kbd>):</p>
 <ul>
-  <li><b>General:</b> the folder new windows open on (Home unless you choose another); whether folders you open with <kbd>⌘</kbd>-double-click open in tabs or windows; whether <kbd>Return</kbd> renames (like Finder) or opens the selection; <b>Use Foray instead of Finder</b> (off until you turn it on: Foray shows your desktop icons and Finder's are hidden, folders opened from other apps and “Show in Finder” open Foray, and Foray opens at login; <b>Also quit Finder</b> keeps Finder quit while Foray runs; turning it off puts everything back as it was, and quitting Foray while it's on asks first, since your desktop icons go with it); <b>Check for updates automatically</b> (once a day Foray asks GitHub whether there's a newer release, and offers it; it downloads and installs only when you say so, after checking the new version is signed by Foray's developer and notarized by Apple; Foray › Check for Updates… checks any time, and <b>Help › Release Notes</b> shows what changed in each version); and <b>Use Foray for “Show in Finder” in other apps</b>, which makes other apps' “Show in Finder” (and “Reveal in Finder”) open Foray with the file selected. That last one is a system-wide setting; turn it off to go back to Finder.</li>
+  <li><b>General:</b> the folder new windows open on (Home unless you choose another); whether folders you open with <kbd>⌘</kbd>-double-click open in tabs or windows; whether <kbd>Return</kbd> renames (like Finder) or opens the selection; <b>Use AOK-Foray instead of Finder</b> (off until you turn it on: AOK-Foray shows your desktop icons and Finder's are hidden, folders opened from other apps and “Show in Finder” open AOK-Foray, and AOK-Foray opens at login; <b>Also quit Finder</b> keeps Finder quit while AOK-Foray runs; turning it off puts everything back as it was, and quitting AOK-Foray while it's on asks first, since your desktop icons go with it); <b>Check for updates automatically</b> (once a day AOK-Foray asks GitHub whether there's a newer release, and offers it; it downloads and installs only when you say so, after checking the new version is signed by AOK-Foray's developer and notarized by Apple; AOK-Foray › Check for Updates… checks any time, and <b>Help › Release Notes</b> shows what changed in each version); and <b>Use AOK-Foray for “Show in Finder” in other apps</b>, which makes other apps' “Show in Finder” (and “Reveal in Finder”) open AOK-Foray with the file selected. That last one is a system-wide setting; turn it off to go back to Finder.</li>
   <li><b>Views:</b> view settings the same everywhere, or remembered for each folder (see <a href="#settings">above</a>).</li>
   <li><b>Search:</b> where searches start (the current folder, This Mac, or whatever you used last), whether they match names or names and contents, and whether a search follows you to other folders.</li>
-  <li><b>Privacy:</b> whether Foray has Full Disk Access, with a button to the right page of System Settings.</li>
+  <li><b>Privacy:</b> whether AOK-Foray has Full Disk Access, with a button to the right page of System Settings.</li>
   <li><b>Advanced:</b> installing the <a href="#terminal"><code>foray</code> command</a> for Terminal, and <a href="#admin">administrator access</a> (off until you turn it on).</li>
 </ul>
 <p><b>View › Customize Toolbar…</b> (or right-click the toolbar) adds buttons for Get Info, the Inspector, Share, Move to Trash, New Folder, Quick Look, Tags, Eject, Copy Path and Connect to Server, and lets you rearrange or remove the rest.</p>
@@ -163,7 +163,7 @@
   <li><b>Recent searches:</b> click the magnifying glass in the search field for your last 12 searches (each remembers where it searched). Choose one to run it again. Searches are saved when you leave them, not while you type.</li>
   <li><b>Nothing runs by itself at launch.</b> Tabs that were showing search results reopen on the folder you searched, with the search in the field, and your most recent search is filled in when there's nothing else. Press <kbd>Return</kbd> to run it.</li>
   <li><b>Filters…</b> in the search bar shows the search's filters in plain words (“Size is larger than 5 MB”, “Modified within the last 7 days”), lets you remove any of them, and builds new ones from menus: kind, name, extension, size, dates, last opened, tag, contents, hidden files. It edits the text in the search field, so you can mix clicking and typing.</li>
-  <li><b>Smart folders.</b> <b>Save…</b> in the search bar (or File › Save Search… <kbd>⌘S</kbd>) keeps a search as a smart folder, in your Saved Searches folder and, if you like, in the sidebar. It finds new matches each time you open it. Smart folders made in Finder open here too; they run Finder's own query, so only where they look can be changed. Finder can open the ones Foray saves. Searches using regular expressions can't be saved, since Spotlight can't run them.</li>
+  <li><b>Smart folders.</b> <b>Save…</b> in the search bar (or File › Save Search… <kbd>⌘S</kbd>) keeps a search as a smart folder, in your Saved Searches folder and, if you like, in the sidebar. It finds new matches each time you open it. Smart folders made in Finder open here too; they run Finder's own query, so only where they look can be changed. Finder can open the ones AOK-Foray saves. Searches using regular expressions can't be saved, since Spotlight can't run them.</li>
   <li><b>Finds what Spotlight misses.</b> Folder searches use Spotlight for quick first results and also scan the folder directly, so unindexed drives, network shares and (with <code>hidden:yes</code>) hidden files are found too.</li>
 </ul>
 <p class="note">Big folders take a while to scan completely (for example ~20 seconds for a home folder with 200,000 folders). Results appear as they're found, and the status bar shows progress.</p>
@@ -215,12 +215,12 @@
 <h2 id="files">Opening and previewing</h2>
 <ul>
   <li><b>Open</b> with a double-click, <kbd>⌘O</kbd> or <kbd>⌘↓</kbd>. <kbd>⌘</kbd>-double-click a folder to open it in a new tab.</li>
-  <li><b>Disk images</b> (.dmg and the like): opening one mounts it, and Foray shows the new disk as soon as it's ready (in a tab or a window, as you've set for folders). Open it again later and Foray goes back to the disk. While Foray stands in for Finder, disk images you open from other apps, such as a download in Safari, get a Foray window too. Eject it from the sidebar when you're done.</li>
+  <li><b>Disk images</b> (.dmg and the like): opening one mounts it, and AOK-Foray shows the new disk as soon as it's ready (in a tab or a window, as you've set for folders). Open it again later and AOK-Foray goes back to the disk. While AOK-Foray stands in for Finder, disk images you open from other apps, such as a download in Safari, get a AOK-Foray window too. Eject it from the sidebar when you're done.</li>
   <li><b>Quick Look:</b> <kbd>Space</kbd> or <kbd>⌘Y</kbd>. Arrow keys move through the selection while it's open.</li>
   <li><b>Right-click</b> (or <kbd>Control</kbd>-click) an item for Open With, Show Package Contents (for apps and bundles), Copy Path, and Quick Look. <b>Right-click empty space</b>, in any view, for the folder's own menu: New Folder, New Text File, Paste, Show Hidden Files, Sort By and Show View Options.</li>
   <li><b>Open With</b> lists the apps that can open the item, the default first. <b>Other…</b> lets you pick any app, and can make it the default for that kind of file. Hold <kbd>⌥</kbd> in the menu for <b>Always Open With</b>, which opens the item and makes that app the default for all files of its kind.</li>
   <li><b>Copy Path:</b> <kbd>⌥⌘C</kbd> copies the selected items' paths.</li>
-  <li><b>Get Info:</b> <kbd>⌘I</kbd> opens a window per selected item (or the current folder): kind, size (folders are totaled), dates, details such as dimensions or duration, tags, comments, the app it opens with, and permissions. You can change the name, <b>Locked</b>, <b>Hide extension</b>, the comment, and (for your own items) who can read and write it. <b>Stationery pad</b> (files) makes opening the file open a fresh copy, so the original stays a template. Under <b>Sharing &amp; Permissions</b>, <b>Add People…</b> gives other users or groups Read &amp; Write, Read only or Write only access (an access list), and for folders <b>Apply to Enclosed Items…</b> gives everything inside the same permissions. These changes can be undone. Right-click the icon at the top to copy it, paste an image as the item's icon, or remove a custom icon; dropping an image file on it works too. <b>Show Inspector</b> <kbd>⌥⌘I</kbd> is one Get Info panel that follows the selection; with several items selected it totals their size and counts their kinds. The first time you save a comment, macOS asks whether Foray may control Finder: allowing it lets Finder show the comment too.</li>
+  <li><b>Get Info:</b> <kbd>⌘I</kbd> opens a window per selected item (or the current folder): kind, size (folders are totaled), dates, details such as dimensions or duration, tags, comments, the app it opens with, and permissions. You can change the name, <b>Locked</b>, <b>Hide extension</b>, the comment, and (for your own items) who can read and write it. <b>Stationery pad</b> (files) makes opening the file open a fresh copy, so the original stays a template. Under <b>Sharing &amp; Permissions</b>, <b>Add People…</b> gives other users or groups Read &amp; Write, Read only or Write only access (an access list), and for folders <b>Apply to Enclosed Items…</b> gives everything inside the same permissions. These changes can be undone. Right-click the icon at the top to copy it, paste an image as the item's icon, or remove a custom icon; dropping an image file on it works too. <b>Show Inspector</b> <kbd>⌥⌘I</kbd> is one Get Info panel that follows the selection; with several items selected it totals their size and counts their kinds. The first time you save a comment, macOS asks whether AOK-Foray may control Finder: allowing it lets Finder show the comment too.</li>
   <li><b>Type to select:</b> start typing a name to jump to it.</li>
 </ul>
 
@@ -233,14 +233,14 @@
   <li><b>New Folder</b> <kbd>⇧⌘N</kbd> (then name it), <b>New Folder with Selection</b> <kbd>⌃⌘N</kbd>, <b>Duplicate</b> <kbd>⌘D</kbd>.</li>
   <li><b>New Text File</b> (File menu, or right-click empty space) makes an empty “untitled.txt” ready to rename.</li>
   <li><b>Move to Trash</b> <kbd>⌘⌫</kbd>, or drag items onto <b>Trash</b> in the sidebar. <b>Delete Immediately</b> <kbd>⌥⌘⌫</kbd> asks first and can't be undone.</li>
-  <li><b>The Trash</b> (in the sidebar, under Locations) shows everything you've trashed, from every disk. Select items and press <kbd>⌘⌫</kbd> (or right-click › <b>Put Back</b>) to return them where they came from; if their folder is gone, it's recreated. Put Back works for things Finder trashed too. If Foray can't tell where something came from, it asks for a folder.</li>
-  <li><b>Empty Trash</b>: the <b>Empty…</b> button at the top of the Trash, or <b>Foray › Empty Trash…</b> <kbd>⇧⌘⌫</kbd>. It asks first (hold <kbd>⌥</kbd> to skip the question) and can't be undone. Seeing and emptying the Trash need Full Disk Access.</li>
+  <li><b>The Trash</b> (in the sidebar, under Locations) shows everything you've trashed, from every disk. Select items and press <kbd>⌘⌫</kbd> (or right-click › <b>Put Back</b>) to return them where they came from; if their folder is gone, it's recreated. Put Back works for things Finder trashed too. If AOK-Foray can't tell where something came from, it asks for a folder.</li>
+  <li><b>Empty Trash</b>: the <b>Empty…</b> button at the top of the Trash, or <b>AOK-Foray › Empty Trash…</b> <kbd>⇧⌘⌫</kbd>. It asks first (hold <kbd>⌥</kbd> to skip the question) and can't be undone. Seeing and emptying the Trash need Full Disk Access.</li>
   <li><b>Rename many at once:</b> select several items and choose <b>Rename N Items…</b> (File menu, right-click, or <kbd>Return</kbd>). <b>Replace Text</b> (optionally a regular expression, with <code>$1</code> for groups), <b>Add Text</b> before or after, <b>Format</b> (“Beach 1”, “00001 Beach”, or the date modified) and <b>Change Case</b>. The preview shows every new name and flags clashes before anything changes. Extensions are left alone unless you include them. One Undo puts every name back.</li>
-  <li><b>Make Alias</b> <kbd>⌃⌘A</kbd> puts “name alias” next to the item. Aliases keep working when the original moves. Opening a folder alias opens the folder here. <b>Show Original</b> <kbd>⌘R</kbd> goes to the original. If the original is gone, Foray offers <b>Fix Alias…</b> to point it somewhere new.</li>
+  <li><b>Make Alias</b> <kbd>⌃⌘A</kbd> puts “name alias” next to the item. Aliases keep working when the original moves. Opening a folder alias opens the folder here. <b>Show Original</b> <kbd>⌘R</kbd> goes to the original. If the original is gone, AOK-Foray offers <b>Fix Alias…</b> to point it somewhere new.</li>
   <li><b>Compress</b> (File menu or right-click) makes “name.zip”, or “Archive.zip” for several items, the same zip Finder makes. <b>Expand</b> unpacks a .zip next to itself: a single item lands beside it; several go into a folder named after the archive.</li>
   <li><b>Spring-loaded folders:</b> while dragging, pause over a folder (in the list, icons or sidebar) and it opens, so you can drop deep inside without letting go.</li>
   <li><b>Drag in from other apps:</b> attachments from Mail, photos from Photos and images from Safari can be dropped into any folder.</li>
-  <li><b>Services</b> (Foray › Services) work on the selected files, like in Finder.</li>
+  <li><b>Services</b> (AOK-Foray › Services) work on the selected files, like in Finder.</li>
   <li><b>Quick Actions</b> (right-click, File › Quick Actions, gallery view, or toolbar buttons you can add): <b>Rotate Left</b> <kbd>⌃⌘L</kbd> and <b>Rotate Right</b> <kbd>⌃⌘R</kbd> for images and PDFs (photos are turned without losing quality), <b>Markup</b> to draw, type or sign on an image or PDF with macOS's editor, and <b>Create PDF</b> to combine the selected images and PDFs, in order, into one PDF. Rotating and Create PDF can be undone; if Markup saves an edited copy, the original goes to the Trash.</li>
   <li><b>Share…</b> (right-click or File menu) sends the selection with AirDrop, Mail, Messages and so on.</li>
   <li><b>Undo</b> <kbd>⌘Z</kbd> and <b>Redo</b> <kbd>⇧⌘Z</kbd> work for everything except Delete Immediately, across all windows.</li>
@@ -272,7 +272,7 @@
 </ul>
 
 <h2 id="keys">Keyboard shortcuts</h2>
-<p>Foray uses Finder's shortcuts. Every command is in the menu bar, so you can change any shortcut in System Settings › Keyboard › Keyboard Shortcuts › App Shortcuts.</p>
+<p>AOK-Foray uses Finder's shortcuts. Every command is in the menu bar, so you can change any shortcut in System Settings › Keyboard › Keyboard Shortcuts › App Shortcuts.</p>
 <table>
   <tr><th>Shortcut</th><th>Action</th></tr>
   <tr><td><kbd>⌘N</kbd> / <kbd>⌘T</kbd></td><td>New window / new tab</td></tr>
@@ -306,38 +306,38 @@
 </table>
 
 <h2 id="access">Privacy and access</h2>
-<p>macOS asks before any app reads Desktop, Documents, Downloads, external drives and network volumes; allow Foray when asked. Some places (Mail, Messages and Safari data, other users' folders, the Trash) need <b>Full Disk Access</b>: System Settings › Privacy &amp; Security › Full Disk Access, then add Foray. <b>Settings › Privacy</b> shows whether it's on and opens that page for you. If a folder won't open because of permissions, the message says so.</p>
+<p>macOS asks before any app reads Desktop, Documents, Downloads, external drives and network volumes; allow AOK-Foray when asked. Some places (Mail, Messages and Safari data, other users' folders, the Trash) need <b>Full Disk Access</b>: System Settings › Privacy &amp; Security › Full Disk Access, then add AOK-Foray. <b>Settings › Privacy</b> shows whether it's on and opens that page for you. If a folder won't open because of permissions, the message says so.</p>
 
 <h2 id="desktop">The desktop</h2>
-<p>With <b>Use Foray instead of Finder</b> on (Settings › General), Foray draws your desktop: the files in your Desktop folder, over your wallpaper, behind every window. Open, rename, drag, Quick Look, Get Info and the right-click menu work as in any Foray window; opening a folder opens a Foray window. Icons stay where you put them and snap to a grid (View Options changes that while the desktop is selected). Disks aren't shown on the desktop; they're in the sidebar.</p>
-<p>If Foray isn't running, the desktop is empty until it opens again. To give the desktop back to Finder without Foray, run <code>defaults delete com.apple.finder CreateDesktop; killall Finder</code> in Terminal.</p>
+<p>With <b>Use AOK-Foray instead of Finder</b> on (Settings › General), AOK-Foray draws your desktop: the files in your Desktop folder, over your wallpaper, behind every window. Open, rename, drag, Quick Look, Get Info and the right-click menu work as in any AOK-Foray window; opening a folder opens a AOK-Foray window. Icons stay where you put them and snap to a grid (View Options changes that while the desktop is selected). Disks aren't shown on the desktop; they're in the sidebar.</p>
+<p>If AOK-Foray isn't running, the desktop is empty until it opens again. To give the desktop back to Finder without AOK-Foray, run <code>defaults delete com.apple.finder CreateDesktop; killall Finder</code> in Terminal.</p>
 
 <h2 id="admin">Administrator access</h2>
-<p>Some folders (the Library folder at the top of your disk, other users' folders) can only be changed by an administrator. Finder asks for a password there; so can Foray, once you turn it on: <b>Settings › Advanced › Allow operations that need an administrator</b>. It's off until you do.</p>
+<p>Some folders (the Library folder at the top of your disk, other users' folders) can only be changed by an administrator. Finder asks for a password there; so can AOK-Foray, once you turn it on: <b>Settings › Advanced › Allow operations that need an administrator</b>. It's off until you do.</p>
 <ul>
-  <li><b>What turning it on does.</b> Foray registers a small helper with macOS, which asks you to allow it in System Settings › General › Login Items &amp; Extensions. The helper only runs when it's needed and quits when it's done.</li>
-  <li><b>How it works afterwards.</b> When copying, moving, renaming, deleting, trashing, making a folder or changing permissions fails for lack of permission, macOS asks for an administrator's name and password, saying which operation it's for, and Foray carries on. You're asked once per operation, however many items it covers. Cancel, and you get the usual list of what couldn't be done.</li>
+  <li><b>What turning it on does.</b> AOK-Foray registers a small helper with macOS, which asks you to allow it in System Settings › General › Login Items &amp; Extensions. The helper only runs when it's needed and quits when it's done.</li>
+  <li><b>How it works afterwards.</b> When copying, moving, renaming, deleting, trashing, making a folder or changing permissions fails for lack of permission, macOS asks for an administrator's name and password, saying which operation it's for, and AOK-Foray carries on. You're asked once per operation, however many items it covers. Cancel, and you get the usual list of what couldn't be done.</li>
   <li><b>What you copy stays yours.</b> Copies and new folders made this way belong to you, as with Finder.</li>
   <li><b>What it can't do.</b> Locked items must be unlocked first (Get Info), and macOS protects its own system files even from administrators.</li>
-  <li><b>How it's kept safe.</b> The helper accepts requests only from Foray itself (macOS checks the app's signature), only with an administrator's approval for that operation, and only for those file operations on the exact items involved. It never runs commands.</li>
+  <li><b>How it's kept safe.</b> The helper accepts requests only from AOK-Foray itself (macOS checks the app's signature), only with an administrator's approval for that operation, and only for those file operations on the exact items involved. It never runs commands.</li>
   <li><b>Turning it off</b> removes the helper.</li>
 </ul>
 
 <h2 id="terminal">The foray command</h2>
-<p>Foray includes a command for Terminal. <b>Settings › Advanced › Install</b> links it into <code>/usr/local/bin</code>; if you installed Foray with Homebrew it's already there.</p>
+<p>AOK-Foray includes a command for Terminal. <b>Settings › Advanced › Install</b> links it into <code>/usr/local/bin</code>; if you installed AOK-Foray with Homebrew it's already there.</p>
 <table>
   <tr><th>Command</th><th>What it does</th></tr>
-  <tr><td><code>foray</code> &nbsp; <code>foray ~/Projects</code></td><td>Opens the current folder, or the folders you name, in Foray. A file is shown selected in its folder.</td></tr>
+  <tr><td><code>foray</code> &nbsp; <code>foray ~/Projects</code></td><td>Opens the current folder, or the folders you name, in AOK-Foray. A file is shown selected in its folder.</td></tr>
   <tr><td><code>foray reveal notes.txt</code></td><td>Shows items (folders too) selected in their enclosing folder.</td></tr>
   <tr><td><code>foray search report kind:pdf</code></td><td>Prints the paths of matches under the current folder, using the same <a href="#syntax">search filters</a> as the search field.</td></tr>
   <tr><td><code>foray trash old.log</code></td><td>Moves items to the Trash (Put Back works).</td></tr>
   <tr><td><code>foray tag -a Work -r Urgent a.txt</code></td><td>Adds and removes tags; with neither, lists them.</td></tr>
 </table>
-<p>Options for <code>search</code>: <code>--in <i>folder</i></code> searches somewhere else and <code>--mac</code> the whole Mac; <code>--contents</code> also matches text inside files; <code>--limit <i>n</i></code> stops early; <code>--print0</code> separates paths for <code>xargs -0</code>; <code>--open</code> shows the search in Foray instead of printing. Like <code>grep</code>, it exits with 1 when nothing matches. <code>foray --help</code> lists everything.</p>
+<p>Options for <code>search</code>: <code>--in <i>folder</i></code> searches somewhere else and <code>--mac</code> the whole Mac; <code>--contents</code> also matches text inside files; <code>--limit <i>n</i></code> stops early; <code>--print0</code> separates paths for <code>xargs -0</code>; <code>--open</code> shows the search in AOK-Foray instead of printing. Like <code>grep</code>, it exits with 1 when nothing matches. <code>foray --help</code> lists everything.</p>
 
 <h2 id="scripting">AppleScript and Shortcuts</h2>
-<p><b>Shortcuts.</b> The Shortcuts app lists Foray's actions under Foray: <b>Open in Foray</b>, <b>Reveal in Foray</b>, <b>Find Files with Foray</b> (returns the files, for the next action to use), <b>Search in Foray</b> (shows the results in a window), <b>Get Selected Files in Foray</b>, <b>Get Current Folder in Foray</b> and <b>Move to Trash with Foray</b>.</p>
-<p><b>AppleScript.</b> Open Foray's dictionary in Script Editor (File › Open Dictionary…) to see everything. In short:</p>
+<p><b>Shortcuts.</b> The Shortcuts app lists AOK-Foray's actions under AOK-Foray: <b>Open in AOK-Foray</b>, <b>Reveal in AOK-Foray</b>, <b>Find Files with AOK-Foray</b> (returns the files, for the next action to use), <b>Search in AOK-Foray</b> (shows the results in a window), <b>Get Selected Files in AOK-Foray</b>, <b>Get Current Folder in AOK-Foray</b> and <b>Move to Trash with AOK-Foray</b>.</p>
+<p><b>AppleScript.</b> Open AOK-Foray's dictionary in Script Editor (File › Open Dictionary…) to see everything. In short: Scripts call it by its file name, <code>"Foray"</code>, as in the examples below.</p>
 <pre><code>tell application "Foray"
     set current folder to POSIX file "/Users/me/Projects"
     set found to find "report kind:pdf" in (path to documents folder)
@@ -347,8 +347,8 @@
     trash {POSIX file "/Users/me/Desktop/old.txt"}
     set dual pane to true
 end tell</code></pre>
-<p><code>current folder</code> and <code>selection</code> belong to the front window (its active pane). <code>find</code> returns files without showing anything; <code>search</code> shows the results. <code>trash</code> goes through Foray, so Undo and Put Back work.</p>
-<p><b>Links.</b> <code>foray://open?path=…</code>, <code>foray://reveal?path=…</code> and <code>foray://search?q=…&amp;in=…</code> open Foray from anything that can open a link.</p>
+<p><code>current folder</code> and <code>selection</code> belong to the front window (its active pane). <code>find</code> returns files without showing anything; <code>search</code> shows the results. <code>trash</code> goes through AOK-Foray, so Undo and Put Back work.</p>
+<p><b>Links.</b> <code>foray://open?path=…</code>, <code>foray://reveal?path=…</code> and <code>foray://search?q=…&amp;in=…</code> open AOK-Foray from anything that can open a link.</p>
 
 </main>
 </body>

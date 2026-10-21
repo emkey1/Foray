@@ -143,7 +143,7 @@ enum MainMenu {
 
     private static func fileMenu(_ target: AppDelegate) -> NSMenu {
         let menu = NSMenu(title: "File")
-        let newWindow = item("New Foray Window", #selector(AppDelegate.newBrowserWindow(_:)), "n")
+        let newWindow = item("New AOK-Foray Window", #selector(AppDelegate.newBrowserWindow(_:)), "n")
         newWindow.target = target
         menu.addItem(newWindow)
         let newTab = item("New Tab", #selector(AppDelegate.newBrowserTab(_:)), "t")
@@ -262,7 +262,7 @@ enum MainMenu {
     private static func helpMenu(_ target: AppDelegate) -> NSMenu {
         // Not titled "Help": AppKit also looks for a menu by that title to add its search field to.
         let menu = NSMenu(title: "Help\u{200B}")
-        let guide = item("Foray Guide", #selector(AppDelegate.showGuide(_:)), "?")
+        let guide = item("AOK-Foray Guide", #selector(AppDelegate.showGuide(_:)), "?")
         guide.target = target
         menu.addItem(guide)
         for (title, section) in [("Searching", "search"), ("Search Filters", "syntax"), ("Keyboard Shortcuts", "keys")] {
@@ -288,8 +288,8 @@ enum MainMenu {
     }
 }
 
-/// "Foray", or "Foray Dev" for test builds.
-let appName = Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String ?? "Foray"
+/// "AOK-Foray", or "AOK-Foray Dev" for test builds (the localized name; the file is Foray.app).
+let appName = Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String ?? "AOK-Foray"
 
 LegacyMigration.run()   // before anything reads preferences
 let app = NSApplication.shared

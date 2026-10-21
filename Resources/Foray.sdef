@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE dictionary SYSTEM "file://localhost/System/Library/DTDs/sdef.dtd">
-<dictionary title="Foray Terminology">
+<dictionary title="AOK-Foray Terminology">
 
 	<suite name="Standard Suite" code="????" description="Common classes and commands for all applications.">
-		<command name="open" code="aevtodoc" description="Open folders in Foray; files are shown selected in their folder.">
+		<command name="open" code="aevtodoc" description="Open folders in AOK-Foray; files are shown selected in their folder.">
 			<direct-parameter description="The file(s) to be opened.">
 				<type type="file" />
 				<type type="file" list="yes" />
@@ -90,7 +90,7 @@
 		</class>
 	</suite>
 
-	<suite name="Foray Suite" code="Fray" description="Browsing, selecting and searching files in Foray.">
+	<suite name="AOK-Foray Suite" code="Fray" description="Browsing, selecting and searching files in AOK-Foray.">
 
 		<class-extension extends="application">
 			<property name="current folder" code="Fcfd" description="The folder shown in the front window (its active pane). Set it to go there.">
@@ -113,7 +113,7 @@
 			</direct-parameter>
 		</command>
 
-		<command name="search" code="Fraysrch" description="Search in the front window, using Foray's search syntax (for example “report kind:pdf”).">
+		<command name="search" code="Fraysrch" description="Search in the front window, using AOK-Foray's search syntax (for example “report kind:pdf”).">
 			<cocoa class="ForaySearchCommand"/>
 			<direct-parameter type="text" description="What to search for."/>
 			<parameter name="in" code="Finf" type="file" optional="yes" description="The folder to search, including its subfolders. Without it, the whole Mac.">
@@ -126,7 +126,7 @@
 
 		<command name="find" code="Frayfind" description="Search without showing a window, and return the items found.">
 			<cocoa class="ForayFindCommand"/>
-			<direct-parameter type="text" description="What to search for, in Foray's search syntax."/>
+			<direct-parameter type="text" description="What to search for, in AOK-Foray's search syntax."/>
 			<parameter name="in" code="Finf" type="file" optional="yes" description="The folder to search, including its subfolders. Without it, the whole Mac.">
 				<cocoa key="folder"/>
 			</parameter>

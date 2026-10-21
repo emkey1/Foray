@@ -29,6 +29,8 @@ case ${minimum%%.*} in
 esac
 # (Homebrew reads a plain release name as "this or later".)
 [[ -n $macos ]] && sed -i '' -E "s/^  depends_on macos: .*/  depends_on macos: $macos/" "$cask"
+# The name Homebrew shows (the app was renamed AOK-Foray; the token stays "foray").
+sed -i '' -E 's/^  name ".*"/  name "AOK-Foray"/' "$cask"
 # From 0.10.0 the app contains the `foray` command-line tool: have Homebrew link it into its bin.
 if ! grep -q 'Contents/Helpers/foray' "$cask"; then
   sed -i '' -E 's|^  app "Foray.app"$|  app "Foray.app"\

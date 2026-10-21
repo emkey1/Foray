@@ -46,7 +46,7 @@ func background(scale: CGFloat) -> Data {
         let h = a.boundingRect(with: CGSize(width: size.width - 80, height: 200), options: [.usesLineFragmentOrigin]).height
         a.draw(with: CGRect(x: 40, y: size.height - centerY - h / 2, width: size.width - 80, height: h), options: [.usesLineFragmentOrigin])
     }
-    text("Drag Foray to Applications", .systemFont(ofSize: 22, weight: .semibold), NSColor(srgbRed: 0.15, green: 0.17, blue: 0.30, alpha: 1), centerY: 52)
+    text("Drag AOK-Foray to Applications", .systemFont(ofSize: 22, weight: .semibold), NSColor(srgbRed: 0.15, green: 0.17, blue: 0.30, alpha: 1), centerY: 52)
 
     // Arrow between the icons.
     let y = size.height - appCenter.y
@@ -65,7 +65,7 @@ func background(scale: CGFloat) -> Data {
     NSColor(srgbRed: 0.13, green: 0.52, blue: 0.56, alpha: 0.9).setFill()
     head.fill()
 
-    text("Then open Foray from Applications. To see the Trash and other protected places,\nturn on Full Disk Access in Foray › Settings › Privacy.",
+    text("Then open AOK-Foray from Applications. To see the Trash and other protected places,\nturn on Full Disk Access in AOK-Foray › Settings › Privacy.",
          .systemFont(ofSize: 12), NSColor(srgbRed: 0.35, green: 0.38, blue: 0.48, alpha: 1), centerY: 345)
     NSGraphicsContext.restoreGraphicsState()
     return rep.tiffRepresentation!

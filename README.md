@@ -1,13 +1,15 @@
-<p align="center"><img src="Resources/Icon/Foray-1024.png" width="160" alt="Foray icon"></p>
+<p align="center"><img src="Resources/Icon/Foray-1024.png" width="160" alt="AOK-Foray icon"></p>
 
-# Foray
+# AOK-Foray
+
+*Formerly just “Foray” (renamed October 2026). The app file is still `Foray.app`, the command is still `foray`, and settings, permissions and updates carry on unchanged.*
 
 A file browser for macOS that does what Finder does, minus the parts that get in the way.
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="Screenshots/4-two-panes-dark.webp">
-    <img src="Screenshots/4-two-panes-light.webp" width="860" alt="Foray with two panes: a list of a Projects folder on the left, icons of a Photos folder on the right.">
+    <img src="Screenshots/4-two-panes-light.webp" width="860" alt="AOK-Foray with two panes: a list of a Projects folder on the left, icons of a Photos folder on the right.">
   </picture>
 </p>
 
@@ -19,7 +21,7 @@ A file browser for macOS that does what Finder does, minus the parts that get in
 - **Two panes** (⌘U): two folders side by side in one window, with F5 and F6 to copy or move between them.
 - **Scriptable:** a `foray` command for Terminal (`foray search report kind:pdf`), Shortcuts actions, and an AppleScript dictionary.
 
-Out of the box Foray runs alongside Finder and changes no system settings. Two switches in Settings, both off until you turn them on, go further: **Use Foray instead of Finder** (Foray shows the desktop and opens folders from other apps) and **administrator access** (a small helper so that changes in places like `/Library` ask for an administrator's password, as they do in Finder, instead of failing). Turning either off puts things back.
+Out of the box AOK-Foray runs alongside Finder and changes no system settings. Two switches in Settings, both off until you turn them on, go further: **Use AOK-Foray instead of Finder** (AOK-Foray shows the desktop and opens folders from other apps) and **administrator access** (a small helper so that changes in places like `/Library` ask for an administrator's password, as they do in Finder, instead of failing). Turning either off puts things back.
 
 ## Screenshots
 
@@ -71,11 +73,11 @@ brew install --cask emkey1/tap/foray
 
 Or by hand:
 
-1. [Download Foray](https://github.com/emkey1/Foray/releases/latest/download/Foray.dmg) (always the latest version; the [releases page](https://github.com/emkey1/Foray/releases/latest) has the notes).
-2. Open it and drag **Foray** to **Applications**.
-3. Open Foray. macOS asks before it can see Desktop, Documents, Downloads and external drives; allow those. For the Trash, Mail data and other protected places, add Foray in **System Settings › Privacy & Security › Full Disk Access** (Foray › Settings › Privacy has a button for it).
+1. [Download AOK-Foray](https://github.com/emkey1/Foray/releases/latest/download/Foray.dmg) (always the latest version; the [releases page](https://github.com/emkey1/Foray/releases/latest) has the notes).
+2. Open it and drag **AOK-Foray** to **Applications**.
+3. Open AOK-Foray. macOS asks before it can see Desktop, Documents, Downloads and external drives; allow those. For the Trash, Mail data and other protected places, add AOK-Foray in **System Settings › Privacy & Security › Full Disk Access** (AOK-Foray › Settings › Privacy has a button for it).
 
-Requires macOS 15 (Sequoia) or later, on Apple silicon or Intel. From 0.9.1 on, Foray offers new versions itself (Foray › Check for Updates…); if you have 0.9.0, download the latest release once.
+Requires macOS 15 (Sequoia) or later, on Apple silicon or Intel. From 0.9.1 on, AOK-Foray offers new versions itself (AOK-Foray › Check for Updates…); if you have 0.9.0, download the latest release once.
 
 ## Build from source
 
@@ -86,11 +88,11 @@ scripts/bundle.sh release && open ".build/Foray Dev.app"   # build and run a tes
 swift test                                                  # run the tests
 ```
 
-Test builds are a separate app, **Foray Dev** (its own bundle ID, settings and privacy grants, and a DEV badge on the icon), so they never get mixed up with an installed Foray. They're signed with your Apple Development certificate when you have one, which keeps permissions like Full Disk Access across rebuilds.
+Test builds are a separate app, **Foray Dev** (its own bundle ID, settings and privacy grants, and a DEV badge on the icon), so they never get mixed up with an installed AOK-Foray. They're signed with your Apple Development certificate when you have one, which keeps permissions like Full Disk Access across rebuilds.
 
-Releases are built from `Xcode/Foray.xcodeproj` (scheme "Foray App"): Product › Archive, then Distribute App › Direct Distribution signs with Developer ID and notarizes. Then `scripts/make-dmg.sh` exports the notarized app from the newest archive and makes the installer: a window with Foray and an Applications shortcut over a background that explains what to do (`scripts/dmg-layout.swift` writes the window layout directly, so Finder isn't scripted). Attach both `dist/Foray-x.y.z.dmg` and `dist/Foray.dmg` (the same file; it's what the permanent download link fetches) to the GitHub release. After publishing it, `scripts/update-cask.sh` points the Homebrew cask ([emkey1/homebrew-tap](https://github.com/emkey1/homebrew-tap)) at it.
+Releases are built from `Xcode/Foray.xcodeproj` (scheme "Foray App"): Product › Archive, then Distribute App › Direct Distribution signs with Developer ID and notarizes. Then `scripts/make-dmg.sh` exports the notarized app from the newest archive and makes the installer: a window with AOK-Foray and an Applications shortcut over a background that explains what to do (`scripts/dmg-layout.swift` writes the window layout directly, so Finder isn't scripted). Attach both `dist/Foray-x.y.z.dmg` and `dist/Foray.dmg` (the same file; it's what the permanent download link fetches) to the GitHub release. After publishing it, `scripts/update-cask.sh` points the Homebrew cask ([emkey1/homebrew-tap](https://github.com/emkey1/homebrew-tap)) at it.
 
-The app bundle also carries the `foray` command-line tool and the privileged helper (`Contents/Helpers`), built from `Sources/foray-cli` and `Sources/foray-helper`. The helper is a root launchd daemon that macOS learns about only when the user turns on administrator access; `Sources/RFOperations/Privileged.swift` lists the handful of file operations it will do, and `PrivilegedHelper.swift` how callers are checked (Foray's code signature, plus an administrator's authorization for each job).
+The app bundle also carries the `foray` command-line tool and the privileged helper (`Contents/Helpers`), built from `Sources/foray-cli` and `Sources/foray-helper`. The helper is a root launchd daemon that macOS learns about only when the user turns on administrator access; `Sources/RFOperations/Privileged.swift` lists the handful of file operations it will do, and `PrivilegedHelper.swift` how callers are checked (AOK-Foray's code signature, plus an administrator's authorization for each job).
 
 `DESIGN.md` describes the architecture, and the in-app guide (`Sources/RFUI/Guide/guide.html`) describes every feature.
 
@@ -98,4 +100,4 @@ The app bundle also carries the `foray` command-line tool and the privileged hel
 
 MIT. See [LICENSE](LICENSE).
 
-Foray is an independent project and is not affiliated with or endorsed by Apple. Finder is a trademark of Apple Inc.
+AOK-Foray is an independent project and is not affiliated with or endorsed by Apple. Finder is a trademark of Apple Inc.
