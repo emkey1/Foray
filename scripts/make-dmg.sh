@@ -2,9 +2,11 @@
 # Makes the installer, dist/Foray-<version>.dmg: a window with Foray and an Applications shortcut
 # side by side over a background that says what to do, and Foray's icon on the disk.
 #
-# Releases (Developer ID signing and notarization happen in Xcode, with your Xcode account):
-#   1. open Xcode/Foray.xcodeproj, "Foray App" scheme, Product › Archive
-#   2. Organizer › Distribute App › Direct Distribution, and wait for "Ready to distribute"
+# Releases (Developer ID signing and notarization use your Xcode account):
+#   1. scripts/archive.sh, which archives and sends the app to Apple to be notarized; or, in Xcode,
+#      Xcode/Foray.xcodeproj, "Foray App" scheme, Product › Archive, then Organizer › Distribute App ›
+#      Direct Distribution
+#   2. wait a few minutes for Apple ("Ready to distribute" in the Organizer)
 #   3. scripts/make-dmg.sh
 #      With no argument it exports the notarized app from Xcode's newest Foray archive. You can
 #      also pass an app: scripts/make-dmg.sh /path/to/Foray.app
