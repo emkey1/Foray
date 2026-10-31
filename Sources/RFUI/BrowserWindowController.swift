@@ -626,8 +626,20 @@ public final class WindowManager {
             if let names = selections[folder] { controller.browser.state.select(names: names) }
             opened.append(controller)
         }
-        NSApplication.shared.activate()
+        Self.comeForward()
         return opened
+    }
+
+    /// Brings the app to the front for something another app asked it to show. Since macOS 14,
+    /// plain `activate()` works only if the app in front hands over, and requests that come by
+    /// way of the system (Safari's and Photos' "Show in Finder", AppleScript's `open`) don't, so
+    /// the windows piled up out of sight. Activating from the app in front does it. (Only in the
+    /// app: tests would put the test runner in front of whatever you're doing.)
+    static func comeForward() {
+        if Bundle.main.bundleURL.pathExtension == "app",
+           let front = NSWorkspace.shared.frontmostApplication, front != NSRunningApplication.current,
+           NSRunningApplication.current.activate(from: front, options: []) { return }
+        NSApplication.shared.activate()
     }
 
     /// The browser window in front (the last one opened if none is main).

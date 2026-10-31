@@ -85,6 +85,7 @@ public enum AppIntegration {
         } else {
             WindowManager.shared.openWindow(location)
         }
+        WindowManager.comeForward()
         return true
     }
 }
