@@ -69,6 +69,12 @@ public enum AppIntegration {
         }
     }
 
+    /// Tells AppKit what a browser's selection can be sent to Services as. Without it no service
+    /// that takes files shows up (Terminal's "New Terminal at Folder", iTerm2's "New iTerm2 Window Here", …).
+    public static func registerServices() {
+        NSApp.registerServicesMenuSendTypes([.fileURL, BrowserViewController.filenamesType, .string], returnTypes: [])
+    }
+
     /// foray:// (or foray-dev:// for test builds).
     static func isOurs(_ url: URL) -> Bool { ["foray", "foray-dev"].contains(url.scheme?.lowercased() ?? "") }
 
@@ -120,19 +126,44 @@ final class MenuTarget: NSObject, NSMenuDelegate {
 
 // MARK: Services (DESIGN.md §4.8): the selection as files for Services and Quick Actions.
 
+extension BrowserWindowController {
+    /// The window answers for its browser too, so Services work whatever has the focus.
+    override public func validRequestor(forSendType sendType: NSPasteboard.PasteboardType?, returnType: NSPasteboard.PasteboardType?) -> Any? {
+        browser.servicesRequestor(sendType, returnType) ?? super.validRequestor(forSendType: sendType, returnType: returnType)
+    }
+}
+
 extension BrowserViewController: @MainActor NSServicesMenuRequestor {
+    static let filenamesType = NSPasteboard.PasteboardType("NSFilenamesPboardType")
+
     override func validRequestor(forSendType sendType: NSPasteboard.PasteboardType?, returnType: NSPasteboard.PasteboardType?) -> Any? {
-        if returnType == nil, sendType == .fileURL || sendType == .string || sendType == NSPasteboard.PasteboardType("NSFilenamesPboardType"),
-           !state.selectedItems.isEmpty {
-            return self
-        }
-        return super.validRequestor(forSendType: sendType, returnType: returnType)
+        servicesRequestor(sendType, returnType) ?? super.validRequestor(forSendType: sendType, returnType: returnType)
+    }
+
+    /// Itself, when the selection can be sent as `sendType`.
+    func servicesRequestor(_ sendType: NSPasteboard.PasteboardType?, _ returnType: NSPasteboard.PasteboardType?) -> Any? {
+        guard returnType == nil, sendType == .fileURL || sendType == .string || sendType == Self.filenamesType,
+              !servicesItems.isEmpty else { return nil }
+        return self
+    }
+
+    /// The selection, or with nothing selected the folder itself (as with Finder's menu inside a folder).
+    private var servicesItems: [URL] {
+        let selected = state.selectedItems.map(\.url)
+        if !selected.isEmpty { return selected }
+        if case .folder(let url) = state.location { return [url] }
+        return []
     }
 
     func writeSelection(to pboard: NSPasteboard, types: [NSPasteboard.PasteboardType]) -> Bool {
-        let urls = state.selectedItems.map(\.url)
+        let urls = servicesItems
         guard !urls.isEmpty else { return false }
         pboard.clearContents()
-        return pboard.writeObjects(urls as [NSURL])
+        guard pboard.writeObjects(urls as [NSURL]) else { return false }
+        // As text, the paths themselves (not file:// links): services that take a folder as text,
+        // like Terminal's, check that the text is a file path. (Asked for under old names too.)
+        pboard.pasteboardItems?.first?.setString(urls.map(\.path).joined(separator: "\n"), forType: .string)
+        return true
     }
 }
+

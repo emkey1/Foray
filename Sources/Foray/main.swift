@@ -6,6 +6,7 @@ import RFUI
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.mainMenu = MainMenu.build(target: self)
+        AppIntegration.registerServices()
         #if DEBUG
         // scripts/screenshots.sh: photograph demo windows and quit, instead of opening as usual.
         if ScreenshotStudio.runIfRequested() { return }

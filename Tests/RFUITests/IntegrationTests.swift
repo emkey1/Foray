@@ -90,7 +90,13 @@ extension UISerial {
             defer { vc.state.invalidate() }
             let deadline = Date().addingTimeInterval(15)
             while vc.state.snapshot.items.isEmpty && Date() < deadline { try await Task.sleep(for: .milliseconds(20)) }
-            #expect(vc.validRequestor(forSendType: .fileURL, returnType: nil) == nil)   // nothing selected
+            // Nothing selected: the folder itself (Terminal's "New Terminal at Folder" from inside it).
+            #expect(vc.validRequestor(forSendType: .fileURL, returnType: nil) as? BrowserViewController === vc)
+            let folderBoard = NSPasteboard(name: .init("rf-test-\(UUID().uuidString)"))
+            defer { folderBoard.releaseGlobally() }
+            #expect(vc.writeSelection(to: folderBoard, types: [.fileURL]))
+            #expect((folderBoard.readObjects(forClasses: [NSURL.self]) as? [URL])?.map(\.lastPathComponent) == ["W"])
+
             vc.state.select(names: ["s.txt"])
             #expect(vc.validRequestor(forSendType: .fileURL, returnType: nil) as? BrowserViewController === vc)
             let pb = NSPasteboard(name: .init("rf-test-\(UUID().uuidString)"))
@@ -98,6 +104,8 @@ extension UISerial {
             #expect(vc.writeSelection(to: pb, types: [.fileURL]))
             let urls = pb.readObjects(forClasses: [NSURL.self]) as? [URL]
             #expect(urls?.map(\.lastPathComponent) == ["s.txt"])
+            // As text, the path itself, which services that take a folder as text check for.
+            #expect(pb.string(forType: .string) == w.appendingPathComponent("s.txt").path)
         }
     }
 }
