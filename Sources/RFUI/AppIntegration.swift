@@ -160,9 +160,13 @@ extension BrowserViewController: @MainActor NSServicesMenuRequestor {
         guard !urls.isEmpty else { return false }
         pboard.clearContents()
         guard pboard.writeObjects(urls as [NSURL]) else { return false }
-        // As text, the paths themselves (not file:// links): services that take a folder as text,
-        // like Terminal's, check that the text is a file path. (Asked for under old names too.)
-        pboard.pasteboardItems?.first?.setString(urls.map(\.path).joined(separator: "\n"), forType: .string)
+        // As text, the paths themselves (not file:// links), for a service that takes only text:
+        // it checks that the text is a file path. (Asked for under old names too.) Not when files
+        // are asked for as well: the system then adds the path from the text as a file of its own,
+        // so iTerm2's "New iTerm2 Tab Here" opened two tabs.
+        if !types.contains(.fileURL) && !types.contains(Self.filenamesType) {
+            pboard.pasteboardItems?.first?.setString(urls.map(\.path).joined(separator: "\n"), forType: .string)
+        }
         return true
     }
 }

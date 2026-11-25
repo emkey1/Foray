@@ -104,8 +104,14 @@ extension UISerial {
             #expect(vc.writeSelection(to: pb, types: [.fileURL]))
             let urls = pb.readObjects(forClasses: [NSURL.self]) as? [URL]
             #expect(urls?.map(\.lastPathComponent) == ["s.txt"])
-            // As text, the path itself, which services that take a folder as text check for.
-            #expect(pb.string(forType: .string) == w.appendingPathComponent("s.txt").path)
+            // No text with the files: the system would send the path from the text as a second file
+            // (iTerm2 opened two tabs).
+            #expect(pb.string(forType: .string) == nil)
+            // Asked for text alone, the path itself, which services that take a folder as text check for.
+            let textBoard = NSPasteboard(name: .init("rf-test-\(UUID().uuidString)"))
+            defer { textBoard.releaseGlobally() }
+            #expect(vc.writeSelection(to: textBoard, types: [.string]))
+            #expect(textBoard.string(forType: .string) == w.appendingPathComponent("s.txt").path)
         }
     }
 }
