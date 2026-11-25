@@ -144,9 +144,38 @@ public enum Trash {
             try FileManager.default.moveItem(at: url, to: dest)
             return dest
         }
+        do {
+            return try coordinatedTrash(url)
+        } catch let error as NSError where Execution.errno(of: error) == EIO && isCloudOnly(url) {
+            // OneDrive (and maybe other cloud providers) won't let a file that's only in the cloud
+            // be moved out of its folder: Finder copes, a plain move gets EIO. Fetch it, then retry.
+            try download(url)
+            return try coordinatedTrash(url)
+        }
+    }
+
+    /// Coordinated, as Finder does, so a cloud provider knows the item is being deleted.
+    private static func coordinatedTrash(_ url: URL) throws -> URL {
         var trashed: NSURL?
-        try FileManager.default.trashItem(at: url, resultingItemURL: &trashed)
+        var coordinationError: NSError?
+        var moveError: Error?
+        NSFileCoordinator(filePresenter: nil).coordinate(writingItemAt: url, options: .forDeleting, error: &coordinationError) { url in
+            do { try FileManager.default.trashItem(at: url, resultingItemURL: &trashed) } catch { moveError = error }
+        }
+        if let error = coordinationError ?? moveError { throw error }
         return (trashed as URL?) ?? url
+    }
+
+    static func isCloudOnly(_ url: URL) -> Bool {
+        guard let st = FileOps.lstat(url) else { return false }
+        return st.st_flags & UInt32(SF_DATALESS) != 0
+    }
+
+    /// A coordinated read makes the provider download the file.
+    private static func download(_ url: URL) throws {
+        var error: NSError?
+        NSFileCoordinator(filePresenter: nil).coordinate(readingItemAt: url, options: [], error: &error) { _ in }
+        if let error { throw error }
     }
 }
 
